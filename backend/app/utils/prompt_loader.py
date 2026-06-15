@@ -1,7 +1,7 @@
 '''提示词模板加载工具'''
-from config_handler import prompts_conf
-from path_tool import get_abs_path
-from logger_handler import logger
+from app.utils.config_handler import prompts_conf
+from app.utils.path_tool import get_abs_path
+from app.utils.logger_handler import logger
 
 
 def load_system_prompt():

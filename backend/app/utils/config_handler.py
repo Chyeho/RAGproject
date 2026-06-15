@@ -1,6 +1,6 @@
 '''配置信息管理工具'''
 import yaml
-from path_tool import get_abs_path
+from app.utils.path_tool import get_abs_path
 
 def load_rag_config(config_path:str = get_abs_path("config/rag_config.yml"),encoding:str = "utf-8"):
     '''加载rag配置信息文件'''
@@ -31,6 +31,7 @@ def load_cache_config(config_path:str = get_abs_path("config/cache_config.yml"),
     '''加载cache配置信息文件'''
     with open(config_path,"r",encoding=encoding) as f:
         return yaml.load(f,yaml.FullLoader)
+
     
 rag_conf      = load_rag_config()
 chroma_conf   = load_chroma_config()

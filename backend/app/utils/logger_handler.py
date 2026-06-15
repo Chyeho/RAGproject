@@ -2,7 +2,7 @@
 日志管理工具
 '''
 import logging
-from path_tool import get_abs_path
+from app.utils.path_tool import get_abs_path
 import os
 from datetime import datetime
 
