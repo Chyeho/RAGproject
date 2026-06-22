@@ -19,7 +19,7 @@ class VectorStoreService(object):
         self.vector_store = Chroma(
             collection_name = chroma_conf["collection_name"],     # 要操作的集合名
             embedding_function = embed_model,                     # 文本嵌入模型
-            persist_directory = chroma_conf["persist_directory"]  # 向量库本地地址
+            persist_directory = os.path.join(os.path.dirname(get_abs_path("")),chroma_conf["persist_directory"])  # 向量库本地地址
         )
 
         # 文本分割器
@@ -78,18 +78,15 @@ class VectorStoreService(object):
                 # exc_info=True记录详细报错信息
                 logger.error(f"[加载知识库]{path}加载失败，报错信息:{str(e)}",exc_info=True)
                 continue
-
-if __name__ == '__main__':
-    vs = VectorStoreService()
-
-    vs.load_document()
-
-    retriever = vs.get_retriever()
-
-    res = retriever.invoke("晋升")
-    for r in res:
-        print(r.page_content)
-        print("-"*20)
         
-    
+# if __name__ == '__main__':
+#     vs = VectorStoreService()
 
+#     vs.load_document()
+
+#     retriever = vs.get_retriever()
+
+#     res = retriever.invoke("薪酬福利")
+#     for r in res:
+#         print(r.page_content)
+#         print("-"*20)

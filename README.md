@@ -18,23 +18,54 @@
 ### 1-3 项目结构
 
 ```plaintext
-project_root/
-├── chat_history/
-├── chroma_db/
-├── data/
-│   ├── 尺码推荐.txt
-│   ├── 洗涤养护.txt
-│   └── 颜色选择.txt
-├── app_file_upload.py
-├── app_qa.py
-├── config_data.py
-├── file_history_store.py
-├── knowledge_base.py
-├── rag.py
-└── vector_stores.py
+RAGproject_demo/
+├── backend/                             # 后端（FastAPI + LangChain）
+│   ├── app/
+│   │   ├── config/                      # 配置文件目录
+│   │   │   ├── agent_config.yml         # Agent 配置
+│   │   │   ├── cache_config.yml         # 缓存配置
+│   │   │   ├── chroma_config.yml        # 向量库配置
+│   │   │   ├── db_config.yml            # 关系数据库配置
+│   │   │   ├── prompts_config.yml       # 提示词配置
+│   │   │   └── rag_config.yml           # RAG 服务配置
+│   │   ├── data/                        # 私有知识库原始文件
+│   │   │   └── 员工手册.txt
+│   │   ├── logs/                        # 运行日志
+│   │   ├── modelFactory/                # 大模型工厂
+│   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
+│   │   ├── models/                      # SQLAlchemy 数据模型
+│   │   │   ├── document_chunk.py
+│   │   │   ├── documents.py
+│   │   │   └── users.py
+│   │   ├── prompts/                     # 系统提示词模板
+│   │   │   ├── rag_summarize.txt
+│   │   │   └── system_prompt.txt
+│   │   ├── routers/                     # FastAPI 路由层
+│   │   │   └── documents.py             # 文档上传 / 检索接口
+│   │   ├── service/                     # 业务服务层
+│   │   │   ├── agent/                   # Agent 服务
+│   │   │   │   └── react_agent.py
+│   │   │   ├── history/                 # 对话历史管理
+│   │   │   │   └── history_store.py
+│   │   │   └── rag/                     # RAG 问答核心
+│   │   │       ├── rag_service.py       # RAG 总结服务
+│   │   │       └── vector_store.py      # 向量库 CRUD 服务
+│   │   ├── utils/                       # 工具模块
+│   │   │   ├── config_handler.py        # 配置加载器
+│   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
+│   │   │   ├── logger_handler.py        # 日志配置
+│   │   │   ├── path_tool.py             # 路径工具（绝对路径计算）
+│   │   │   └── prompt_loader.py         # 提示词模板加载
+│   │   ├── main.py                      # FastAPI 应用入口
+│   │   └── md5.txt                      # 知识库文件去重记录
+│   ├── chat_history/                    # 用户对话历史持久化
+│   ├── chroma_db/                       # Chroma 向量数据库
+│   ├── pyproject.toml                   # 项目依赖配置
+│   └── uv.lock
+├── oldProject/                          # 旧版本脚本代码归档
+├── frontend/                            # 前端（待开发）
+└── README.md
 ```
-
-
 
 ## 2 如何使用
 
@@ -64,15 +95,7 @@ deactivate
 
 4.在线流程代码运行
 
-```powershell
-streamlit run app_qa.py
-```
-
-5.离线流程代码运行
-
-```python
-streamlit run file_app_upload.py
-```
+。。。
 
 ## 3 项目期望
 

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from routers import documents
 
 app = FastAPI(
-    title="智荟 PrivRAG 企业私有知识库问答系统API",
+    title="宸甄 PrivRAG 企业私有知识库问答系统API",
     description="基于FastAPI+Langchain的企业私有知识库RAG问答系统后端API",
 )
 

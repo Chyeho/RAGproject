@@ -89,14 +89,3 @@ class RagService(object):
         )
 
         return conversation_chain
-
-# # 测试代码                
-# if __name__ == '__main__':
-#     # session id 配置
-#     session_config = {
-#         "configurable":{
-#             "session_id":"user_001",
-#         }
-#     }
-#     res = RagService().chain.invoke({"input":"我身高170cm，体重99斤，尺码推荐"},session_config)
-#     print(res)

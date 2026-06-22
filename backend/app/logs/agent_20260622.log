@@ -1,0 +1,20 @@
+2026-06-22 16:58:19,030 - agent - ERROR - vector_store.py:79 - [加载知识库]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\员工手册.txt加载失败，报错信息:status_code: 400, code: InvalidParameter, message: <400> InternalError.Algo.InvalidParameter: Value error, batch size is invalid, it should not be larger than 10.: input.contents
+Traceback (most recent call last):
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\service\rag\vector_store.py", line 71, in load_document
+    self.vector_store.add_documents(split_document)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\langchain_core\vectorstores\base.py", line 258, in add_documents
+    return self.add_texts(texts, metadatas, **kwargs)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\langchain_chroma\vectorstores.py", line 627, in add_texts
+    embeddings = self._embedding_function.embed_documents(texts)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\modelFactory\factory.py", line 47, in embed_documents
+    return self._call_api(texts)
+           ~~~~~~~~~~~~~~^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\modelFactory\factory.py", line 34, in _call_api
+    raise ValueError(
+        f"status_code: {resp.status_code}, code: {resp.code}, message: {resp.message}"
+    )
+ValueError: status_code: 400, code: InvalidParameter, message: <400> InternalError.Algo.InvalidParameter: Value error, batch size is invalid, it should not be larger than 10.: input.contents
+2026-06-22 17:02:16,748 - agent - INFO - vector_store.py:76 - [加载知识库]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\员工手册.txt内容加载成功
+2026-06-22 17:02:50,543 - agent - INFO - vector_store.py:50 - [加载知识库]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\员工手册.txt内容已经存在知识库内，跳过

@@ -18,8 +18,12 @@ class FileChatMessageHistory(BaseChatMessageHistory):
         self.file_path = os.path.join(self.storage_path,self.session_id)
 
         # 保证文件夹存在，不存在就创建
-        os.makedirs(os.path.dirname(self.file_path),exist_ok=True)
-        # os.makedirs(self.storage_path, exist_ok=True)
+        os.makedirs(self.storage_path, exist_ok=True)
+
+        # 文件不存在或内容为空时，初始化为合法的空数组
+        if not os.path.exists(self.file_path) or os.path.getsize(self.file_path) == 0:
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump([], f)
 
 
     def add_messages(self, messages):
