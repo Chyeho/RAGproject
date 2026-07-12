@@ -32,7 +32,7 @@ class RagSummarizeService(object):
     def __get_chain(self):
         """初始化执行链（手动管理对话历史，替代已弃用的 RunnableWithMessageHistory）"""
 
-        # list[Document] 转字符串功能函数
+        # list[Document] 转字符串功能函数（检索器返回的是文档列表，而聊天模型需要的是字符串）
         def format_document(docs: list[Document]):
             if not docs:
                 return "无相关资料"
@@ -43,13 +43,12 @@ class RagSummarizeService(object):
                 context += f"【参考资料{counter}】：参考资料：{doc.page_content} | 参考元数据：{doc.metadata}\n"
             return context
 
-        # 解决 retriever 的输入问题
+        # 解决 retriever 的输入问题（需要字符串输入，而用户提问是字典）
         def format_for_retriever(value: dict) -> str:
             return value["input"]
 
-        # 格式化 self.prompt_template 的输入
+        # 格式化 self.prompt_template 的输入（提示词模板需要三个参数：input, context, history）
         def format_for_prompt_template(value):
-            # 需要三个：{input, context, history}
             new_value = {}
             new_value["input"] = value["input"]["input"]
             new_value["history"] = value["input"]["history"]
