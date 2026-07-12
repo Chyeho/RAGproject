@@ -8,10 +8,10 @@
 
 ### 1-2 项目技术栈
 
-- **前端框架**：Vue
-- **后端框架**：FastAPI
-- **关系型数据库**：MySQL
-- **向量数据库**：Chroma（后面升级为Milvus）
+- **前端框架**：Vue（待开发）
+- **后端框架**：FastAPI（待开发）
+- **关系型数据库**：MySQL（待接入）
+- **向量数据库**：Chroma（后面将升级为Milvus）
 - **ORM**：SQLAlchemy（异步）
 - **AI问答服务框架**：Langchain
 
@@ -31,7 +31,7 @@ RAGproject_demo/
 │   │   ├── data/                        # 私有知识库原始文件
 │   │   │   └── 员工手册.txt
 │   │   ├── logs/                        # 运行日志
-│   │   ├── modelFactory/                # 大模型工厂
+│   │   ├── modelFactory/                # 模型工厂
 │   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
 │   │   ├── models/                      # SQLAlchemy 数据模型
 │   │   │   ├── document_chunk.py
@@ -49,7 +49,7 @@ RAGproject_demo/
 │   │   │   │   └── history_store.py
 │   │   │   └── rag/                     # RAG 问答核心
 │   │   │       ├── rag_service.py       # RAG 总结服务
-│   │   │       └── vector_store.py      # 向量库 CRUD 服务
+│   │   │       └── vector_store.py      # 向量库服务
 │   │   ├── utils/                       # 工具模块
 │   │   │   ├── config_handler.py        # 配置加载器
 │   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
@@ -67,35 +67,9 @@ RAGproject_demo/
 └── README.md
 ```
 
-## 2 如何使用
+## 2 项目阶段
 
-**快速开始**
-
-1.创建并激活并激活虚拟环境(Windows)[可选]
-
-```powershell
-# 1.创建虚拟环境
-python -m venv .venv
-
-# 2.激活虚拟环境
-.venv/Scripts/activate
-```
-
-2.安装`pyproject.toml`的所有依赖
-
-```powershell
-pip install -e .
-```
-
-3.退出虚拟环境(Windows)[可选]
-
-```powershell
-deactivate
-```
-
-4.在线流程代码运行
-
-。。。
+目前阶段项目尚未完善，仅完成rag服务和agent的基本架构的开发；下一阶段将会开发fastAPI后端和前端服务。
 
 ## 3 项目期望
 
