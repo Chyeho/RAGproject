@@ -1,6 +1,0 @@
-2026-06-21 21:12:17,330 - agent - ERROR - history_store.py:63 - [message]文件不存在
-2026-06-21 21:12:23,829 - agent - ERROR - history_store.py:63 - [message]文件不存在
-2026-06-21 21:19:41,687 - agent - INFO - vector_store.py:50 - [加载知识库]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\员工手册.txt内容已经存在知识库内，跳过
-2026-06-21 21:20:02,906 - agent - ERROR - history_store.py:63 - [message]文件不存在
-2026-06-21 21:20:10,247 - agent - ERROR - history_store.py:63 - [message]文件不存在
-2026-06-21 22:36:24,073 - agent - INFO - vector_store.py:50 - [加载知识库]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\员工手册.txt内容已经存在知识库内，跳过
