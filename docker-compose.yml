@@ -1,0 +1,150 @@
+# ======================================================================
+# 宸甄 PrivRAG — Docker Compose 编排文件
+# ======================================================================
+# 包含服务: nginx, frontend(Vue), backend(FastAPI), MySQL, Qdrant
+#
+# 启动命令（开发环境）:
+#   docker compose --env-file docker/env/.env.dev up -d --build
+#
+# 启动命令（生产环境）:
+#   docker compose --env-file docker/env/.env.prod up -d --build
+# ======================================================================
+
+services:
+  # ======================== MySQL 关系型数据库 ========================
+  mysql:
+    image: mysql:8.4
+    container_name: privrag-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/middleware/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - privrag-network
+
+  # ======================== Qdrant 向量数据库 ========================
+  qdrant:
+    image: qdrant/qdrant:v1.16
+    container_name: privrag-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - ./docker/middleware/qdrant_config.yaml:/qdrant/config/config.yaml:ro
+    networks:
+      - privrag-network
+
+  # ======================== FastAPI 后端服务 ========================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: privrag-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      ENV: ${ENV:-development}
+      DEBUG: ${DEBUG:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_USER: ${MYSQL_USER:-privrag}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-privrag}
+      QDRANT_HOST: ${QDRANT_HOST:-qdrant}
+      QDRANT_PORT: ${QDRANT_PORT:-6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-privrag}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      # 业务配置目录（只读挂载）
+      - ./backend/app/config:/app/app/config:ro
+      # 知识库数据
+      - ./backend/app/data:/app/app/data
+      # 持久化目录
+      - chat_history:/app/chat_history
+    networks:
+      - privrag-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ======================== Vue 前端服务 ========================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: privrag-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    networks:
+      - privrag-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ======================== Nginx 反向代理 ========================
+  nginx:
+    image: nginx:stable-alpine
+    container_name: privrag-nginx
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - privrag-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+# ======================== 数据卷 ========================
+volumes:
+  mysql_data:
+    name: privrag_mysql_data
+  qdrant_data:
+    name: privrag_qdrant_data
+  chat_history:
+    name: privrag_chat_history
+
+# ======================== 网络 ========================
+networks:
+  privrag-network:
+    name: privrag-network
+    driver: bridge
