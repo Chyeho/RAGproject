@@ -107,6 +107,27 @@ python -m pytest ..\tests\ --lf                  # --last-failed
 python -m pytest ..\tests\ --ff                  # --failed-first
 ```
 
+## 已知警告说明
+
+运行全部测试时，你可能看到如下警告：
+
+```
+DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated
+  _EPOCH_DATETIME_NAIVE = datetime.datetime.utcfromtimestamp(0)
+```
+
+**原因**：项目依赖的 `protobuf==3.20.3`（chromadb 间接依赖）使用了 Python 3.12+ 已弃用的 `utcfromtimestamp()` API。该警告发生在模块导入阶段（早于任何测试代码执行），属于第三方库的内部问题，不影响测试结果。
+
+**状态**：无需处理。等待 `protobuf` 上游修复或 `chromadb` 升级其 `protobuf` 依赖版本后，该警告会自动消失。
+
+**如需手动抑制**（可选）：
+
+```powershell
+python -m pytest ..\tests\ -q -W "ignore::DeprecationWarning"
+```
+
+---
+
 ## 测试设计原则
 
 1. **不修改业务代码**：所有测试只读被测模块，通过 mock 隔离外部依赖（DashScope API、Chroma、ChatTongyi）
