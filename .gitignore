@@ -38,7 +38,8 @@ htmlcov/
 # ============================================================
 # 运行时数据（包含用户数据或可重建数据，不应提交）
 # ============================================================
-backend/app/chroma_db/
+backend/chroma_db/
+backend/app/chroma_db/       # 旧版本遗留，后续可删
 backend/chat_history/
 backend/app/logs/
 backend/app/md5.txt

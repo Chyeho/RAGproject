@@ -15,11 +15,15 @@ from app.modelFactory.factory import embed_model                                
 
 class VectorStoreService(object):
     def __init__(self):
+        # 向量库本地持久化目录
+        persist_dir = os.path.join(os.path.dirname(get_abs_path("")), chroma_conf["persist_directory"])
+        os.makedirs(persist_dir, exist_ok=True)                      # 确保目录存在（git clone 后首次运行）
+
         # chroma数据库
         self.vector_store = Chroma(
-            collection_name = chroma_conf["collection_name"],     # 要操作的集合名
-            embedding_function = embed_model,                     # 文本嵌入模型
-            persist_directory = os.path.join(os.path.dirname(get_abs_path("")),chroma_conf["persist_directory"])  # 向量库本地地址
+            collection_name = chroma_conf["collection_name"],        # 要操作的集合名
+            embedding_function = embed_model,                        # 文本嵌入模型
+            persist_directory = persist_dir                          # 向量库本地地址
         )
 
         # 文本分割器
