@@ -8,7 +8,7 @@
 
 ### 1-2 项目技术栈
 
-- **前端框架**：Vue（待开发）
+- **前端框架**：Vue 3 + Vite + Element Plus + ECharts + Vue Router + Axios（已完成，当前为 mock 数据）
 - **后端框架**：FastAPI（待开发）
 - **关系型数据库**：MySQL（待接入）
 - **向量数据库**：Chroma（后面将升级为Qdrant）
@@ -74,19 +74,41 @@ RAGproject_demo/
 │   ├── chroma_db/                       # Chroma 向量数据库
 │   ├── pyproject.toml                   # 项目依赖配置
 │   └── uv.lock
-├── frontend/                            # 前端（Vue）
-│   └── Dockerfile                       # 前端容器构建文件
+├── frontend/                            # 前端（Vue 3 + Element Plus + ECharts）
+│   ├── Dockerfile                       # 前端容器构建文件
+│   └── src/
+│       ├── api/                         # 接口层（当前返回 mock，后端就绪后替换为真实请求）
+│       ├── assets/
+│       │   ├── images/                  # Logo 等静态资源
+│       │   └── styles/                  # 全局样式（蓝紫渐变设计变量）
+│       ├── layout/                      # 主框架布局（顶部导航 + 侧边菜单 + 内容区）
+│       ├── mock/                        # mock 数据源（严格对齐接口 JSON 契约）
+│       ├── router/                      # 路由配置 + 登录守卫
+│       ├── utils/                       # 工具模块（登录态 / 格式化 / 延迟模拟）
+│       └── views/                       # 页面视图
+│           ├── chat/                    # Bot 问答页（会话管理 + 引用溯源）
+│           ├── knowledge/               # 知识库页（文档表格 + 上传/预览/删除）
+│           ├── statistics/              # 统计数据页（ECharts 图表）
+│           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
+│           └── LoginRegister.vue        # 登录注册页
 ├── tests/                               # 测试代码
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
+├── 前端制作参考资料/                     # 前端制作提示词与界面参考图
+├── 前后端开发执行文档.md                 # 前后端开发计划与实施记录
+├── 接口JSON契约文档.md                  # 前后端接口契约（联调依据）
 └── README.md
 ```
 
 ## 2 项目阶段
 
-目前阶段项目尚未完善，仅完成rag服务和agent的基本架构的开发；下一阶段将会开发fastAPI后端和前端服务。
+目前阶段完成情况：
+
+1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（向量库服务、RAG 总结服务、ReAct Agent、对话历史管理）；
+2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，当前使用 mock 数据，无需后端即可运行查看全部页面效果；
+3. **下一阶段**：开发 FastAPI 后端全部业务接口（认证、会话、文档、统计、配置），接入 MySQL 关系型数据库，复用现有 RAG/Agent 服务，最终完成前后端联调。
 
 ## 3 项目期望
 
@@ -145,6 +167,8 @@ cd frontend
 npm install  # 首次运行
 npm run dev
 # 访问 http://localhost:3000 查看前端页面
+# 说明：当前前端为 mock 数据，无需后端即可体验全部页面；
+#       测试账号 13800138000 / 123456（注册验证码固定为 123456）
 
 # 停止基础设施
 docker compose down
