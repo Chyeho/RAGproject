@@ -146,9 +146,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Iphone, Lock, Message } from '@element-plus/icons-vue'
 import horizontalLogo from '../assets/images/宸甄 PrivRAG 企业私有知识库问答系统logo.png'
-import { login, register, sendSmsCode } from '../api/auth'
+import { login, register, sendSmsCode, DEV_SMS_CODE } from '../api/auth'
 import { setLoginState } from '../utils/auth'
-import { MOCK_SMS_CODE } from '../mock/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -237,7 +236,7 @@ function handleGetCode() {
     return
   }
   sendSmsCode({ phone: registerForm.phone, scene: 'register' })
-  ElMessage.success(`验证码已发送（开发环境固定为 ${MOCK_SMS_CODE}）`)
+  ElMessage.success(`验证码已发送（开发环境固定为 ${DEV_SMS_CODE}）`)
   countdown.value = 60
   countdownTimer = setInterval(() => {
     countdown.value -= 1

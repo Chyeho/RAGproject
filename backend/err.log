@@ -1,0 +1,228 @@
+INFO:     Started server process [5788]
+INFO:     Waiting for application startup.
+2026-08-13 18:56:02,013 - agent - INFO - main.py:17 - [启动]后端服务开始启动...
+2026-08-13 18:56:02,035 - agent - INFO - db.py:43 - [数据库]表结构初始化完成
+2026-08-13 18:56:02,035 - agent - INFO - main.py:19 - [启动]后端服务启动完成
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2026-08-13 18:56:12,308 - agent - INFO - auth.py:77 - [认证]手机号13900001234登录成功
+2026-08-13 18:56:12,341 - agent - INFO - chat.py:108 - [会话]用户2新建会话(id=4)
+2026-08-13 18:56:12,358 - agent - INFO - chat.py:108 - [会话]用户2新建会话(id=5)
+2026-08-13 18:56:33,787 - agent - INFO - chat.py:264 - [会话]用户2会话(id=4)问答完成，引用 1 条
+2026-08-13 18:56:47,502 - agent - INFO - chat.py:264 - [会话]用户2会话(id=4)问答完成，引用 1 条
+2026-08-13 18:57:01,599 - agent - INFO - auth.py:77 - [认证]手机号13900001234登录成功
+2026-08-13 18:57:18,029 - agent - INFO - chat.py:264 - [会话]用户2会话(id=5)问答完成，引用 1 条
+2026-08-13 19:37:05,851 - agent - INFO - chat.py:108 - [会话]用户3新建会话(id=6)
+2026-08-13 19:37:53,965 - agent - ERROR - chat.py:261 - [会话]助手消息入库失败：(pymysql.err.DataError) (1406, "Data too long for column 'content' at row 1")
+[SQL: INSERT INTO chat_message (conversation_id, `role`, content, citations, created_at) VALUES (%s, %s, %s, %s, %s)]
+[parameters: (6, 'assistant', '未来科技公司的考勤制度主要包括迟到与旷工界定、请假审批流程以及加班与调休三个方面。在迟到与旷工方面，每月享有3次、每次15分钟内的免责迟到机会，超出部分扣除绩效分；未经批准缺勤视为旷工，连续旷工3天或全年累计5天，公司有权单方解除劳动合同且不支付经济补偿。在请假审批方面，需提前通过OA系统申请，1天以内由直属主管审批，1-3天由部门总监审批，3天以上需HR部门及分管副总双重审批；突发疾病等紧急情况需当天上午9点前电话通知主管，并在返岗后2个工作日内补齐流程。在加班与调休方面，公司不提倡无效加班，需提前在OA系统申请；周末及法定节假日加班优先安排调休，无法调休的按国家法定标准发放加班费。', '[{"documentId": 2, "documentName": "\\u5458\\u5de5\\u624b\\u518c.txt", "snippet": "\\u672a\\u6765\\u79d1\\u6280\\u516c\\u53f8\\u5458\\u5de5\\u624b\\u518c\\n\\n\\u7b2c\\u4e00\\u7ae0 \\u8003\\u52e4\\u5236\\u5ea6"}]', datetime.datetime(2026, 8, 13, 19, 37, 53, 960255))]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+Traceback (most recent call last):
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 230, in execute
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 368, in _handle_exception
+    raise error.with_traceback(exc_info[2])
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 228, in execute
+    return self.await_(self._execute_async(operation, parameters))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 251, in _execute_async
+    result = await self._cursor.execute(operation, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\cursors.py", line 239, in execute
+    await self._query(query)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\cursors.py", line 457, in _query
+    await conn.query(q)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 469, in query
+    await self._read_query_result(unbuffered=unbuffered)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 683, in _read_query_result
+    await result.read()
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 1164, in read
+    first_packet = await self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 652, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\pymysql\err.py", line 154, in raise_mysql_exception
+    raise errorclass(errno, errval, sqlstate=sqlstate)
+pymysql.err.DataError: (1406, "Data too long for column 'content' at row 1")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\routers\chat.py", line 258, in send_message
+    await session.commit()
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 121, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+        statement,
+        params,
+        execution_options=execution_options,
+    )
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 230, in execute
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 368, in _handle_exception
+    raise error.with_traceback(exc_info[2])
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 228, in execute
+    return self.await_(self._execute_async(operation, parameters))
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 251, in _execute_async
+    result = await self._cursor.execute(operation, parameters)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\cursors.py", line 239, in execute
+    await self._query(query)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\cursors.py", line 457, in _query
+    await conn.query(q)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 469, in query
+    await self._read_query_result(unbuffered=unbuffered)
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 683, in _read_query_result
+    await result.read()
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 1164, in read
+    first_packet = await self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\aiomysql\connection.py", line 652, in _read_packet
+    packet.raise_for_error()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\.venv\Lib\site-packages\pymysql\err.py", line 154, in raise_mysql_exception
+    raise errorclass(errno, errval, sqlstate=sqlstate)
+sqlalchemy.exc.DataError: (pymysql.err.DataError) (1406, "Data too long for column 'content' at row 1")
+[SQL: INSERT INTO chat_message (conversation_id, `role`, content, citations, created_at) VALUES (%s, %s, %s, %s, %s)]
+[parameters: (6, 'assistant', '未来科技公司的考勤制度主要包括迟到与旷工界定、请假审批流程以及加班与调休三个方面。在迟到与旷工方面，每月享有3次、每次15分钟内的免责迟到机会，超出部分扣除绩效分；未经批准缺勤视为旷工，连续旷工3天或全年累计5天，公司有权单方解除劳动合同且不支付经济补偿。在请假审批方面，需提前通过OA系统申请，1天以内由直属主管审批，1-3天由部门总监审批，3天以上需HR部门及分管副总双重审批；突发疾病等紧急情况需当天上午9点前电话通知主管，并在返岗后2个工作日内补齐流程。在加班与调休方面，公司不提倡无效加班，需提前在OA系统申请；周末及法定节假日加班优先安排调休，无法调休的按国家法定标准发放加班费。', '[{"documentId": 2, "documentName": "\\u5458\\u5de5\\u624b\\u518c.txt", "snippet": "\\u672a\\u6765\\u79d1\\u6280\\u516c\\u53f8\\u5458\\u5de5\\u624b\\u518c\\n\\n\\u7b2c\\u4e00\\u7ae0 \\u8003\\u52e4\\u5236\\u5ea6"}]', datetime.datetime(2026, 8, 13, 19, 37, 53, 960255))]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-08-13 19:38:06,828 - agent - INFO - chat.py:108 - [会话]用户3新建会话(id=7)
+2026-08-13 19:38:43,331 - agent - INFO - chat.py:264 - [会话]用户3会话(id=7)问答完成，引用 1 条
+2026-08-13 19:38:48,254 - agent - INFO - chat.py:124 - [会话]用户3删除会话(id=6)
+2026-08-13 19:38:51,240 - agent - INFO - chat.py:108 - [会话]用户3新建会话(id=8)
+2026-08-13 19:39:18,823 - agent - INFO - chat.py:264 - [会话]用户3会话(id=8)问答完成，引用 1 条
+2026-08-13 19:45:02,073 - agent - INFO - documents.py:140 - [文档]用户3上传文件 plan.txt 成功（id=9）
+2026-08-13 19:45:03,325 - agent - INFO - vector_store.py:91 - [上传向量化]D:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend\app\data\1786621502057_plan.txt向量化成功，共 2 个分块
+2026-08-13 19:45:03,349 - agent - INFO - documents.py:69 - [文档]文档(id=9)异步向量化完成，共 2 个分块
+2026-08-13 19:45:30,539 - agent - INFO - vector_store.py:103 - [删除向量]已删除 2 个向量分块
+2026-08-13 19:45:30,555 - agent - INFO - documents.py:248 - [文档]用户3删除文档 plan.txt（id=9）

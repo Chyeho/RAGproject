@@ -8,11 +8,11 @@
 
 ### 1-2 项目技术栈
 
-- **前端框架**：Vue 3 + Vite + Element Plus + ECharts + Vue Router + Axios（已完成，当前为 mock 数据）
-- **后端框架**：FastAPI（待开发）
-- **关系型数据库**：MySQL（待接入）
-- **向量数据库**：Chroma（后面将升级为Qdrant）
-- **ORM**：SQLAlchemy（异步）
+- **前端框架**：Vue 3 + Vite + Element Plus + ECharts + Vue Router + Axios
+- **后端框架**：FastAPI（含认证/会话/文档/统计/设置全部业务接口）
+- **关系型数据库**：MySQL 8.4（SQLModel + aiomysql 异步）
+- **向量数据库**：Qdrant v1.16
+- **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：Langchain
 
 ### 1-3 项目结构
@@ -36,55 +36,64 @@ RAGproject_demo/
 │   │   ├── config/                      # 业务配置文件目录
 │   │   │   ├── agent_config.yml         # Agent 配置
 │   │   │   ├── cache_config.yml         # 缓存配置
-│   │   │   ├── chroma_config.yml        # 向量库配置
-│   │   │   ├── db_config.yml            # 关系数据库配置
 │   │   │   ├── prompts_config.yml       # 提示词配置
+│   │   │   ├── qdrant_config.yml        # Qdrant 向量库 + RAG 参数配置
 │   │   │   └── rag_config.yml           # RAG 服务配置
-│   │   ├── data/                        # 私有知识库原始文件
+│   │   ├── core/                        # 核心模块
+│   │   │   ├── response.py              # 统一响应 {code, message, data}
+│   │   │   └── security.py              # 密码哈希 / JWT 签发与校验
+│   │   ├── data/                        # 私有知识库原始文件（上传落盘目录）
 │   │   │   └── 员工手册.txt
+│   │   ├── database/                    # 数据库连接层
+│   │   │   └── db.py                    # 环境变量连接 / get_session / init_db 建表
+│   │   ├── dependencies.py              # 全局依赖（get_current_user）
 │   │   ├── logs/                        # 运行日志
 │   │   ├── modelFactory/                # 模型工厂
 │   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
-│   │   ├── models/                      # SQLAlchemy 数据模型
-│   │   │   ├── document_chunk.py
-│   │   │   ├── documents.py
-│   │   │   └── users.py
+│   │   ├── models/                      # SQLModel 数据模型（5 张表）
+│   │   │   ├── __init__.py
+│   │   │   ├── chat_conversation.py     # 会话表
+│   │   │   ├── chat_message.py          # 消息表（含 citations）
+│   │   │   ├── document_chunk.py        # 文档分块表
+│   │   │   ├── documents.py             # 文档表（含 md5 去重）
+│   │   │   └── users.py                 # 用户表
 │   │   ├── prompts/                     # 系统提示词模板
 │   │   │   ├── rag_summarize.txt
 │   │   │   └── system_prompt.txt
 │   │   ├── routers/                     # FastAPI 路由层
-│   │   │   └── documents.py             # 文档上传 / 检索接口
+│   │   │   ├── auth.py                  # 认证（登录/注册/个人信息/改密）
+│   │   │   ├── chat.py                  # 会话 CRUD + 问答 + 引用来源
+│   │   │   ├── documents.py             # 文档上传/列表/预览/下载/删除
+│   │   │   ├── settings.py              # RAG 参数配置读写
+│   │   │   └── statistics.py            # 统计数据查询
 │   │   ├── service/                     # 业务服务层
 │   │   │   ├── agent/                   # Agent 服务
 │   │   │   │   └── react_agent.py
-│   │   │   ├── history/                 # 对话历史管理
+│   │   │   ├── history/                 # 对话历史管理（按会话隔离）
 │   │   │   │   └── history_store.py
 │   │   │   └── rag/                     # RAG 问答核心
-│   │   │       ├── rag_service.py       # RAG 总结服务
-│   │   │       └── vector_store.py      # 向量库服务
+│   │   │       ├── rag_service.py       # RAG 总结服务（支持多会话历史隔离）
+│   │   │       └── vector_store.py      # Qdrant 向量库服务
 │   │   ├── utils/                       # 工具模块
 │   │   │   ├── config_handler.py        # 配置加载器
 │   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
 │   │   │   ├── logger_handler.py        # 日志配置
 │   │   │   ├── path_tool.py             # 路径工具（绝对路径计算）
 │   │   │   └── prompt_loader.py         # 提示词模板加载
-│   │   ├── main.py                      # FastAPI 应用入口
-│   │   └── md5.txt                      # 知识库文件去重记录
-│   ├── chat_history/                    # 用户对话历史持久化
-│   ├── chroma_db/                       # Chroma 向量数据库
+│   │   └── main.py                      # FastAPI 应用入口（lifespan 建表 + 路由注册）
+│   ├── chat_history/                    # 用户对话历史持久化（按会话独立文件）
 │   ├── pyproject.toml                   # 项目依赖配置
 │   └── uv.lock
 ├── frontend/                            # 前端（Vue 3 + Element Plus + ECharts）
 │   ├── Dockerfile                       # 前端容器构建文件
 │   └── src/
-│       ├── api/                         # 接口层（当前返回 mock，后端就绪后替换为真实请求）
+│       ├── api/                         # 接口层（axios 请求）
 │       ├── assets/
 │       │   ├── images/                  # Logo 等静态资源
 │       │   └── styles/                  # 全局样式（蓝紫渐变设计变量）
 │       ├── layout/                      # 主框架布局（顶部导航 + 侧边菜单 + 内容区）
-│       ├── mock/                        # mock 数据源（严格对齐接口 JSON 契约）
 │       ├── router/                      # 路由配置 + 登录守卫
-│       ├── utils/                       # 工具模块（登录态 / 格式化 / 延迟模拟）
+│       ├── utils/                       # 工具模块（登录态 / 格式化）
 │       └── views/                       # 页面视图
 │           ├── chat/                    # Bot 问答页（会话管理 + 引用溯源）
 │           ├── knowledge/               # 知识库页（文档表格 + 上传/预览/删除）
@@ -96,9 +105,9 @@ RAGproject_demo/
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
-├── 前端制作参考资料/                     # 前端制作提示词与界面参考图
-├── 前后端开发执行文档.md                 # 前后端开发计划与实施记录
-├── 接口JSON契约文档.md                  # 前后端接口契约（联调依据）
+├── docs/                                # 项目开发文档目录
+│   ├── 前后端开发执行文档.md               # 前后端开发计划与实施记录
+│   └── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
 └── README.md
 ```
 
@@ -106,9 +115,10 @@ RAGproject_demo/
 
 目前阶段完成情况：
 
-1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（向量库服务、RAG 总结服务、ReAct Agent、对话历史管理）；
-2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，当前使用 mock 数据，无需后端即可运行查看全部页面效果；
-3. **下一阶段**：开发 FastAPI 后端全部业务接口（认证、会话、文档、统计、配置），接入 MySQL 关系型数据库，复用现有 RAG/Agent 服务，最终完成前后端联调。
+1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（Qdrant 向量库服务、RAG 总结服务、ReAct Agent、按会话隔离的对话历史管理）；
+2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，已对接后端真实接口；
+3. **后端业务服务**：已完成（认证、会话、文档、统计、设置全部接口），接入 MySQL 8.4 + Qdrant v1.16，复用现有 RAG/Agent 服务；前后端联调通过；
+4. **后续可迭代**：完整容器化部署（模式 B）、citations 检索合并优化、RAG 参数热生效等（详见前后端开发执行文档 4.5）。
 
 ## 3 项目期望
 
@@ -140,7 +150,7 @@ RAGproject_demo/
 
 **特点**：
 - 只启动 MySQL 和 Qdrant 两个基础服务
-- 后端通过 `uvicorn` 在本地运行（开发阶段可用`uv run fastapi dev`启动后端服务），代码修改即时生效（支持热重载）
+- 后端通过 `uvicorn` 在本地运行，代码修改即时生效（支持热重载）
 - 前端通过 `npm run dev` 本地启动，支持 HMR 热更新
 - 调试方便，可直接在 IDE 中打断点
 - 资源占用少，启动速度快
@@ -159,16 +169,17 @@ docker compose ps
 
 # 4. 本地启动后端服务（新终端窗口）
 cd backend
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
-# 访问 http://localhost:8000/docs 验证 API
+# 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
 
-# 5. 本地启动前端服务（新终端窗口，可选）
+# 5. 本地启动前端服务（新终端窗口）
 cd frontend
 npm install  # 首次运行
 npm run dev
-# 访问 http://localhost:3000 查看前端页面
-# 说明：当前前端为 mock 数据，无需后端即可体验全部页面；
-#       测试账号 13800138000 / 123456（注册验证码固定为 123456）
+# 访问 http://localhost:3000 查看前端页面（已对接后端真实接口）
+# 测试账号：注册后登录（注册验证码固定为 123456）
 
 # 停止基础设施
 docker compose down

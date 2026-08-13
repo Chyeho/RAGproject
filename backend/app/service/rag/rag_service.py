@@ -62,11 +62,17 @@ class RagSummarizeService(object):
         )
         return chain
 
-    def rag_summarize(self, query: str) -> str:
+    def rag_summarize(self, query: str, session_id: str | None = None) -> str:
         """
         手动管理对话历史：从文件读取 -> 传入链 -> 写回文件
+
+        Args:
+            query (str): 用户提问
+            session_id (str|None): 会话隔离标识，不同会话使用独立的历史文件；
+                                   为 None 时回退到 rag_conf 配置的 session_id（默认 user_001）
         """
-        session_id = rag_conf["session_config"]["configurable"]["session_id"]
+        if not session_id:
+            session_id = rag_conf["session_config"]["configurable"]["session_id"]
         history_obj = get_chat_history(session_id)
         history_messages = history_obj.messages
 

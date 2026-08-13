@@ -2,6 +2,13 @@
  * 通用格式化工具
  */
 
+/** 从文件名解析扩展名（小写，无扩展名返回空串） */
+export function getFileType(name) {
+  const idx = name.lastIndexOf('.')
+  if (idx === -1) return ''
+  return name.slice(idx + 1).toLowerCase()
+}
+
 /** 文件大小（字节）转可读文本 */
 export function formatFileSize(bytes) {
   if (bytes === 0 || bytes == null) return '0 B'

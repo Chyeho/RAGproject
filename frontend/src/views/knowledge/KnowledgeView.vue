@@ -141,8 +141,7 @@ import {
   downloadDocument,
   deleteDocument,
 } from '../../api/documents'
-import { formatFileSize } from '../../utils/format'
-import { getFileType } from '../../mock/documents'
+import { formatFileSize, getFileType } from '../../utils/format'
 
 // ---------------- 查询参数 ----------------
 const query = reactive({
@@ -252,7 +251,7 @@ async function handlePreview(row) {
 // ---------------- 下载 ----------------
 async function handleDownload(row) {
   await downloadDocument(row.id)
-  ElMessage.success(`已开始下载「${row.name}」（mock 模拟，无真实文件）`)
+  ElMessage.success(`已开始下载「${row.name}」`)
 }
 
 // ---------------- 删除 ----------------
