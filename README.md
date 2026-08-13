@@ -14,6 +14,7 @@
 - **向量数据库**：Qdrant v1.16
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：Langchain
+- **测试框架**：pytest + anyio（202 个单元测试，详见 `tests/README.md`）
 
 ### 1-3 项目结构
 
@@ -100,7 +101,7 @@ RAGproject_demo/
 │           ├── statistics/              # 统计数据页（ECharts 图表）
 │           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
 │           └── LoginRegister.vue        # 登录注册页
-├── tests/                               # 测试代码
+├── tests/                               # 单元测试（202 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
@@ -118,17 +119,141 @@ RAGproject_demo/
 1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（Qdrant 向量库服务、RAG 总结服务、ReAct Agent、按会话隔离的对话历史管理）；
 2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，已对接后端真实接口；
 3. **后端业务服务**：已完成（认证、会话、文档、统计、设置全部接口），接入 MySQL 8.4 + Qdrant v1.16，复用现有 RAG/Agent 服务；前后端联调通过；
-4. **后续可迭代**：完整容器化部署（模式 B）、citations 检索合并优化、RAG 参数热生效等（详见前后端开发执行文档 4.5）。
+4. **单元测试**：已为后端新增与更新 202 个单元测试（工具/模型/核心/数据/依赖/服务/路由/Agent 各层），全程 mock 外部依赖（MySQL/Qdrant/DashScope/LLM），不连真实库、无网络调用；运行方式详见 `tests/README.md`；
+5. **后续可迭代**：详见下一章「项目期望」。
 
 ## 3 项目期望
 
-基于当前的代码架构，做企业级迭代
+基于当前的代码架构，做企业级迭代。当前版本的已完成能力之外，规划以下优化方向（按优先级排列）：
+
+### 3-1 升级 RAG 检索体系
+
+**a. 扩展支持更多文档格式**
+
+目前仅支持 `txt` / `pdf` 两种格式（由 `file_handler.py` 的文件加载器决定）。后续按文档类型逐类接入加载器，并同步放开 `allow_knowledge_file_type` 白名单：
+
+- Office 系：`docx` / `doc`（python-docx / 转换工具）
+- 表格与演示：`xlsx` / `pptx`（openpyxl / python-pptx）
+- Web 与标记：`md` / `html`（Markdown 解析 / BeautifulSoup）
+- 图片与扫描件：`png` / `jpg`（OCR 文本提取）
+
+**b. 增强文档解析能力**
+
+当前按固定 `chunk_size` / `chunk_overlap` 均匀切分，未感知文档结构。后续升级为结构化解析：
+
+- **章节树构建**：解析文档标题层级（H1→Hn），生成章节树，检索时可按章节定位引用来源，回答展示更精准；
+- **智能切分规则**：根据章节/段落语义自定义切分策略——小章节合并进邻近 chunk（避免碎片化）、超长章节按段落边界再分割（避免截断语义）、常规段落保持原样不处理；
+- **元数据增强**：chunk 携带章节号、标题、页码等元数据，供检索过滤与引用展示使用。
+
+**c. 检索侧升级（混合检索 + 精排）**
+
+当前为纯稠密向量检索（`topK` 直接返回）。后续升级为两级检索架构：
+
+- **混合检索**：BM25 稀疏检索与稠密向量检索并行召回，按权重融合（如 RRF 融合算法），提升专有名词/缩写/长尾查询的召回率；
+- **精排重排**：召回 TopN 后使用 Cross-Encoder 或大模型打分重排，取精排后的 TopK 作为最终上下文，提升回答相关性与引用准确度；
+- **检索调优**：支持查询改写（Query Rewriting）、上下文压缩（Contextual Compression）等后处理。
+
+### 3-2 RAG 参数实时生效
+
+当前系统设置中的 RAG 参数（chunkSize / topK 等）写入 `qdrant_config.yml`，**重启后端后生效**。后续升级为实时生效：
+
+- 参数热更新：设置保存时同步刷新内存中的运行参数（如线程安全的配置快照）；
+- 可观测：参数变更记录日志，便于追溯配置调整时间线与影响范围。
+
+### 3-3 验证码可随时接入短信服务
+
+当前开发环境验证码固定为 `123456`（`/api/auth/sms-code` 仅写日志，不真实下发）。后续抽象短信发送接口，接入真实服务商（阿里云短信 / 腾讯云 SMS 等），通过配置切换：
+
+- 开发环境：保留固定验证码兜底；
+- 生产环境：走真实短信通道，增加发送频率限制、验证码有效期与防爆破策略。
+
+### 3-4 其他可补充方向
+
+- **权限与数据隔离**：知识库支持按用户/部门授权，文档与会话数据严格按用户隔离（当前会话已按用户隔离，可进一步细化到知识库级别）；
+- **引用来源展示增强**：citations 支持高亮命中片段、跳转到原文位置；合并「回答检索」与「引用检索」为一次检索两处使用，降低重复计算；
+- **系统可观测性**：接入指标采集（请求量/时延/错误率）、链路追踪与日志可视化（Prometheus + Grafana / ELK）；
+- **部署与运维**：补充 CI/CD 流水线（自动测试 + 镜像构建 + 发布）、Kubernetes 编排与水平扩展、数据备份恢复策略；
+- **多模态与语音**：支持图片/表格多模态问答、语音提问与播报等交互形态。
 
 ---
 
-## 4 Docker 容器化部署
+## 4 快速启动
 
-### 4-1 架构概览
+本节介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
+
+### 4-1 环境准备
+
+| 依赖 | 版本要求 | 说明 |
+|---|---|---|
+| Docker Desktop | ≥ 4.x（Windows 需启用 WSL2 后端） | 提供 MySQL / Qdrant / 完整容器化部署的运行环境；镜像源可配置加速 |
+| Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；可选 `uv` 作为包管理器（项目已提供 `pyproject.toml` / `uv.lock`） |
+| Node.js | ≥ 18 | 方式二本地运行前端所需（`npm` 随 Node 附带） |
+| Git | 任意 | 拉取/管理项目代码 |
+
+> Windows 提示：执行下述命令前，请确认 **Docker Desktop 已启动**（任务栏图标处于运行状态），否则 `docker compose` 会报连接错误。
+
+### 4-2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
+
+**前置准备**：仅需 Docker Desktop；无需本地安装 Python / Node.js。
+
+```bash
+# 1. 首次使用：从模板复制环境变量文件并编辑
+cp docker/env/.env.dev.example docker/env/.env.dev
+#    至少需填写：DASHSCOPE_API_KEY（问答与向量化必需）、MYSQL_ROOT_PASSWORD 等
+
+# 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx）
+docker compose --env-file docker/env/.env.dev up -d --build
+
+# 3. 查看运行状态与日志
+docker compose ps                 # 5 个服务均应为 Up (healthy)
+docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
+
+# 4. 访问应用
+#    Nginx 入口：http://localhost
+#    后端 API：  http://localhost:8000/docs
+#    前端页面：  http://localhost:3000
+
+# 停止 / 重新构建（代码更新后）
+docker compose down
+docker compose --env-file docker/env/.env.dev up -d --build
+```
+
+**说明**：一条命令拉起全部服务，环境一致、无需本地装依赖，适合演示与部署；但**首次启动较慢**——需拉取 MySQL/Qdrant/Nginx 基础镜像并构建前后端镜像（安装 Python / Node 依赖），且代码修改后需重新构建镜像才能生效。
+
+### 4-3 启动方式二：仅基础设施 + 本地启动前后端（推荐开发调试）
+
+**前置准备**：Docker Desktop + Python（可选 uv）+ Node.js。
+
+```bash
+# 1. 仅启动基础设施（MySQL + Qdrant）
+docker compose --env-file docker/env/.env.dev up -d mysql qdrant
+docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
+
+# 2. 本地启动后端服务（新终端窗口）
+cd backend
+# 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
+
+# 3. 本地启动前端服务（新终端窗口）
+cd frontend
+npm install  # 首次运行
+npm run dev
+# 访问 http://localhost:3000 查看前端页面（已对接后端真实接口）
+# 测试账号：注册后登录（注册验证码固定为 123456）
+
+# 4. 停止基础设施
+docker compose down
+```
+
+**说明**：仅运行 MySQL/Qdrant 两个容器，资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
+
+---
+
+## 5 Docker 容器化部署
+
+### 5-1 架构概览
 
 ```
 互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
@@ -138,98 +263,21 @@ RAGproject_demo/
                           Qdrant(:6333)  向量数据库
 ```
 
-### 4-2 两种使用模式
+### 5-2 两种使用模式
 
-本项目支持两种 Docker 使用模式，根据开发阶段和需求选择：
-
----
+本项目支持两种 Docker 使用模式，启动步骤已在上章「快速启动」中给出，此处仅说明两种模式的特点与适用场景：
 
 #### 模式 A：基础设施模式（推荐开发阶段使用）
 
-**适用场景**：后端/前端代码开发调试阶段，需要频繁修改代码
-
-**特点**：
-- 只启动 MySQL 和 Qdrant 两个基础服务
-- 后端通过 `uvicorn` 在本地运行，代码修改即时生效（支持热重载）
-- 前端通过 `npm run dev` 本地启动，支持 HMR 热更新
-- 调试方便，可直接在 IDE 中打断点
-- 资源占用少，启动速度快
-
-```bash
-# 1. 从模板复制环境变量文件（首次使用）
-cp docker/env/.env.dev.example docker/env/.env.dev
-# 编辑 docker/env/.env.dev 文件，修改数据库密码、API Key 等变量
-
-# 2. 仅启动基础设施（MySQL + Qdrant）
-docker compose --env-file docker/env/.env.dev up -d mysql qdrant
-
-# 3. 验证基础设施是否就绪
-docker compose ps
-# 预期输出：mysql 和 qdrant 状态为 Up (healthy)
-
-# 4. 本地启动后端服务（新终端窗口）
-cd backend
-# 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
-export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-# 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
-
-# 5. 本地启动前端服务（新终端窗口）
-cd frontend
-npm install  # 首次运行
-npm run dev
-# 访问 http://localhost:3000 查看前端页面（已对接后端真实接口）
-# 测试账号：注册后登录（注册验证码固定为 123456）
-
-# 停止基础设施
-docker compose down
-```
-
----
+- 只启动 MySQL 和 Qdrant 两个基础服务，前后端在本地（Windows）运行；
+- 代码修改即时生效（后端热重载 + 前端 HMR），支持 IDE 断点调试；
+- 资源占用少、启动速度快；需本机安装 Python / Node.js 依赖。
 
 #### 模式 B：完整容器化模式（部署/演示阶段使用）
 
-**适用场景**：功能开发完成后，需要验证容器内运行或进行部署
-
-**特点**：
-- 一键启动所有服务（MySQL、Qdrant、Backend、Frontend、Nginx）
-- 环境一致性，避免"在我机器上能跑"的问题
-- 无需本地安装 Python/Node.js 等依赖
-- 适合演示、测试环境、生产部署
-- 修改代码后需要重新构建镜像
-
-```bash
-# 1. 从模板复制环境变量文件（首次使用）
-cp docker/env/.env.dev.example docker/env/.env.dev
-# 编辑 docker/env/.env.dev 文件，修改数据库密码、API Key 等变量
-
-# 2. 开发环境：构建并启动所有服务
-docker compose --env-file docker/env/.env.dev up -d --build
-
-# 3. 生产环境：构建并启动所有服务
-docker compose --env-file docker/env/.env.prod up -d --build
-
-# 4. 查看运行状态
-docker compose ps
-# 预期输出：5 个服务均为 Up 状态
-
-# 5. 查看服务日志
-docker compose logs -f
-# 查看特定服务日志：docker compose logs -f backend
-
-# 6. 访问应用
-# Nginx 入口：http://localhost
-# Backend API：http://localhost:8000/docs
-# Frontend 页面：http://localhost:3000
-
-# 停止所有服务
-docker compose down
-
-# 重新构建并启动（代码更新后）
-docker compose --env-file docker/env/.env.dev up -d --build
-```
-
----
+- 一键启动全部 5 个服务（MySQL、Qdrant、Backend、Frontend、Nginx），环境一致性高；
+- 无需本机安装 Python / Node.js 依赖，适合演示、测试环境与生产部署；
+- 修改代码后需重新构建镜像，构建/拉取耗时较长。
 
 #### 模式对比
 
@@ -243,158 +291,7 @@ docker compose --env-file docker/env/.env.dev up -d --build
 | 资源占用 | 较低 | 较高 |
 | 依赖安装 | 需本地安装 | 无需本地安装 |
 
-### 4-3 docker-compose.yml 模板
-
-```yaml
-# ======================================================================
-# 宸甄 PrivRAG — Docker Compose 编排文件
-# ======================================================================
-# 包含服务: nginx, frontend(Vue), backend(FastAPI), MySQL, Qdrant
-
-services:
-  # ======================== MySQL 关系型数据库 ========================
-  mysql:
-    image: mysql:8.4
-    container_name: privrag-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./docker/middleware/my.cnf:/etc/mysql/conf.d/my.cnf:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - privrag-network
-
-  # ======================== Qdrant 向量数据库 ========================
-  qdrant:
-    image: qdrant/qdrant:v1.16
-    container_name: privrag-qdrant
-    restart: unless-stopped
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant_data:/qdrant/storage
-      - ./docker/middleware/qdrant_config.yaml:/qdrant/config/config.yaml:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    networks:
-      - privrag-network
-
-  # ======================== FastAPI 后端服务 ========================
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: privrag-backend
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      qdrant:
-        condition: service_healthy
-    environment:
-      ENV: ${ENV:-development}
-      DEBUG: ${DEBUG:-true}
-      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
-      MYSQL_HOST: ${MYSQL_HOST:-mysql}
-      MYSQL_PORT: ${MYSQL_PORT:-3306}
-      MYSQL_USER: ${MYSQL_USER:-privrag}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-privrag}
-      QDRANT_HOST: ${QDRANT_HOST:-qdrant}
-      QDRANT_PORT: ${QDRANT_PORT:-6333}
-      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-privrag}
-      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/app/config:/app/app/config:ro
-      - ./backend/app/data:/app/app/data
-      - chat_history:/app/chat_history
-    networks:
-      - privrag-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  # ======================== Vue 前端服务 ========================
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: privrag-frontend
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
-    ports:
-      - "3000:80"
-    networks:
-      - privrag-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-
-  # ======================== Nginx 反向代理 ========================
-  nginx:
-    image: nginx:stable-alpine
-    container_name: privrag-nginx
-    restart: unless-stopped
-    depends_on:
-      - frontend
-      - backend
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-    networks:
-      - privrag-network
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-# ======================== 数据卷 ========================
-volumes:
-  mysql_data:
-    name: privrag_mysql_data
-  qdrant_data:
-    name: privrag_qdrant_data
-  chat_history:
-    name: privrag_chat_history
-
-# ======================== 网络 ========================
-networks:
-  privrag-network:
-    name: privrag-network
-    driver: bridge
-```
-
-### 4-4 关键设计说明
+### 5-3 关键设计说明
 
 | 设计点 | 说明 |
 |---|---|
