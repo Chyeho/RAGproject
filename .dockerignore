@@ -1,0 +1,43 @@
+# ============ 通用 ============
+.git
+.gitattributes
+.gitignore
+*.md
+LICENSE
+
+# ============ IDE ============
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ============ Python ============
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# ============ Node ============
+node_modules/
+.npm/
+.cache/
+
+# ============ 后端专属 ============
+backend/.venv/
+backend/app/logs/
+backend/app/chroma_db/
+backend/chat_history/
+backend/app/data/
+backend/app/md5.txt
+
+# ============ Docker ============
+docker-compose.override.yml
+.env.local
+
+# ============ 操作系统 ============
+.DS_Store
+Thumbs.db

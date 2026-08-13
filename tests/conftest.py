@@ -19,6 +19,14 @@ if BACKEND_DIR not in sys.path:
 
 
 # ========================================
+# anyio（fastapi 自带）的 pytest 后端：async 测试统一用 asyncio
+# ========================================
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+# ========================================
 # DashScope embedding mock fixtures
 # ========================================
 @pytest.fixture
@@ -34,16 +42,6 @@ def sample_chat_history_dir():
     """创建一个临时聊天历史目录"""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
-
-
-@pytest.fixture
-def temp_md5_file():
-    """临时 md5 标记文件"""
-    fd, path = tempfile.mkstemp(suffix=".txt", prefix="md5_test_")
-    os.close(fd)
-    yield path
-    if os.path.exists(path):
-        os.unlink(path)
 
 
 @pytest.fixture

@@ -4,7 +4,6 @@ import hashlib
 
 from app.utils.logger_handler import logger
 from app.utils.path_tool import get_abs_path
-from app.utils.config_handler import chroma_conf
 
 # langchain
 from langchain_core.documents import Document
@@ -43,32 +42,6 @@ def get_file_md5_hex(file_path:str):
     except Exception as e:
         logger.error(f"[md5计算]文件{file_path}计算md5失败，错误信息：{str(e)}")
         return None
-
-def check_md5_hex(md5_for_check:str):
-    """用md5检查文件是否已经存储
-    Args:
-        md5_for_check (str): 需要检查的文件md5
-    Returns:
-        _boolean_: 返回False说明没存，反之则已存
-    """
-    if not os.path.exists(get_abs_path(chroma_conf["md5_hex_store"])): # 当存储md5值的文件不存在
-        open(get_abs_path(chroma_conf["md5_hex_store"]),"w",encoding="utf-8").close()
-        return False
-    else: # 检查
-        with open(get_abs_path(chroma_conf["md5_hex_store"]),"r",encoding="utf-8") as f:
-            for line in f.readlines():
-                line = line.strip()
-                if line == md5_for_check:
-                    return True
-                return False
-
-def save_md5_hex(md5_for_check:str):
-    """存放新的md5值
-    Args:
-        md5_for_check (str): 需要存放的md值
-    """
-    with open(get_abs_path(chroma_conf["md5_hex_store"]),"a",encoding="utf-8") as f:
-        f.write(md5_for_check + '\n')
 
 def get_file_documents(read_path:str):
     """

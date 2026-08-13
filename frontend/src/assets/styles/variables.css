@@ -1,0 +1,50 @@
+/* ============================================================
+   宸甄 PrivRAG 全局设计变量 —— 蓝紫渐变科技风格
+   蓝色为主，低饱和暗调蓝紫，避免刺眼
+   ============================================================ */
+:root {
+  /* ---------- 品牌蓝紫渐变 ---------- */
+  --brand-gradient: linear-gradient(135deg, #1E44C9 0%, #3D4BD6 50%, #6249D4 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #2A52DA 0%, #4A56DF 55%, #7054E2 100%);
+  --brand-gradient-active: linear-gradient(135deg, #1638AE 0%, #313CBE 55%, #523BBD 100%);
+  /* 浅色蓝紫渐变（登录页底、卡片点缀、用户气泡） */
+  --brand-gradient-soft: linear-gradient(160deg, #E9EDFF 0%, #E6E8FA 55%, #E2E4F8 100%);
+  --brand-gradient-soft-deep: linear-gradient(160deg, #E3E9FF 0%, #DFE0F7 60%, #DADBF4 100%);
+
+  /* ---------- 品牌单色（配合渐变的文字/描边/浅色块） ---------- */
+  --brand-blue: #2B4FE0;
+  --brand-purple: #6C4FD1;
+  --brand-color: #2B4FE0;
+  --brand-color-hover: #3D5CE8;
+  --brand-color-active: #1E3FBF;
+  --brand-color-disabled: #A3B4F5;
+  --brand-color-light: #E9EDFF;
+  --brand-color-light-hover: #DCE2FF;
+
+  /* ---------- 中性文本色 ---------- */
+  --text-main: #1D2129;
+  --text-secondary: #86909C;
+  --text-disabled: #C9CDD4;
+
+  /* ---------- 背景与边框 ---------- */
+  --bg-page: #FFFFFF;
+  --bg-card: #F7F9FC;
+  --border-light: #E5E6EB;
+
+  /* ---------- 功能色 ---------- */
+  --danger: #F53F3F;
+  --danger-light: #FFECE8;
+  --success: #00B42A;
+  --success-light: #E8FFEA;
+  --warning: #FF7D00;
+  --warning-light: #FFF3E8;
+
+  /* ---------- 阴影（偏蓝紫调） ---------- */
+  --shadow-card: 0 2px 8px rgba(30, 55, 160, 0.08);
+  --shadow-hover: 0 4px 14px rgba(30, 55, 160, 0.12);
+  --shadow-dialog: 0 8px 24px rgba(30, 55, 160, 0.14);
+
+  /* ---------- 布局尺寸 ---------- */
+  --header-height: 56px;
+  --sidebar-width: 208px;
+}

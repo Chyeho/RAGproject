@@ -6,16 +6,14 @@ import pytest
 # 配置模块在导入时会自动加载所有 YAML 文件，需要确保路径正确
 from app.utils.config_handler import (
     load_rag_config,
-    load_chroma_config,
+    load_qdrant_config,
     load_prompts_config,
     load_agent_config,
-    load_db_config,
     load_cache_config,
     rag_conf,
-    chroma_conf,
+    qdrant_conf,
     prompts_conf,
     agent_conf,
-    db_conf,
     cache_conf,
 )
 
@@ -45,44 +43,57 @@ class TestRagConfig:
         assert "session_id" in rag_conf["session_config"]["configurable"]
 
 
-class TestChromaConfig:
-    """测试 Chroma 配置加载"""
+class TestQdrantConfig:
+    """测试 Qdrant 配置加载"""
 
-    def test_load_chroma_config_returns_dict(self):
+    def test_load_qdrant_config_returns_dict(self):
         """验证返回值为字典"""
-        config = load_chroma_config()
+        config = load_qdrant_config()
         assert isinstance(config, dict)
 
-    def test_chroma_conf_contains_collection_name(self):
+    def test_qdrant_conf_contains_collection_name(self):
         """验证包含集合名称"""
-        assert "collection_name" in chroma_conf
-        assert isinstance(chroma_conf["collection_name"], str)
+        assert "collection_name" in qdrant_conf
+        assert isinstance(qdrant_conf["collection_name"], str)
 
-    def test_chroma_conf_contains_chunk_size(self):
+    def test_qdrant_conf_contains_host_and_port(self):
+        """验证包含连接地址 host/port"""
+        assert "host" in qdrant_conf
+        assert isinstance(qdrant_conf["host"], str)
+        assert "port" in qdrant_conf
+        assert isinstance(qdrant_conf["port"], int)
+
+    def test_qdrant_conf_contains_chunk_size(self):
         """验证包含切片大小"""
-        assert "chunk_size" in chroma_conf
-        assert isinstance(chroma_conf["chunk_size"], int)
-        assert chroma_conf["chunk_size"] > 0
+        assert "chunk_size" in qdrant_conf
+        assert isinstance(qdrant_conf["chunk_size"], int)
+        assert qdrant_conf["chunk_size"] > 0
 
-    def test_chroma_conf_contains_persist_directory(self):
-        """验证包含持久化目录"""
-        assert "persist_directory" in chroma_conf
-        assert isinstance(chroma_conf["persist_directory"], str)
+    def test_qdrant_conf_contains_chunk_overlap(self):
+        """验证包含切片重叠大小"""
+        assert "chunk_overlap" in qdrant_conf
+        assert isinstance(qdrant_conf["chunk_overlap"], int)
+        assert qdrant_conf["chunk_overlap"] >= 0
 
-    def test_chroma_conf_contains_k(self):
+    def test_qdrant_conf_contains_k(self):
         """验证包含检索数目 k"""
-        assert "k" in chroma_conf
-        assert isinstance(chroma_conf["k"], int)
-        assert chroma_conf["k"] > 0
+        assert "k" in qdrant_conf
+        assert isinstance(qdrant_conf["k"], int)
+        assert qdrant_conf["k"] > 0
 
-    def test_chroma_conf_contains_data_path(self):
+    def test_qdrant_conf_contains_data_path(self):
         """验证包含数据路径"""
-        assert "data_path" in chroma_conf
+        assert "data_path" in qdrant_conf
 
-    def test_chroma_conf_contains_separators(self):
+    def test_qdrant_conf_contains_separators(self):
         """验证包含分隔符"""
-        assert "separators" in chroma_conf
-        assert isinstance(chroma_conf["separators"], list)
+        assert "separators" in qdrant_conf
+        assert isinstance(qdrant_conf["separators"], list)
+
+    def test_qdrant_conf_contains_allowed_file_type(self):
+        """验证包含允许上传的文件类型列表"""
+        assert "allow_knowledge_file_type" in qdrant_conf
+        assert isinstance(qdrant_conf["allow_knowledge_file_type"], list)
 
 
 class TestPromptsConfig:
@@ -108,14 +119,6 @@ class TestAgentConfig:
 
     def test_agent_conf_contains_chat_history_path(self):
         assert "chat_history_storage_path" in agent_conf
-
-
-class TestDbConfig:
-    """测试数据库配置加载"""
-
-    def test_load_db_config_returns_dict(self):
-        config = load_db_config()
-        assert isinstance(config, dict)
 
 
 class TestCacheConfig:
