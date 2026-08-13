@@ -122,6 +122,74 @@ class TestRagSummarize:
         assert "history" in call_args
         assert len(call_args["history"]) == 2
 
+    @patch("app.service.rag.rag_service.VectorStoreService")
+    @patch("app.service.rag.rag_service.get_chat_history")
+    def test_rag_summarize_passes_custom_session_id(self, mock_get_history, mock_vs):
+        """多会话历史隔离：传入 session_id 时使用对应历史文件"""
+        mock_vs.return_value = MagicMock()
+
+        mock_history_obj = MagicMock()
+        mock_history_obj.messages = []
+        mock_get_history.return_value = mock_history_obj
+
+        from app.service.rag.rag_service import RagSummarizeService
+        service = RagSummarizeService()
+        service.chain = MagicMock()
+        service.chain.invoke.return_value = "回答"
+
+        service.rag_summarize("问题", session_id="user_2_conv_4")
+        # get_chat_history 必须用传入的 session_id 调用（不同会话隔离）
+        mock_get_history.assert_called_once_with("user_2_conv_4")
+
+    @patch("app.service.rag.rag_service.VectorStoreService")
+    @patch("app.service.rag.rag_service.get_chat_history")
+    def test_rag_summarize_falls_back_to_config_session_id(self, mock_get_history, mock_vs):
+        """不传 session_id 时回退 rag_conf 配置的默认 session_id"""
+        mock_vs.return_value = MagicMock()
+
+        mock_history_obj = MagicMock()
+        mock_history_obj.messages = []
+        mock_get_history.return_value = mock_history_obj
+
+        from app.service.rag.rag_service import RagSummarizeService, rag_conf
+        service = RagSummarizeService()
+        service.chain = MagicMock()
+        service.chain.invoke.return_value = "回答"
+
+        default_session_id = rag_conf["session_config"]["configurable"]["session_id"]
+        service.rag_summarize("问题")
+        mock_get_history.assert_called_once_with(default_session_id)
+
+    @patch("app.service.rag.rag_service.VectorStoreService")
+    @patch("app.service.rag.rag_service.get_chat_history")
+    def test_rag_summarize_session_ids_isolate_history(self, mock_get_history, mock_vs):
+        """不同 session_id 调用 get_chat_history 的参数不同（历史文件相互独立）"""
+        mock_vs.return_value = MagicMock()
+
+        def _side_effect(session_id):
+            history = MagicMock()
+            history.messages = [HumanMessage(content=f"来自{session_id}的历史")]
+            return history
+
+        mock_get_history.side_effect = _side_effect
+
+        from app.service.rag.rag_service import RagSummarizeService
+        service = RagSummarizeService()
+        service.chain = MagicMock()
+        service.chain.invoke.return_value = "回答"
+
+        service.rag_summarize("问题", session_id="user_2_conv_4")
+        first_call_history = service.chain.invoke.call_args[0][0]["history"]
+
+        service.chain.invoke.reset_mock()
+        service.rag_summarize("问题", session_id="user_2_conv_5")
+        second_call_history = service.chain.invoke.call_args[0][0]["history"]
+
+        assert first_call_history[0].content == "来自user_2_conv_4的历史"
+        assert second_call_history[0].content == "来自user_2_conv_5的历史"
+        # 两个会话的历史内容不相同（相互隔离）
+        assert first_call_history != second_call_history
+
 
 class TestChainFormatFunctions:
     """测试链中的格式化函数"""

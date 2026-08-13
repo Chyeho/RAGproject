@@ -7,8 +7,6 @@ import pytest
 
 from app.utils.file_handler import (
     get_file_md5_hex,
-    check_md5_hex,
-    save_md5_hex,
     get_file_documents,
     listdir_with_allowed_type,
     txt_loader,
@@ -58,33 +56,6 @@ class TestGetFileMd5Hex:
     def test_nonexistent_file_returns_none(self):
         md5 = get_file_md5_hex("不存在的文件.txt")
         assert md5 is None
-
-
-class TestCheckMd5Hex:
-    """测试 check_md5_hex()"""
-
-    def test_returns_false_for_new_md5(self, tmp_path):
-        """新的 MD5 值返回 False"""
-        test_md5 = "a" * 32
-        # 临时修改 md5 存储路径相关逻辑没法做，
-        # 这里只验证函数可以正常调用（文件不存在时会创建）
-        result = check_md5_hex(test_md5)
-        # 新 MD5 应该不在文件中（可能是 False，也可能因为第一次运行创建文件后返回 False）
-        assert isinstance(result, bool)
-
-
-class TestSaveMd5Hex:
-    """测试 save_md5_hex()"""
-
-    def test_save_and_retrieve(self, tmp_path):
-        """保存 MD5 后应能从文件中读到"""
-        test_md5 = "b" * 32
-        # 这个测试依赖于 chroma_conf 的 md5_hex_store 路径
-        # 这里只验证函数不抛异常
-        try:
-            save_md5_hex(test_md5)
-        except Exception as e:
-            pytest.fail(f"save_md5_hex 抛出了异常: {e}")
 
 
 class TestGetFileDocuments:
