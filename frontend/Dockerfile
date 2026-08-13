@@ -26,8 +26,9 @@ RUN npm run build
 # ============ 阶段二：Nginx 托管静态文件 ============
 FROM nginx:stable-alpine
 
-# 删除默认 nginx 配置
+# 删除默认 nginx 配置，替换为自定义静态托管配置（含 history 路由回退）
 RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 

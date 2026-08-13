@@ -230,9 +230,17 @@ docker compose --env-file docker/env/.env.dev up -d mysql qdrant
 docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
 # 2. 本地启动后端服务（新终端窗口）
+# 2.1 进入后端目录
 cd backend
-# 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+# 2.2 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+
+# 2.2.1 Windows PowerShell:
+$env:DASHSCOPE_API_KEY = ((Get-Content ../docker/env/.env.dev | Select-String '^DASHSCOPE_API_KEY=').Line -split '=',2)[1]
+
+# 2.2.2 Linux / macOS / Git Bash:
 export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+
+# 2.3 启动后端服务
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
 

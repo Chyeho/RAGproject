@@ -107,7 +107,8 @@ services:
     networks:
       - privrag-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      # 容器内 nginx 仅监听 IPv4，localhost 会解析为 IPv6 导致误判，显式用 127.0.0.1
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/"]
       interval: 15s
       timeout: 5s
       retries: 3
