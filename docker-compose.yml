@@ -75,7 +75,7 @@ services:
       QDRANT_COLLECTION: ${QDRANT_COLLECTION:-privrag}
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
     ports:
-      - "8000:8000"
+      - "18000:8000"
     volumes:
       # 业务配置目录（只读挂载）
       - ./backend/app/config:/app/app/config:ro
