@@ -4,7 +4,7 @@
 import os
 
 def get_root_path() ->str:
-    '''获取app所在的根目录'''
+    '''获取应用根目录（即 backend/app 目录本身）'''
     current_file = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file)
     root_dir = os.path.dirname(current_dir)

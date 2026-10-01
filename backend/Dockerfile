@@ -8,18 +8,20 @@ WORKDIR /app
 # 启用 uv 字节码编译加速
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
+# 强制使用阿里云 PyPI 镜像源（覆盖 uv.lock 中硬编码的索引地址）
+ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 
 # 先拷贝依赖文件，利用 Docker 层缓存
 COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --no-install-project --no-dev
 
 # 拷贝源码
 COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --no-dev
 
 # ============ 运行阶段 ============
 FROM python:3.13-slim-bookworm
