@@ -75,6 +75,7 @@ desktop.ini
 .env.local
 .env.*.local
 docker/env/.env.*
+!docker/env/.env.*.example
 *.pem
 *.key
 credentials.*
