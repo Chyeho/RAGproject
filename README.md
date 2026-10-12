@@ -232,13 +232,19 @@ docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 # 2. 本地启动后端服务（新终端窗口）
 # 2.1 进入后端目录
 cd backend
-# 2.2 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+# 2.2 读取 docker/env/.env.dev 中的环境变量（DASHSCOPE_API_KEY + 模型模式相关变量）
 
 # 2.2.1 Windows PowerShell:
 $env:DASHSCOPE_API_KEY = ((Get-Content ../docker/env/.env.dev | Select-String '^DASHSCOPE_API_KEY=').Line -split '=',2)[1]
+$env:MODEL_MODE = "remote"
+$env:OPENAI_API_KEY = "your_openai_compatible_api_key"
+$env:OPENAI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 # 2.2.2 Linux / macOS / Git Bash:
 export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+export MODEL_MODE=remote
+export OPENAI_API_KEY=your_openai_compatible_api_key
+export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 
 # 2.3 启动后端服务
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -259,6 +265,55 @@ docker compose down
 
 ---
 
+## 4a-5 模型加载模式切换（remote / local）
+
+系统支持两种模型加载模式，通过环境变量 **`MODEL_MODE`** 一键切换，无需改代码：
+
+| 模式 | 聊天模型（LLM） | 嵌入模型（Embed） | 适用场景 |
+|------|----------------|-------------------|----------|
+| `remote`（默认） | `langchain_openai.ChatOpenAI`，兼容任意 OpenAI 协议模型（通义/DeepSeek/月之暗面等） | DashScope `text-embedding-v4` | 有 API Key、低延迟需求 |
+| `local` | `langchain_ollama.ChatOllama`，本地 Ollama | `langchain_ollama.OllamaEmbeddings`，本地 Ollama | 私有化部署、数据不出域 |
+
+### 切换方法
+
+修改 `.env` 文件中的 `MODEL_MODE` 值即可：
+
+```ini
+# 远程模式（默认）
+MODEL_MODE=remote
+OPENAI_API_KEY=your_openai_compatible_api_key
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# 本地模式
+MODEL_MODE=local
+OLLAMA_BASE_URL=http://ollama:11434
+```
+
+### 本地模式首次使用：拉取 Ollama 模型
+
+Docker Compose 已内置 `ollama` 服务，但模型需手动拉取（仅首次）：
+
+```bash
+# 拉取默认模型（qwen2.5:7b 聊天 + bge-m3 嵌入）
+docker exec -it privrag-ollama ollama pull qwen2.5:7b
+docker exec -it privrag-ollama ollama pull bge-m3
+
+# 可在 rag_config.yml 中修改 local 分组下的模型名
+# 也可通过环境变量 OLLAMA_CHAT_MODEL / OLLAMA_EMBEDDING_MODEL 覆盖
+```
+
+> **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。
+
+### 远程模式兼容的模型端点
+
+| 服务商 | `OPENAI_BASE_URL` | 模型名示例 |
+|--------|-------------------|-----------|
+| 通义千问（兼容端点） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3.7-max` |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| 月之暗面 | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
+
+---
+
 ## 5 Docker 容器化部署
 
 ### 5-1 架构概览
@@ -269,6 +324,7 @@ docker compose down
                                    ↓
                           MySQL(:3306)   关系型数据库
                           Qdrant(:6333)  向量数据库
+                          Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
 ```
 
 ### 5-2 两种使用模式

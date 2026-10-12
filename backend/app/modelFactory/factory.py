@@ -1,12 +1,29 @@
-'''工厂模式，用于生产模型（文本嵌入模型，聊天模型等）'''
+'''工厂模式，用于生产模型（文本嵌入模型，聊天模型等）
+
+通过环境变量 MODEL_MODE 切换加载模式：
+  - remote（默认）：聊天模型用 langchain_openai.ChatOpenAI（兼容 OpenAI 协议），嵌入模型用 DashScope
+  - local：聊天模型和嵌入模型均用 langchain_ollama（本地 Ollama 服务）
+'''
+import os
 import dashscope
 from abc import ABC, abstractmethod                               # 导入抽象类
 from typing import Optional, List                                 # 类型注解
 from langchain_core.embeddings import Embeddings                  # 文本嵌入模型类型
-from langchain_community.chat_models.tongyi import BaseChatModel  # 聊天模型类型
-from langchain_community.chat_models.tongyi import ChatTongyi     # 聊天模型
+from langchain_core.language_models.chat_models import BaseChatModel  # 聊天模型通用基类
+from langchain_openai import ChatOpenAI                           # 远程模式聊天模型（OpenAI 协议）
+from langchain_ollama import ChatOllama, OllamaEmbeddings          # 本地模式聊天+嵌入模型
 
 from app.utils.config_handler import rag_conf                     # 导入rag配置项
+from app.utils.logger_handler import logger                       # 日志器
+
+
+def _get_model_mode() -> str:
+    """读取环境变量 MODEL_MODE，返回 'remote' 或 'local'；非法值回退 remote 并告警"""
+    mode = os.environ.get("MODEL_MODE", "remote").lower()
+    if mode not in ("remote", "local"):
+        logger.warning(f"[模型工厂]MODEL_MODE='{mode}' 不合法，回退为 'remote'")
+        mode = "remote"
+    return mode
 
 
 class DashScopeTextEmbeddings(Embeddings):
@@ -70,13 +87,52 @@ class BaseModelFactory(ABC):
 class ChatModelFactory(BaseModelFactory):
     """聊天模型"""
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
-        return ChatTongyi(model=rag_conf["chat_model_name"])
+        mode = _get_model_mode()
+        if mode == "local":
+            # 本地模式：Ollama 聊天模型
+            model_name = os.environ.get(
+                "OLLAMA_CHAT_MODEL",
+                rag_conf["local"]["chat_model_name"],
+            )
+            base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            logger.info(f"[模型工厂]聊天模型(本地): {model_name} @ {base_url}")
+            return ChatOllama(model=model_name, base_url=base_url)
+
+        # 远程模式：OpenAI 协议聊天模型
+        api_key = os.environ.get("OPENAI_API_KEY", "not-configured")
+        if api_key == "not-configured":
+            logger.warning(
+                "[模型工厂]远程模式未配置 OPENAI_API_KEY，"
+                "模型可加载但调用时会失败。请在环境变量中设置 OPENAI_API_KEY。"
+                "通义兼容端点示例: https://dashscope.aliyuncs.com/compatible-mode/v1"
+            )
+        model_name = os.environ.get(
+            "OPENAI_CHAT_MODEL",
+            rag_conf["remote"]["chat_model_name"],
+        )
+        base_url = os.environ.get("OPENAI_BASE_URL")
+        logger.info(f"[模型工厂]聊天模型(远程): {model_name} @ {base_url}")
+        return ChatOpenAI(model=model_name, api_key=api_key, base_url=base_url)
 
 
 class EmbeddingFactory(BaseModelFactory):
     """文本嵌入模型"""
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
-        return DashScopeTextEmbeddings(model=rag_conf["embedding_model_name"])
+        mode = _get_model_mode()
+        if mode == "local":
+            # 本地模式：Ollama 嵌入模型
+            model_name = os.environ.get(
+                "OLLAMA_EMBEDDING_MODEL",
+                rag_conf["local"]["embedding_model_name"],
+            )
+            base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            logger.info(f"[模型工厂]嵌入模型(本地): {model_name} @ {base_url}")
+            return OllamaEmbeddings(model=model_name, base_url=base_url)
+
+        # 远程模式：DashScope 嵌入模型（保持不变）
+        model_name = rag_conf["remote"]["embedding_model_name"]
+        logger.info(f"[模型工厂]嵌入模型(远程-DashScope): {model_name}")
+        return DashScopeTextEmbeddings(model=model_name)
 
 
 chat_model = ChatModelFactory().generator()
