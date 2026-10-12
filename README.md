@@ -213,10 +213,17 @@ docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 #    后端 API：  http://localhost:8000/docs
 #    前端页面：  http://localhost:3000
 
-# 停止 / 重新构建（代码更新后）
-docker compose down
+# 日常停止（仅删除容器，数据卷保留，数据不丢失）
+docker compose --env-file docker/env/.env.dev down
+
+# 再次启动（已构建且代码无修改：不加 --build，直接复用镜像，秒级启动）
+docker compose --env-file docker/env/.env.dev up -d
+
+# 重新构建启动（代码有修改：必须加 --build，否则改动不会生效）
 docker compose --env-file docker/env/.env.dev up -d --build
 ```
+
+> ⚠️ **注意**：每一条 `docker compose` 命令（包括 `down`）都必须带 `--env-file` 参数。本项目环境变量位于 `docker/env/` 而非项目根目录，Compose 不会自动加载；漏掉该参数会导致数据库密码、库名等被置空，后端连不上 MySQL 而启动失败（容器显示 unhealthy）。若启动时终端出现 `WARN: The "XXX" variable is not set` 提示，即说明漏带了该参数。
 
 **说明**：一条命令拉起全部服务，环境一致、无需本地装依赖，适合演示与部署；但**首次启动较慢**——需拉取 MySQL/Qdrant/Nginx 基础镜像并构建前后端镜像（安装 Python / Node 依赖），且代码修改后需重新构建镜像才能生效。
 
