@@ -22,7 +22,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_HOST_PORT:-6666}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/middleware/my.cnf:/etc/mysql/conf.d/my.cnf:ro
@@ -55,7 +55,7 @@ services:
     container_name: privrag-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-21434}:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:

@@ -101,6 +101,9 @@ RAGproject_demo/
 │           ├── statistics/              # 统计数据页（ECharts 图表）
 │           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
 │           └── LoginRegister.vue        # 登录注册页
+├── scripts/                             # 启动脚本
+│   ├── start-backend.ps1                # Windows 后端一键启动脚本
+│   └── start-backend.sh                 # Linux 后端一键启动脚本
 ├── tests/                               # 单元测试（202 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
@@ -237,24 +240,20 @@ docker compose --env-file docker/env/.env.dev up -d mysql qdrant
 docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
 # 2. 本地启动后端服务（新终端窗口）
-# 2.1 进入后端目录
-cd backend
-# 2.2 读取 docker/env/.env.dev 中的环境变量（DASHSCOPE_API_KEY + 模型模式相关变量）
+# 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
+# （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
 
-# 2.2.1 Windows PowerShell:
-$env:DASHSCOPE_API_KEY = ((Get-Content ../docker/env/.env.dev | Select-String '^DASHSCOPE_API_KEY=').Line -split '=',2)[1]
-$env:MODEL_MODE = "remote"
-$env:OPENAI_API_KEY = "your_openai_compatible_api_key"
-$env:OPENAI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# Windows PowerShell:
+.\scripts\start-backend.ps1
 
-# 2.2.2 Linux / macOS / Git Bash:
-export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
-export MODEL_MODE=remote
-export OPENAI_API_KEY=your_openai_compatible_api_key
-export OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+# Linux / macOS / Git Bash:
+chmod +x scripts/start-backend.sh   # 首次需加执行权限
+./scripts/start-backend.sh
 
-# 2.3 启动后端服务
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 如需指定其他 env 文件（如生产环境）：
+#   .\scripts\start-backend.ps1 docker/env/.env.prod
+#   ./scripts/start-backend.sh docker/env/.env.prod
+
 # 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
 
 # 3. 本地启动前端服务（新终端窗口）
