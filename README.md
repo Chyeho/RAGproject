@@ -236,12 +236,13 @@ docker compose --env-file docker/env/.env.dev up -d --build
 
 ```bash
 # 1. 仅启动基础设施（MySQL + Qdrant）
-docker compose --env-file docker/env/.env.dev up -d mysql qdrant
+docker compose --env-file docker/env/.env.dev up -d mysql qdrant ollama
 docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
-# 2. 本地启动后端服务（新终端窗口）
+# 2. 本地启动后端服务（新终端窗口，在项目根目录执行）
 # 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
 # （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
+# 注意：脚本路径是相对于项目根目录的；若当前在 backend 目录，改用 ..\scripts\start-backend.ps1
 
 # Windows PowerShell:
 .\scripts\start-backend.ps1
@@ -295,17 +296,22 @@ MODEL_MODE=local
 OLLAMA_BASE_URL=http://ollama:11434
 ```
 
-### 本地模式首次使用：拉取 Ollama 模型
+### 本地模式首次使用：Ollama 模型自动拉取
 
-Docker Compose 已内置 `ollama` 服务，但模型需手动拉取（仅首次）：
+Docker Compose 已内置 `ollama` 服务。切换为 `MODEL_MODE=local` 后，后端启动时会**自动检测** `qwen2.5:7b`（聊天）和 `bge-m3`（嵌入）两个模型是否存在，缺失则自动 `pull`，无需手动执行：
 
 ```bash
-# 拉取默认模型（qwen2.5:7b 聊天 + bge-m3 嵌入）
-docker exec -it privrag-ollama ollama pull qwen2.5:7b
-docker exec -it privrag-ollama ollama pull bge-m3
+# 首次使用本地模式时，后端启动日志会显示：
+# [模型工厂]Ollama 模型缺失: qwen2.5:7b，开始自动拉取（可能耗时较长）...
+```
 
-# 可在 rag_config.yml 中修改 local 分组下的模型名
-# 也可通过环境变量 OLLAMA_CHAT_MODEL / OLLAMA_EMBEDDING_MODEL 覆盖
+> **注意**：模型体积较大（qwen2.5:7b 约 4.7GB，bge-m3 约 1.2GB），首次拉取耗时取决于网络，需耐心等待。
+
+如需自定义本地模型，可在 `rag_config.yml` 中修改 `local` 分组，或通过环境变量覆盖：
+
+```bash
+OLLAMA_CHAT_MODEL=qwen2.5:14b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
 > **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。

@@ -5,6 +5,7 @@
   - local：聊天模型和嵌入模型均用 langchain_ollama（本地 Ollama 服务）
 '''
 import os
+import ollama
 import dashscope
 from abc import ABC, abstractmethod                               # 导入抽象类
 from typing import Optional, List                                 # 类型注解
@@ -24,6 +25,42 @@ def _get_model_mode() -> str:
         logger.warning(f"[模型工厂]MODEL_MODE='{mode}' 不合法，回退为 'remote'")
         mode = "remote"
     return mode
+
+
+def _normalize_model_name(name: str) -> str:
+    """规范化模型名用于比较：去掉 ':latest' 后缀、去首尾空白"""
+    name = name.strip()
+    if name.endswith(":latest"):
+        name = name[: -len(":latest")]
+    return name
+
+
+def _ensure_ollama_model(model_name: str, base_url: str) -> None:
+    """本地模式启动前检查 Ollama 模型是否存在，不存在则自动 pull。
+
+    Args:
+        model_name: 模型名，如 'qwen2.5:7b'、'bge-m3'
+        base_url: Ollama 服务地址
+    """
+    try:
+        client = ollama.Client(host=base_url)
+        # 列出本地已有模型
+        response = client.list()
+        installed = [m.model for m in response.models] if response.models else []
+        installed_norm = [_normalize_model_name(m) for m in installed]
+
+        # 规范化比较：用户传 'bge-m3' 应匹配到列表里的 'bge-m3:latest'
+        if _normalize_model_name(model_name) in installed_norm:
+            logger.info(f"[模型工厂]Ollama 模型已存在: {model_name}")
+            return
+
+        # 不存在则自动拉取
+        logger.warning(f"[模型工厂]Ollama 模型缺失: {model_name}，开始自动拉取（可能耗时较长）...")
+        client.pull(model_name)
+        logger.info(f"[模型工厂]Ollama 模型拉取完成: {model_name}")
+    except Exception as e:
+        logger.error(f"[模型工厂]Ollama 模型检查/拉取失败: {model_name} @ {base_url}，错误: {e}")
+        # 不中断启动，让后续调用时报错
 
 
 class DashScopeTextEmbeddings(Embeddings):
@@ -89,14 +126,17 @@ class ChatModelFactory(BaseModelFactory):
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
         mode = _get_model_mode()
         if mode == "local":
-            # 本地模式：Ollama 聊天模型
+            # 本地模式：Ollama 聊天模型（启动前确保模型已存在，不存在则自动拉取）
             model_name = os.environ.get(
                 "OLLAMA_CHAT_MODEL",
                 rag_conf["local"]["chat_model_name"],
             )
             base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            _ensure_ollama_model(model_name, base_url)
             logger.info(f"[模型工厂]聊天模型(本地): {model_name} @ {base_url}")
-            return ChatOllama(model=model_name, base_url=base_url)
+            # keep_alive=3600：模型常驻内存 3600 秒（Ollama 默认 5 分钟即卸载），
+            # 避免闲置后再次请求触发重新加载导致的长时间等待
+            return ChatOllama(model=model_name, base_url=base_url, keep_alive=3600)
 
         # 远程模式：OpenAI 协议聊天模型
         api_key = os.environ.get("OPENAI_API_KEY", "not-configured")
@@ -120,14 +160,15 @@ class EmbeddingFactory(BaseModelFactory):
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
         mode = _get_model_mode()
         if mode == "local":
-            # 本地模式：Ollama 嵌入模型
+            # 本地模式：Ollama 嵌入模型（启动前确保模型已存在，不存在则自动拉取）
             model_name = os.environ.get(
                 "OLLAMA_EMBEDDING_MODEL",
                 rag_conf["local"]["embedding_model_name"],
             )
             base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            _ensure_ollama_model(model_name, base_url)
             logger.info(f"[模型工厂]嵌入模型(本地): {model_name} @ {base_url}")
-            return OllamaEmbeddings(model=model_name, base_url=base_url)
+            return OllamaEmbeddings(model=model_name, base_url=base_url, keep_alive=3600)
 
         # 远程模式：DashScope 嵌入模型（保持不变）
         model_name = rag_conf["remote"]["embedding_model_name"]
