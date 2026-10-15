@@ -1,22 +1,32 @@
 # 宸甄 PrivRAG 企业私有知识库问答系统
 
-## 1 项目概述
+## 第一章 项目介绍
 
-### 1-1 项目背景
+企业在日常运营中沉淀了大量非结构化内部文档（制度规范、产品手册、培训资料等），传统文件管理与关键词检索方式查阅效率低下；同时通用大模型无法加载企业私有数据，回答易产生幻觉，而直接调用公有大模型接口又存在数据泄密隐患。
 
-​	企业沉淀大量非结构化内部文档，传统文件管理与关键词检索查阅效率低下；通用大模型无法加载私有数据，回答易产生幻觉，公有接口存在数据泄密隐患。为此基于 RAG 技术开发私有化知识库问答系统，依托本地向量库实现私有文档语义检索，赋能大模型精准作答，保障数据安全。
+**宸甄 PrivRAG** 是一套面向企业的私有化知识库问答系统。基于 RAG（检索增强生成）技术，将企业私有文档向量化后存入本地向量数据库，问答时先从私有知识库中语义检索相关片段，再交由大模型生成回答，从而实现：
 
-### 1-2 项目技术栈
+- **私有数据安全**：文档与向量库均部署在企业内网，数据不出域；
+- **回答精准可溯源**：基于检索到的文档片段作答，减少幻觉，并提供引用来源；
+- **双模型模式**：支持远程 API（通义/DeepSeek 等）与本地 Ollama 模型一键切换，兼顾性能与数据合规；
+- **完整业务闭环**：涵盖用户认证、文档管理、知识入库、多轮问答、会话管理、统计分析、系统设置等全功能。
+
+系统采用前后端分离架构，前端基于 Vue 3 + Element Plus，后端基于 FastAPI + LangChain，数据层使用 MySQL（关系型）与 Qdrant（向量库），并提供 Docker 容器化一键部署能力。
+
+## 第二章 技术架构
+
+### 2.1 项目技术栈
 
 - **前端框架**：Vue 3 + Vite + Element Plus + ECharts + Vue Router + Axios
 - **后端框架**：FastAPI（含认证/会话/文档/统计/设置全部业务接口）
 - **关系型数据库**：MySQL 8.4（SQLModel + aiomysql 异步）
 - **向量数据库**：Qdrant v1.16
+- **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
-- **AI问答服务框架**：Langchain
-- **测试框架**：pytest + anyio（202 个单元测试，详见 `tests/README.md`）
+- **AI问答服务框架**：LangChain
+- **测试框架**：pytest + anyio（225 个单元测试，详见 `tests/README.md`）
 
-### 1-3 项目结构
+### 2.2 项目结构
 
 ```plaintext
 RAGproject_demo/
@@ -101,98 +111,48 @@ RAGproject_demo/
 │           ├── statistics/              # 统计数据页（ECharts 图表）
 │           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
 │           └── LoginRegister.vue        # 登录注册页
-├── tests/                               # 单元测试（202 个，运行方式见 tests/README.md）
+├── scripts/                             # 启动脚本
+│   ├── start-backend.ps1                # Windows 后端一键启动脚本
+│   └── start-backend.sh                 # Linux 后端一键启动脚本
+├── tests/                               # 单元测试（225 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
 ├── docs/                                # 项目开发文档目录
+│   ├── 技术文档.md                       # 项目阶段、期望与 Docker 部署设计说明
 │   ├── 前后端开发执行文档.md               # 前后端开发计划与实施记录
 │   └── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
 └── README.md
 ```
 
-## 2 项目阶段
+### 2.3 Docker 架构概览
 
-目前阶段完成情况：
+```
+互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
+                          → Backend API(:8000)  数据处理
+                                   ↓
+                          MySQL(:3306)   关系型数据库
+                          Qdrant(:6333)  向量数据库
+                          Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
+```
 
-1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（Qdrant 向量库服务、RAG 总结服务、ReAct Agent、按会话隔离的对话历史管理）；
-2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，已对接后端真实接口；
-3. **后端业务服务**：已完成（认证、会话、文档、统计、设置全部接口），接入 MySQL 8.4 + Qdrant v1.16，复用现有 RAG/Agent 服务；前后端联调通过；
-4. **单元测试**：已为后端新增与更新 202 个单元测试（工具/模型/核心/数据/依赖/服务/路由/Agent 各层），全程 mock 外部依赖（MySQL/Qdrant/DashScope/LLM），不连真实库、无网络调用；运行方式详见 `tests/README.md`；
-5. **后续可迭代**：详见下一章「项目期望」。
+## 第三章 安装运行指南
 
-## 3 项目期望
+本章介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
 
-基于当前的代码架构，做企业级迭代。当前版本的已完成能力之外，规划以下优化方向（按优先级排列）：
-
-### 3-1 升级 RAG 检索体系
-
-**a. 扩展支持更多文档格式**
-
-目前仅支持 `txt` / `pdf` 两种格式（由 `file_handler.py` 的文件加载器决定）。后续按文档类型逐类接入加载器，并同步放开 `allow_knowledge_file_type` 白名单：
-
-- Office 系：`docx` / `doc`（python-docx / 转换工具）
-- 表格与演示：`xlsx` / `pptx`（openpyxl / python-pptx）
-- Web 与标记：`md` / `html`（Markdown 解析 / BeautifulSoup）
-- 图片与扫描件：`png` / `jpg`（OCR 文本提取）
-
-**b. 增强文档解析能力**
-
-当前按固定 `chunk_size` / `chunk_overlap` 均匀切分，未感知文档结构。后续升级为结构化解析：
-
-- **章节树构建**：解析文档标题层级（H1→Hn），生成章节树，检索时可按章节定位引用来源，回答展示更精准；
-- **智能切分规则**：根据章节/段落语义自定义切分策略——小章节合并进邻近 chunk（避免碎片化）、超长章节按段落边界再分割（避免截断语义）、常规段落保持原样不处理；
-- **元数据增强**：chunk 携带章节号、标题、页码等元数据，供检索过滤与引用展示使用。
-
-**c. 检索侧升级（混合检索 + 精排）**
-
-当前为纯稠密向量检索（`topK` 直接返回）。后续升级为两级检索架构：
-
-- **混合检索**：BM25 稀疏检索与稠密向量检索并行召回，按权重融合（如 RRF 融合算法），提升专有名词/缩写/长尾查询的召回率；
-- **精排重排**：召回 TopN 后使用 Cross-Encoder 或大模型打分重排，取精排后的 TopK 作为最终上下文，提升回答相关性与引用准确度；
-- **检索调优**：支持查询改写（Query Rewriting）、上下文压缩（Contextual Compression）等后处理。
-
-### 3-2 RAG 参数实时生效
-
-当前系统设置中的 RAG 参数（chunkSize / topK 等）写入 `qdrant_config.yml`，**重启后端后生效**。后续升级为实时生效：
-
-- 参数热更新：设置保存时同步刷新内存中的运行参数（如线程安全的配置快照）；
-- 可观测：参数变更记录日志，便于追溯配置调整时间线与影响范围。
-
-### 3-3 验证码可随时接入短信服务
-
-当前开发环境验证码固定为 `123456`（`/api/auth/sms-code` 仅写日志，不真实下发）。后续抽象短信发送接口，接入真实服务商（阿里云短信 / 腾讯云 SMS 等），通过配置切换：
-
-- 开发环境：保留固定验证码兜底；
-- 生产环境：走真实短信通道，增加发送频率限制、验证码有效期与防爆破策略。
-
-### 3-4 其他可补充方向
-
-- **权限与数据隔离**：知识库支持按用户/部门授权，文档与会话数据严格按用户隔离（当前会话已按用户隔离，可进一步细化到知识库级别）；
-- **引用来源展示增强**：citations 支持高亮命中片段、跳转到原文位置；合并「回答检索」与「引用检索」为一次检索两处使用，降低重复计算；
-- **系统可观测性**：接入指标采集（请求量/时延/错误率）、链路追踪与日志可视化（Prometheus + Grafana / ELK）；
-- **部署与运维**：补充 CI/CD 流水线（自动测试 + 镜像构建 + 发布）、Kubernetes 编排与水平扩展、数据备份恢复策略；
-- **多模态与语音**：支持图片/表格多模态问答、语音提问与播报等交互形态。
-
----
-
-## 4 快速启动
-
-本节介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
-
-### 4-1 环境准备
+### 3.1 环境准备
 
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
 | Docker Desktop | ≥ 4.x（Windows 需启用 WSL2 后端） | 提供 MySQL / Qdrant / 完整容器化部署的运行环境；镜像源可配置加速 |
 | Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；可选 `uv` 作为包管理器（项目已提供 `pyproject.toml` / `uv.lock`） |
-| Node.js | ≥ 18 | 方式二本地运行前端所需（`npm` 随 Node 附带） |
+| Node.js | ≥ 18 | 方式二本地运行前端所需 |
 | Git | 任意 | 拉取/管理项目代码 |
 
 > Windows 提示：执行下述命令前，请确认 **Docker Desktop 已启动**（任务栏图标处于运行状态），否则 `docker compose` 会报连接错误。
 
-### 4-2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
+### 3.2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
 
 **前置准备**：仅需 Docker Desktop；无需本地安装 Python / Node.js。
 
@@ -201,11 +161,11 @@ RAGproject_demo/
 cp docker/env/.env.dev.example docker/env/.env.dev
 #    至少需填写：DASHSCOPE_API_KEY（问答与向量化必需）、MYSQL_ROOT_PASSWORD 等
 
-# 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx）
+# 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx / ollama）
 docker compose --env-file docker/env/.env.dev up -d --build
 
 # 3. 查看运行状态与日志
-docker compose ps                 # 5 个服务均应为 Up (healthy)
+docker compose ps                 # 5 个服务均应为 Up (healthy)[本地模式为6个服务]
 docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 
 # 4. 访问应用
@@ -213,35 +173,49 @@ docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 #    后端 API：  http://localhost:8000/docs
 #    前端页面：  http://localhost:3000
 
-# 停止 / 重新构建（代码更新后）
-docker compose down
+# 日常停止（仅删除容器，数据卷保留，数据不丢失）
+docker compose --env-file docker/env/.env.dev down
+
+# 再次启动（已构建且代码无修改：不加 --build，直接复用镜像，秒级启动）
+docker compose --env-file docker/env/.env.dev up -d
+
+# 重新构建启动（代码有修改：必须加 --build，否则改动不会生效）
 docker compose --env-file docker/env/.env.dev up -d --build
 ```
 
+> ⚠️ **注意**：每一条 `docker compose` 命令（包括 `down`）都必须带 `--env-file` 参数。本项目环境变量位于 `docker/env/` 而非项目根目录，Compose 不会自动加载；漏掉该参数会导致数据库密码、库名等被置空，后端连不上 MySQL 而启动失败（容器显示 unhealthy）。若启动时终端出现 `WARN: The "XXX" variable is not set` 提示，即说明漏带了该参数。
+
 **说明**：一条命令拉起全部服务，环境一致、无需本地装依赖，适合演示与部署；但**首次启动较慢**——需拉取 MySQL/Qdrant/Nginx 基础镜像并构建前后端镜像（安装 Python / Node 依赖），且代码修改后需重新构建镜像才能生效。
 
-### 4-3 启动方式二：仅基础设施 + 本地启动前后端（推荐开发调试）
+### 3.3 启动方式二：仅基础设施 + 本地启动前后端（推荐开发调试）
 
 **前置准备**：Docker Desktop + Python（可选 uv）+ Node.js。
 
 ```bash
-# 1. 仅启动基础设施（MySQL + Qdrant）
+# 1. 仅启动基础设施（MySQL + Qdrant + Ollama）
+# 1.1 remote 模式
 docker compose --env-file docker/env/.env.dev up -d mysql qdrant
+# 1.2 local 模式
+docker compose --env-file docker/env/.env.dev up -d mysql qdrant ollama
+# 1.3 查看运行状态与日志
 docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
-# 2. 本地启动后端服务（新终端窗口）
-# 2.1 进入后端目录
-cd backend
-# 2.2 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+# 2. 本地启动后端服务（新终端窗口，在项目根目录执行）
+# 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
+# （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
+# 注意：脚本路径是相对于项目根目录的；若当前在 backend 目录，改用 ..\scripts\start-backend.ps1
 
-# 2.2.1 Windows PowerShell:
-$env:DASHSCOPE_API_KEY = ((Get-Content ../docker/env/.env.dev | Select-String '^DASHSCOPE_API_KEY=').Line -split '=',2)[1]
+# Windows PowerShell:
+.\scripts\start-backend.ps1
 
-# 2.2.2 Linux / macOS / Git Bash:
-export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+# Linux / macOS / Git Bash:
+chmod +x scripts/start-backend.sh   # 首次需加执行权限
+./scripts/start-backend.sh
 
-# 2.3 启动后端服务
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 如需指定其他 env 文件（如生产环境）：
+#   .\scripts\start-backend.ps1 docker/env/.env.prod
+#   ./scripts/start-backend.sh docker/env/.env.prod
+
 # 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
 
 # 3. 本地启动前端服务（新终端窗口）
@@ -255,56 +229,65 @@ npm run dev
 docker compose down
 ```
 
-**说明**：仅运行 MySQL/Qdrant 两个容器，资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
+**说明**：仅运行 MySQL/Qdrant 两个容器（local模式为加上ollama的共计三个容器），资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
 
----
+### 3.4 模型加载模式切换（remote / local）
 
-## 5 Docker 容器化部署
+系统支持两种模型加载模式，通过环境变量 **`MODEL_MODE`** 一键切换，无需改代码：
 
-### 5-1 架构概览
+| 模式 | 聊天模型（LLM） | 嵌入模型（Embed） | 适用场景 |
+|------|----------------|-------------------|----------|
+| `remote`（默认） | `langchain_openai.ChatOpenAI`，兼容任意 OpenAI 协议模型（通义/DeepSeek/月之暗面等） | DashScope `text-embedding-v4` | 有 API Key、低延迟需求 |
+| `local` | `langchain_ollama.ChatOllama`，本地 Ollama | `langchain_ollama.OllamaEmbeddings`，本地 Ollama | 私有化部署、数据不出域 |
 
+#### 切换方法
+
+修改 `.env` 文件中的 `MODEL_MODE` 值即可：
+
+```ini
+# 远程模式（默认）
+MODEL_MODE=remote
+OPENAI_API_KEY=your_openai_compatible_api_key
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+# 本地模式
+MODEL_MODE=local
+OLLAMA_BASE_URL=http://ollama:11434
 ```
-互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
-                          → Backend API(:8000)  数据处理
-                                   ↓
-                          MySQL(:3306)   关系型数据库
-                          Qdrant(:6333)  向量数据库
+
+#### 本地模式首次使用：Ollama 模型自动拉取
+
+Docker Compose 已内置 `ollama` 服务。切换为 `MODEL_MODE=local` 后，后端启动时会**自动检测** `qwen2.5:7b`（聊天）和 `bge-m3`（嵌入）两个模型是否存在，缺失则自动 `pull`，无需手动执行：
+
+```bash
+# 首次使用本地模式时，后端启动日志会显示：
+# [模型工厂]Ollama 模型缺失: qwen2.5:7b，开始自动拉取（可能耗时较长）...
 ```
 
-### 5-2 两种使用模式
+> **注意**：模型体积较大（qwen2.5:7b 约 4.7GB，bge-m3 约 1.2GB），首次拉取耗时取决于网络，需耐心等待。
 
-本项目支持两种 Docker 使用模式，启动步骤已在上章「快速启动」中给出，此处仅说明两种模式的特点与适用场景：
+如需自定义本地模型，可在 `rag_config.yml` 中修改 `local` 分组，或通过环境变量覆盖：
 
-#### 模式 A：基础设施模式（推荐开发阶段使用）
+```bash
+OLLAMA_CHAT_MODEL=qwen2.5:14b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
 
-- 只启动 MySQL 和 Qdrant 两个基础服务，前后端在本地（Windows）运行；
-- 代码修改即时生效（后端热重载 + 前端 HMR），支持 IDE 断点调试；
-- 资源占用少、启动速度快；需本机安装 Python / Node.js 依赖。
+> **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。
 
-#### 模式 B：完整容器化模式（部署/演示阶段使用）
+#### 远程模式兼容的模型端点
 
-- 一键启动全部 5 个服务（MySQL、Qdrant、Backend、Frontend、Nginx），环境一致性高；
-- 无需本机安装 Python / Node.js 依赖，适合演示、测试环境与生产部署；
-- 修改代码后需重新构建镜像，构建/拉取耗时较长。
+| 服务商 | `OPENAI_BASE_URL` | 模型名示例 |
+|--------|-------------------|-----------|
+| 通义千问（兼容端点） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3.7-max` |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| 月之暗面 | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
 
-#### 模式对比
+## 第四章 团队信息
 
-| 对比项 | 模式 A：基础设施模式 | 模式 B：完整容器化模式 |
-|---|---|---|
-| 启动服务 | MySQL、Qdrant | 全部 5 个服务 |
-| 代码运行位置 | 本地（Windows） | 容器内 |
-| 代码修改生效 | 即时（热重载） | 需重新构建 |
-| 调试支持 | IDE 断点调试 | 日志查看 |
-| 适用阶段 | 开发调试 | 部署/演示/生产 |
-| 资源占用 | 较低 | 较高 |
-| 依赖安装 | 需本地安装 | 无需本地安装 |
-
-### 5-3 关键设计说明
-
-| 设计点 | 说明 |
-|---|---|
-| 业务配置 vs 部署配置 | `backend/app/config/` 存放业务级 YAML 配置，`docker/` 存放部署级配置，职责分离 |
-| 独立 Dockerfile | `backend/Dockerfile` 和 `frontend/Dockerfile` 各自管理构建，不混入 docker 目录 |
-| 多阶段构建 | 后端使用 `uv` 官方镜像构建虚拟环境后复制到 slim 运行镜像；前端使用 Node 构建后由 Nginx 托管 |
-| 健康检查 | 所有服务均配置 healthcheck，后端依赖 MySQL/Qdrant 健康状态后才启动 |
-| 环境隔离 | 通过 `--env-file` 切换 `.env.dev` / `.env.prod` 实现开发/生产环境分离 |
+- 学校：东莞理工学院
+- 指导老师：无
+- 团队名：207
+- 队员信息：
+  1. 队长：程迪宏
+  2. 队员：李仕远
