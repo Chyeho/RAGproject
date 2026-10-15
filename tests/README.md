@@ -24,7 +24,7 @@ tests/
 ├── test_logger_handler.py       # 工具层 · 日志器创建与管理
 ├── test_prompt_loader.py        # 工具层 · 提示词模板加载
 │
-├── test_factory.py              # 模型层 · 嵌入模型 & 工厂模式
+├── test_factory.py              # 模型层 · 模型工厂双模式（remote/local）+ 嵌入模型封装
 ├── test_models.py               # 模型层 · SQLModel 五张表定义（字段/外键/默认值）
 │
 ├── test_security.py             # 核心层 · bcrypt 密码哈希 + JWT 签发/解析
@@ -49,7 +49,7 @@ tests/
 | 层级 | 测试文件 | 说明 |
 |------|---------|------|
 | **工具层** | `test_path_tool` ~ `test_prompt_loader`（5 个） | 纯函数、无外部依赖，最快、最稳定 |
-| **模型层** | `test_factory.py`、`test_models.py` | 嵌入模型 API 封装（mock DashScope）；SQLModel 表定义 |
+| **模型层** | `test_factory.py`、`test_models.py` | 模型工厂双模式分发（`MODEL_MODE` remote/local）、DashScope 嵌入封装、Ollama 模型自动拉取；SQLModel 表定义 |
 | **核心层** | `test_security.py`、`test_response.py` | 密码哈希/JWT、统一响应包裹（纯函数） |
 | **数据/依赖层** | `test_db.py`、`test_dependencies.py` | 连接串与建表、JWT 认证依赖（mock 会话） |
 | **服务层** | `test_history_store` ~ `test_rag_service`（3 个） | 文件读写、Qdrant 向量库、RAG 链与历史隔离 |
@@ -64,28 +64,36 @@ tests/
 
 ```powershell
 # 1. 确保在正确的目录
-cd "d:\Microsoft VS Code\pyAdCode\7.rag_agent_project\02_RAG项目\RAGproject_demo\backend"
+cd backend
 
 # 2. 确认 pytest 已安装
-python -m pytest --version
+uv run pytest --version
+# 或： .\.venv\Scripts\python.exe -m pytest --version
 ```
+
+> 下文命令中的 `python -m pytest` 均需在项目虚拟环境内执行（先 `uv run` 或激活 `.venv`）。
 
 ### 常用命令
 
 ```powershell
 # ─── 运行全部测试 ──────────────────────────────
-python -m pytest ..\tests\ -v                    # 详细输出（推荐）
+python -m pytest ..\tests\ -v                    # 详细输出
 python -m pytest ..\tests\ -v --tb=short         # 详细 + 简洁错误回溯
 python -m pytest ..\tests\ -q                    # 安静模式（只显示结果）
 
 
 # ─── 按层级运行 ────────────────────────────────
+# 模型层
 python -m pytest ..\tests\test_path_tool.py ..\tests\test_config_handler.py ..\tests\test_file_handler.py ..\tests\test_logger_handler.py ..\tests\test_prompt_loader.py -v  # 工具层
-python -m pytest ..\tests\test_factory.py ..\tests\test_models.py -v                                                                                                                                                              # 模型层
-python -m pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_db.py ..\tests\test_dependencies.py -v                                                                                                         # 核心/数据/依赖层
-python -m pytest ..\tests\test_history_store.py ..\tests\test_vector_store.py ..\tests\test_rag_service.py -v                                                                                                                      # 服务层
-python -m pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v                                                                                                                                                 # 路由层
-python -m pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v                                                                                                                          # Agent 层
+python -m pytest ..\tests\test_factory.py ..\tests\test_models.py -v                                                                                                                                             # 核心/数据/依赖层                 
+python -m pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_db.py ..\tests\test_dependencies.py -v  
+
+# 服务层                                
+python -m pytest ..\tests\test_history_store.py ..\tests\test_vector_store.py ..\tests\test_rag_service.py -v
+
+# 路由层                                             
+python -m pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v                                                                                                                               # Agent 层                  
+python -m pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v                                                                                                                          
 
 
 # ─── 运行单个文件 ──────────────────────────────
@@ -125,20 +133,14 @@ python -m pytest ..\tests\ --ff                  # --failed-first
 
 ## 已知警告说明
 
-运行全部测试时，你可能看到如下警告（均为第三方库内部问题，**不影响测试结果**，无需处理）：
+运行全部测试时会出现 **1 条警告**（第三方库内部问题，**不影响测试结果**，无需处理）：
 
 ```
 DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated
   _EPOCH_DATETIME_NAIVE = datetime.datetime.utcfromtimestamp(0)
 ```
 
-**来源**：`protobuf==3.20.3`（项目依赖）使用了 Python 3.12+ 已弃用的 `utcfromtimestamp()` API，发生在模块导入阶段（早于任何测试代码执行）。
-
-```
-StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
-```
-
-**来源**：`fastapi.testclient`（TestClient）底层依赖 `httpx`，新版 starlette 推荐使用 `httpx2`，属框架演进提示，当前功能不受影响。
+**来源**：`protobuf`（项目依赖）使用了 Python 3.12+ 已弃用的 `utcfromtimestamp()` API，发生在模块导入阶段（早于任何测试代码执行）。
 
 **如需手动抑制**（可选）：
 
@@ -150,16 +152,49 @@ python -m pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 
 ## 测试设计原则
 
-1. **不修改业务代码**：所有测试只读被测模块，通过 mock 隔离外部依赖（DashScope API、Qdrant、MySQL、ChatTongyi）
+1. **不修改业务代码**：所有测试只读被测模块，通过 mock 隔离外部依赖（DashScope API、Qdrant、MySQL、ChatOpenAI / ChatOllama / Ollama）
 2. **快速执行**：避免网络调用和磁盘 I/O 密集型操作，使用 `tempfile` 和 `unittest.mock`；路由测试使用 TestClient + `dependency_overrides`，不连接真实数据库
 3. **独立性**：每个测试独立运行，不依赖其他测试的执行顺序或副作用
 4. **清晰命名**：测试方法名精确描述被测行为和预期结果
 
 ## 当前测试统计
 
+### 标准环境：已启动 Qdrant 容器
+
 ```
 platform: win32
 python:   3.13.0
-pytest:   9.0.2
-tests:    202 passed, 0 failed
+pytest:   9.1.1
+tests:    225 passed, 0 failed
 ```
+
+输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。
+
+### 未启动任何 Docker 容器时
+
+**预期结果：215 passed, 10 failed**。这不是代码缺陷，而是有 10 个用例对 Qdrant 服务存在真实依赖。
+
+依赖 Qdrant 的 10 个用例（均为 Agent 层）：
+
+```
+tests/test_agent_tools.py::TestRagSummarizeTool        （3 个）
+tests/test_agent_tools.py::TestModuleLevelRag          （1 个）
+tests/test_react_agent.py::TestReActAgentInit          （3 个）
+tests/test_react_agent.py::TestReActAgentExecuteStream （3 个）
+```
+
+**原因**：`test_agent_tools.py` / `test_react_agent.py` 在导入 `app.service.rag.vector_store` 时会真实初始化 Qdrant 客户端并访问服务；容器未运行时连接被拒，报：
+
+```
+qdrant_client.http.exceptions.ResponseHandlingException: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+```
+
+**处理**：启动 Qdrant 容器后重跑即可恢复全绿：
+
+```powershell
+# 在项目根目录执行
+docker compose --env-file docker/env/.env.dev up -d qdrant
+docker compose ps      # 确认 privrag-qdrant 状态为 Up
+```
+
+> 其余 215 个用例全程 mock 外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama），不启动任何容器也能通过。

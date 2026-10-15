@@ -14,7 +14,7 @@
 - **向量数据库**：Qdrant v1.16
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：Langchain
-- **测试框架**：pytest + anyio（202 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（225 个单元测试，详见 `tests/README.md`）
 
 ### 1-3 项目结构
 
@@ -122,7 +122,7 @@ RAGproject_demo/
 1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（Qdrant 向量库服务、RAG 总结服务、ReAct Agent、按会话隔离的对话历史管理）；
 2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，已对接后端真实接口；
 3. **后端业务服务**：已完成（认证、会话、文档、统计、设置全部接口），接入 MySQL 8.4 + Qdrant v1.16，复用现有 RAG/Agent 服务；前后端联调通过；
-4. **单元测试**：已为后端新增与更新 202 个单元测试（工具/模型/核心/数据/依赖/服务/路由/Agent 各层），全程 mock 外部依赖（MySQL/Qdrant/DashScope/LLM），不连真实库、无网络调用；运行方式详见 `tests/README.md`；
+4. **单元测试**：已为后端新增与更新 225 个单元测试（工具/模型/核心/数据/依赖/服务/路由/Agent 各层），绝大多数用例全程 mock 外部依赖（MySQL/DashScope/LLM/Ollama）、不连真实库；Agent 层 10 个用例需本地 Qdrant 容器运行（未启动容器时为 215 passed + 10 failed）；运行方式详见 `tests/README.md`；
 5. **后续可迭代**：详见下一章「项目期望」。
 
 ## 3 项目期望
