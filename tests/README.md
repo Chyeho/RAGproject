@@ -41,7 +41,12 @@ tests/
 │
 ├── test_agent_tools.py          # Agent 层 · 工具注册
 ├── test_middleware.py           # Agent 层 · 中间件（监控、日志）
-└── test_react_agent.py          # Agent 层 · ReAct Agent 主体
+├── test_react_agent.py          # Agent 层 · ReAct Agent 主体
+│
+├── test_eval_metrics.py         # 评测层 · 确定性检索指标（归一化/2-gram 重叠/命中判定/聚合）
+├── test_eval_llm_judge.py       # 评测层 · LLM 裁判（分数解析/忠实度/相关性/聚合）
+├── test_eval_dataset.py         # 评测层 · 评测集构建（5 格式段落提取/QA 解析/均衡采样/加载校验）
+└── test_eval_runner.py          # 评测层 · 评测编排 + 报告生成/对比（全 mock，不连 Qdrant/MySQL）
 ```
 
 ### 测试覆盖层级
@@ -55,6 +60,7 @@ tests/
 | **服务层** | `test_history_store` ~ `test_rag_service`（3 个） | 文件读写、Qdrant 向量库、RAG 链与历史隔离 |
 | **路由层** | `test_auth_router.py`、`test_settings_router.py` | FastAPI TestClient + dependency_overrides（不连真实 DB） |
 | **Agent 层** | `test_agent_tools` ~ `test_react_agent`（3 个） | Agent 初始化、工具注册、流式输出 |
+| **评测层** | `test_eval_metrics` ~ `test_eval_runner`（4 个，P0 新增） | 检索指标纯函数、LLM 裁判、评测集构建（样例自包含生成）、评测编排与报告（全 mock） |
 
 > 异步测试（`test_db`、`test_dependencies` 中带 `@pytest.mark.anyio` 的用例）由 anyio 的 pytest 插件执行，backend 统一使用 asyncio（见 conftest.py 的 `anyio_backend` fixture）。
 
@@ -165,14 +171,14 @@ python -m pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 platform: win32
 python:   3.13.0
 pytest:   9.1.1
-tests:    225 passed, 0 failed
+tests:    296 passed, 0 failed
 ```
 
 输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。
 
 ### 未启动任何 Docker 容器时
 
-**预期结果：215 passed, 10 failed**。这不是代码缺陷，而是有 10 个用例对 Qdrant 服务存在真实依赖。
+**预期结果：286 passed, 10 failed**。这不是代码缺陷，而是有 10 个用例对 Qdrant 服务存在真实依赖。
 
 依赖 Qdrant 的 10 个用例（均为 Agent 层）：
 
@@ -197,4 +203,4 @@ docker compose --env-file docker/env/.env.dev up -d qdrant
 docker compose ps      # 确认 privrag-qdrant 状态为 Up
 ```
 
-> 其余 215 个用例全程 mock 外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama），不启动任何容器也能通过。
+> 其余 286 个用例全程 mock 外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama），不启动任何容器也能通过（其中 P0 新增的 71 个评测用例见上表「评测层」）。
