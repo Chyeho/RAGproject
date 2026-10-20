@@ -1,2 +1,4 @@
 system_prompt_path: prompts/system_prompt.txt
 rag_summarize_prompt_path: prompts/rag_summarize.txt
+faithfulness_judge_prompt_path: prompts/faithfulness_judge.txt
+relevancy_judge_prompt_path: prompts/relevancy_judge.txt

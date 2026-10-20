@@ -1,6 +1,7 @@
 '''LLM 裁判生成指标（Faithfulness / AnswerRelevancy）
 
-- 中文 Prompt 固定、temperature=0（通过 bind 绑定，不改共享单例模型）
+- 中文 Prompt 存放于 app/prompts/*.txt（经 prompt_loader 加载），内容固定、temperature=0
+  （通过 bind 绑定，不改共享单例模型），保证跨阶段公平对比的口径
 - 输出严格 JSON：{"score": <0.0~1.0>, "reason": "<简短理由>"}
 - 解析失败/调用异常返回 None，不计入均值（另计 judge_error 数），保证评测可跑完
 '''
@@ -8,49 +9,12 @@ import json
 import re
 
 from app.utils.logger_handler import logger
+from app.utils.prompt_loader import load_prompt
 
-# ---------- 裁判 Prompt（中文，固定不变；跨阶段公平对比的口径） ----------
+# ---------- 裁判 Prompt（app/prompts/ 下的 txt 文件，加载后保持模块常量名） ----------
 
-FAITHFULNESS_PROMPT = """你是一个严谨的评估助手。请评估【待评估回答】中的信息是否被【检索上下文】支持。
-
-评分标准：
-- 1.0：回答中的全部关键信息（数字、日期、流程、结论）都能在检索上下文中找到依据
-- 0.7：绝大部分关键信息有依据，仅少量细节属于常识补充
-- 0.4：约一半关键信息有依据，另一半为上下文外的补充或推测
-- 0.0：关键信息基本无上下文依据（编造、与上下文矛盾或答非所问）
-
-说明：
-- 忽略上下文与回答中都未涉及的纯常识性表述
-- 回答表示"无法回答/资料未提及"且属实（上下文确实无相关信息）时，评 1.0
-
-【用户问题】
-{question}
-
-【检索上下文】
-{context}
-
-【待评估回答】
-{answer}
-
-仅输出一行 JSON（不要输出其他内容）：
-{{"score": <0.0~1.0 的一位小数>, "reason": "<不超过30字的理由>"}}"""
-
-RELEVANCY_PROMPT = """你是一个严谨的评估助手。请评估【待评估回答】与【用户问题】的相关程度。
-
-评分标准：
-- 1.0：直接回答了问题，切题且信息有效
-- 0.7：大体切题，但仅部分回答了问题或明显啰嗦绕远
-- 0.4：与问题相关但未正面回答（如仅复述背景、给出泛泛建议）
-- 0.0：跑题、答非所问或空泛拒答
-
-【用户问题】
-{question}
-
-【待评估回答】
-{answer}
-
-仅输出一行 JSON（不要输出其他内容）：
-{{"score": <0.0~1.0 的一位小数>, "reason": "<不超过30字的理由>"}}"""
+FAITHFULNESS_PROMPT = load_prompt("faithfulness_judge_prompt_path")
+RELEVANCY_PROMPT = load_prompt("relevancy_judge_prompt_path")
 
 
 # ---------- 解析与调用 ----------

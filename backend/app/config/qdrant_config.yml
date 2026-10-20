@@ -1,12 +1,19 @@
 allow_knowledge_file_type:
 - txt
 - pdf
-chunk_overlap: 20
-chunk_size: 150
+- docx
+- doc
+- md
+- xlsx
+chunk_overlap: 50
+chunk_size: 500
 collection_name: privrag_dev
 data_path: data
+excel_rows_per_chunk: 20
 host: 127.0.0.1
 k: 3
+max_chunk_size: 800
+min_chunk_size: 100
 port: 6333
 separators:
 - '

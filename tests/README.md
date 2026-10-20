@@ -33,8 +33,9 @@ tests/
 ├── test_dependencies.py         # 依赖层 · get_current_user 认证鉴权
 │
 ├── test_history_store.py        # 服务层 · 对话历史存储
-├── test_vector_store.py         # 服务层 · Qdrant 向量库（含 upload/delete/md5 去重）
+├── test_vector_store.py         # 服务层 · Qdrant 向量库（P1 改造：确定性 chunk ID + metadata 合并 + chunking 接入）
 ├── test_rag_service.py          # 服务层 · RAG 总结服务（含多会话历史隔离）
+├── test_chunking.py             # 服务层 · 格式感知分块（P1：strategy 路由/智能切分/五格式 chunker，样例动态生成全离线）
 │
 ├── test_auth_router.py          # 路由层 · /api/auth 认证接口（TestClient + mock 会话）
 ├── test_settings_router.py      # 路由层 · /api/settings RAG 参数读写
@@ -57,7 +58,7 @@ tests/
 | **模型层** | `test_factory.py`、`test_models.py` | 模型工厂双模式分发（`MODEL_MODE` remote/local）、DashScope 嵌入封装、Ollama 模型自动拉取；SQLModel 表定义 |
 | **核心层** | `test_security.py`、`test_response.py` | 密码哈希/JWT、统一响应包裹（纯函数） |
 | **数据/依赖层** | `test_db.py`、`test_dependencies.py` | 连接串与建表、JWT 认证依赖（mock 会话） |
-| **服务层** | `test_history_store` ~ `test_rag_service`（3 个） | 文件读写、Qdrant 向量库、RAG 链与历史隔离 |
+| **服务层** | `test_history_store` ~ `test_rag_service`、`test_chunking`（4 个） | 文件读写、Qdrant 向量库（P1：uuid5 确定性 ID/metadata 合并）、RAG 链与历史隔离；格式感知分块（P1：策略路由 + 智能切分规则 + pdf/docx/md/xlsx/txt 五 chunker，22 个用例全离线） |
 | **路由层** | `test_auth_router.py`、`test_settings_router.py` | FastAPI TestClient + dependency_overrides（不连真实 DB） |
 | **Agent 层** | `test_agent_tools` ~ `test_react_agent`（3 个） | Agent 初始化、工具注册、流式输出 |
 | **评测层** | `test_eval_metrics` ~ `test_eval_runner`（4 个，P0 新增） | 检索指标纯函数、LLM 裁判、评测集构建（样例自包含生成）、评测编排与报告（全 mock） |
@@ -66,6 +67,11 @@ tests/
 
 ## 运行测试
 
+**注意事项（重要）**
+
+- 如果在虚拟环境下跑测试命令，则需要在命令前加`.\.venv\Scripts\python.exe -m`
+- 如果在虚拟环境下并且使用uv作为包管理器跑测试命令，则需要在命令前加`uv run`
+
 ### 前置条件
 
 ```powershell
@@ -73,68 +79,76 @@ tests/
 cd backend
 
 # 2. 确认 pytest 已安装
-uv run pytest --version
-# 或： .\.venv\Scripts\python.exe -m pytest --version
+pytest --version
+# 或：.\.venv\Scripts\python.exe -m pytest --version
+# 或：uv run pytest --version
+# 后面的类似
 ```
-
-> 下文命令中的 `python -m pytest` 均需在项目虚拟环境内执行（先 `uv run` 或激活 `.venv`）。
 
 ### 常用命令
 
 ```powershell
 # ─── 运行全部测试 ──────────────────────────────
-python -m pytest ..\tests\ -v                    # 详细输出
-python -m pytest ..\tests\ -v --tb=short         # 详细 + 简洁错误回溯
-python -m pytest ..\tests\ -q                    # 安静模式（只显示结果）
+pytest ..\tests\ -v                       # 详细输出
+pytest ..\tests\ -v --tb=short            # 详细 + 简洁错误回溯
+pytest ..\tests\ -q                       # 安静模式（只显示结果）
 
 
 # ─── 按层级运行 ────────────────────────────────
+# 工具层
+pytest ..\tests\test_path_tool.py ..\tests\test_config_handler.py ..\tests\test_file_handler.py ..\tests\test_logger_handler.py ..\tests\test_prompt_loader.py -v
+
 # 模型层
-python -m pytest ..\tests\test_path_tool.py ..\tests\test_config_handler.py ..\tests\test_file_handler.py ..\tests\test_logger_handler.py ..\tests\test_prompt_loader.py -v  # 工具层
-python -m pytest ..\tests\test_factory.py ..\tests\test_models.py -v                                                                                                                                             # 核心/数据/依赖层                 
-python -m pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_db.py ..\tests\test_dependencies.py -v  
+pytest ..\tests\test_factory.py ..\tests\test_models.py -v
 
-# 服务层                                
-python -m pytest ..\tests\test_history_store.py ..\tests\test_vector_store.py ..\tests\test_rag_service.py -v
+# 核心/数据/依赖层
+pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_db.py ..\tests\test_dependencies.py -v
 
-# 路由层                                             
-python -m pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v                                                                                                                               # Agent 层                  
-python -m pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v                                                                                                                          
+# 服务层
+pytest ..\tests\test_history_store.py ..\tests\test_vector_store.py ..\tests\test_rag_service.py ..\tests\test_chunking.py -v
+
+# 路由层
+pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v
+
+# Agent 层
+pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v
+
+# 评测层
+pytest ..\tests\test_eval_metrics.py ..\tests\test_eval_llm_judge.py ..\tests\test_eval_dataset.py ..\tests\test_eval_runner.py -v
 
 
 # ─── 运行单个文件 ──────────────────────────────
-python -m pytest ..\tests\test_factory.py -v
+pytest ..\tests\test_factory.py -v
 
 
 # ─── 运行单个测试类 ────────────────────────────
-python -m pytest ..\tests\test_factory.py::TestDashScopeTextEmbeddingsCallApi -v
+pytest ..\tests\test_factory.py::TestDashScopeTextEmbeddingsCallApi -v
 
 
 # ─── 运行单个测试方法 ──────────────────────────
-python -m pytest ..\tests\test_factory.py::TestDashScopeTextEmbeddingsCallApi::test_batch_splits_when_exceeds_max -v
+pytest ..\tests\test_factory.py::TestDashScopeTextEmbeddingsCallApi::test_batch_splits_when_exceeds_max -v
 
 
 # ─── 运行匹配关键词的测试 ─────────────────────
-python -m pytest ..\tests\ -v -k "history"       # 所有包含 "history" 的测试
-python -m pytest ..\tests\ -v -k "config"        # 所有包含 "config" 的测试
+pytest ..\tests\ -v -k "history"          # 所有包含 "history" 的测试
+pytest ..\tests\ -v -k "config"           # 所有包含 "config" 的测试
 
 
-# ─── 输出测试覆盖率报告 ───────────────────────
-pip install pytest-cov
-python -m pytest ..\tests\ --cov=app --cov-report=term-missing
+# ─── 输出测试覆盖率报告 ────────────────────────
+uv add --dev pytest-cov
+pytest ..\tests\ --cov=app --cov-report=term-missing
 
 
 # ─── 失败时立即停止 ────────────────────────────
-python -m pytest ..\tests\ -v -x                 # 第一个失败就停
-python -m pytest ..\tests\ -v --maxfail=3        # 最多 3 个失败就停
+pytest ..\tests\ -v -x                    # 第一个失败就停
+pytest ..\tests\ -v --maxfail=3           # 最多 3 个失败就停
 
 
 # ─── 只运行上次失败的测试 ─────────────────────
-python -m pytest ..\tests\ --lf                  # --last-failed
-
+pytest ..\tests\ --lf                     # --last-failed
 
 # ─── 先运行上次失败的，再运行全部 ─────────────
-python -m pytest ..\tests\ --ff                  # --failed-first
+pytest ..\tests\ --ff                     # --failed-first
 ```
 
 ## 已知警告说明
@@ -151,7 +165,7 @@ DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated
 **如需手动抑制**（可选）：
 
 ```powershell
-python -m pytest ..\tests\ -q -W "ignore::DeprecationWarning"
+pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 ```
 
 ---
@@ -167,18 +181,20 @@ python -m pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 
 ### 标准环境：已启动 Qdrant 容器
 
+最近一次验证：**2026-10-20**（MySQL/Qdrant 容器运行中，`pytest ..\tests\ -v`，15.39s）
+
 ```
 platform: win32
-python:   3.13.0
+python:   3.13.0（backend/.venv）
 pytest:   9.1.1
-tests:    296 passed, 0 failed
+tests:    310 passed, 0 failed
 ```
 
 输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。
 
 ### 未启动任何 Docker 容器时
 
-**预期结果：286 passed, 10 failed**。这不是代码缺陷，而是有 10 个用例对 Qdrant 服务存在真实依赖。
+**预期结果：300 passed, 10 failed**（总用例 310，其中 10 个失败）。这不是代码缺陷，而是有 10 个用例对 Qdrant 服务存在真实依赖。
 
 依赖 Qdrant 的 10 个用例（均为 Agent 层）：
 
@@ -198,9 +214,9 @@ qdrant_client.http.exceptions.ResponseHandlingException: [WinError 10061] 由于
 **处理**：启动 Qdrant 容器后重跑即可恢复全绿：
 
 ```powershell
-# 在项目根目录执行
+# 在项目根目录执行（--env-file 避免 MYSQL_DATABASE 等变量未设置的警告）
 docker compose --env-file docker/env/.env.dev up -d qdrant
-docker compose ps      # 确认 privrag-qdrant 状态为 Up
+docker compose --env-file docker/env/.env.dev ps    # 确认 privrag-qdrant 状态为 Up
 ```
 
-> 其余 286 个用例全程 mock 外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama），不启动任何容器也能通过（其中 P0 新增的 71 个评测用例见上表「评测层」）。
+> 其余 300 个用例全程 mock 外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama），不启动任何容器也能通过（其中 P0 新增的 71 个评测用例、P1 新增的 22 个分块用例见上表「评测层」「服务层」）。

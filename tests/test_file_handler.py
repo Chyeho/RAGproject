@@ -7,9 +7,7 @@ import pytest
 
 from app.utils.file_handler import (
     get_file_md5_hex,
-    get_file_documents,
     listdir_with_allowed_type,
-    txt_loader,
 )
 
 
@@ -56,40 +54,6 @@ class TestGetFileMd5Hex:
     def test_nonexistent_file_returns_none(self):
         md5 = get_file_md5_hex("不存在的文件.txt")
         assert md5 is None
-
-
-class TestGetFileDocuments:
-    """测试 get_file_documents()"""
-
-    def test_loads_txt_file(self, temp_txt_file):
-        docs = get_file_documents(temp_txt_file)
-        assert isinstance(docs, list)
-        assert len(docs) > 0
-        assert docs[0].page_content != ""
-
-    def test_unsupported_extension_returns_empty_list(self):
-        docs = get_file_documents("test.xyz")
-        assert docs == []
-
-    def test_pdf_extension_recognized(self, temp_pdf_file):
-        """PDF 扩展名应被识别（即使可能加载失败）"""
-        # 注意：临时创建的 PDF 不是合法 PDF，加载可能抛异常
-        # 只测试扩展名识别逻辑（不实际加载）
-        pass
-
-
-class TestTxtLoader:
-    """测试 txt_loader()"""
-
-    def test_loads_text_content(self, temp_txt_file):
-        docs = txt_loader(temp_txt_file)
-        assert len(docs) > 0
-        assert "测试文本内容" in docs[0].page_content
-
-    def test_returns_document_objects(self, temp_txt_file):
-        docs = txt_loader(temp_txt_file)
-        assert hasattr(docs[0], "page_content")
-        assert hasattr(docs[0], "metadata")
 
 
 class TestListdirWithAllowedType:

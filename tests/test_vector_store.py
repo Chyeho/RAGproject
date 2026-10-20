@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """向量存储服务（Qdrant 版）模块单元测试"""
 from unittest.mock import patch, MagicMock
 
@@ -65,17 +65,6 @@ class TestVectorStoreServiceInit:
     @patch("app.service.rag.vector_store.QdrantClient")
     @patch("app.service.rag.vector_store.QdrantVectorStore")
     @patch("app.service.rag.vector_store.embed_model")
-    def test_creates_text_splitter(self, mock_embed, mock_store, mock_client):
-        """验证会创建文本分割器"""
-        mock_client.return_value = MagicMock()
-        mock_store.return_value = MagicMock()
-        vs = VectorStoreService()
-        assert vs.spliter is not None
-        assert hasattr(vs.spliter, "split_documents")
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
     def test_creates_vector_store(self, mock_embed, mock_store, mock_client):
         """验证会创建 QdrantVectorStore"""
         mock_client.return_value = MagicMock()
@@ -121,37 +110,68 @@ class TestGetRetriever:
         store_instance.as_retriever.assert_called_once()
 
 
+class TestBuildChunkId:
+    """测试 build_chunk_id（P1：确定性 chunk ID）"""
+
+    def test_deterministic_for_same_args(self):
+        from app.service.rag.vector_store import build_chunk_id
+        assert build_chunk_id(7, 0) == build_chunk_id(7, 0)
+
+    def test_different_for_different_args(self):
+        from app.service.rag.vector_store import build_chunk_id
+        assert build_chunk_id(7, 0) != build_chunk_id(8, 0)
+        assert build_chunk_id(7, 0) != build_chunk_id(7, 1)
+
+    def test_returns_uuid_string(self):
+        import uuid
+        from app.service.rag.vector_store import build_chunk_id
+        chunk_id = build_chunk_id(7, 0)
+        assert isinstance(chunk_id, str)
+        uuid.UUID(chunk_id)  # 能被解析为合法 UUID
+
+
 class TestUploadFile:
-    """测试 upload_file 方法"""
+    """测试 upload_file 方法（P1：格式感知分块 + 确定性 chunk ID）"""
 
     @patch("app.service.rag.vector_store.QdrantClient")
     @patch("app.service.rag.vector_store.QdrantVectorStore")
     @patch("app.service.rag.vector_store.embed_model")
-    def test_returns_chunks_with_vector_ids(self, mock_embed, mock_store, mock_client, monkeypatch):
-        """成功向量化：返回 [(chunk_text, vector_id)]，且写入 document_id 元数据"""
+    def test_returns_chunks_with_deterministic_ids(self, mock_embed, mock_store, mock_client, monkeypatch):
+        """成功向量化：确定性 ID 传入 add_documents，返回 [(chunk_text, vector_id)]"""
         _patch_init_env(monkeypatch)
+        from langchain_core.documents import Document
+        from app.service.rag.vector_store import build_chunk_id
+
         mock_client.return_value = MagicMock()
         store_instance = MagicMock()
-        store_instance.add_documents.return_value = ["vec-1", "vec-2"]
+        expected_ids = [build_chunk_id(7, 0), build_chunk_id(7, 1)]
+        store_instance.add_documents.return_value = expected_ids
         mock_store.return_value = store_instance
 
-        from langchain_core.documents import Document
-        with patch("app.service.rag.vector_store.get_file_documents", return_value=[
-            Document(page_content="第一段内容"),
-            Document(page_content="第二段内容"),
-        ]):
+        docs = [
+            Document(page_content="第一段内容", metadata={"section_path": "1 总则"}),
+            Document(page_content="第二段内容", metadata={}),
+        ]
+        with patch("app.service.rag.vector_store.chunk_file", return_value=docs):
             vs = VectorStoreService()
-            result = vs.upload_file("/tmp/test.txt", document_id=7)
+            result = vs.upload_file("/tmp/test.pdf", document_id=7)
 
-        assert isinstance(result, list)
-        assert len(result) == 2
-        assert result[0][0] == "第一段内容"
-        assert result[0][1] == "vec-1"
-        assert result[1][1] == "vec-2"
+        # 调用参数：documents + 确定性 ids
+        call_args = store_instance.add_documents.call_args
+        assert call_args.args[0] == docs
+        assert call_args.kwargs["ids"] == expected_ids
 
-        # 写入前设置了 document_id 元数据
-        added_docs = store_instance.add_documents.call_args[0][0]
-        assert all(d.metadata.get("document_id") == 7 for d in added_docs)
+        # 元数据合并：保留 chunker 结构信息 + 索引信息（不覆盖原有键）
+        assert docs[0].metadata["section_path"] == "1 总则"
+        assert docs[0].metadata["chunk_index"] == 0
+        assert docs[0].metadata["total_chunks"] == 2
+        assert docs[0].metadata["document_id"] == 7
+        assert docs[0].metadata["vector_id"] == expected_ids[0]
+        assert docs[1].metadata["chunk_index"] == 1
+
+        # 返回 [(chunk_text, vector_id)]
+        assert result[0] == ("第一段内容", expected_ids[0])
+        assert result[1] == ("第二段内容", expected_ids[1])
 
     @patch("app.service.rag.vector_store.QdrantClient")
     @patch("app.service.rag.vector_store.QdrantVectorStore")
@@ -161,7 +181,7 @@ class TestUploadFile:
         _patch_init_env(monkeypatch)
         mock_client.return_value = MagicMock()
         mock_store.return_value = MagicMock()
-        with patch("app.service.rag.vector_store.get_file_documents", return_value=[]):
+        with patch("app.service.rag.vector_store.chunk_file", return_value=[]):
             vs = VectorStoreService()
             with pytest.raises(ValueError):
                 vs.upload_file("/tmp/empty.txt")
@@ -169,23 +189,29 @@ class TestUploadFile:
     @patch("app.service.rag.vector_store.QdrantClient")
     @patch("app.service.rag.vector_store.QdrantVectorStore")
     @patch("app.service.rag.vector_store.embed_model")
-    def test_without_document_id_keeps_original_metadata(self, mock_embed, mock_store, mock_client, monkeypatch):
-        """未传 document_id 时不改写分块元数据"""
+    def test_without_document_id_no_deterministic_ids(self, mock_embed, mock_store, mock_client, monkeypatch):
+        """未传 document_id 时不注入确定性 ID，元数据不含 document_id/vector_id"""
         _patch_init_env(monkeypatch)
+        from langchain_core.documents import Document
+
         mock_client.return_value = MagicMock()
         store_instance = MagicMock()
         store_instance.add_documents.return_value = ["vec-1"]
         mock_store.return_value = store_instance
 
-        from langchain_core.documents import Document
-        with patch("app.service.rag.vector_store.get_file_documents", return_value=[
-            Document(page_content="内容", metadata={"source": "a.txt"}),
-        ]):
+        docs = [Document(page_content="内容", metadata={"source": "a.txt"})]
+        with patch("app.service.rag.vector_store.chunk_file", return_value=docs):
             vs = VectorStoreService()
             vs.upload_file("/tmp/test.txt")
 
-        added_docs = store_instance.add_documents.call_args[0][0]
-        assert "document_id" not in added_docs[0].metadata
+        call_kwargs = store_instance.add_documents.call_args.kwargs
+        assert call_kwargs["ids"] is None
+        assert "document_id" not in docs[0].metadata
+        assert "vector_id" not in docs[0].metadata
+        # 仍会附加索引信息
+        assert docs[0].metadata["chunk_index"] == 0
+        assert docs[0].metadata["total_chunks"] == 1
+        assert docs[0].metadata["source"] == "a.txt"
 
 
 class TestDeleteByVectorIds:
@@ -216,102 +242,3 @@ class TestDeleteByVectorIds:
         vs = VectorStoreService()
         vs.delete_by_vector_ids(["vec-1", "vec-2"])
         store_instance.delete.assert_called_once_with(ids=["vec-1", "vec-2"])
-
-
-class TestLoadDocument:
-    """测试 load_document 方法（批量加载 data 目录）"""
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
-    def test_skips_when_md5_exists(self, mock_embed, mock_store, mock_client, tmp_path):
-        """md5_exists 回调返回 True 时跳过加载"""
-        mock_client.return_value = MagicMock()
-        store_instance = MagicMock()
-        mock_store.return_value = store_instance
-
-        data_dir = tmp_path / "data"
-        data_dir.mkdir()
-        test_file = data_dir / "test.txt"
-        test_file.write_text("测试内容", encoding="utf-8")
-
-        with patch("app.service.rag.vector_store.listdir_with_allowed_type", return_value=[str(test_file)]):
-            with patch("app.service.rag.vector_store.get_abs_path", return_value=str(data_dir)):
-                with patch("app.service.rag.vector_store.get_file_md5_hex", return_value="abc123"):
-                    vs = VectorStoreService()
-                    vs.load_document(md5_exists=lambda md5: True)
-                    store_instance.add_documents.assert_not_called()
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
-    def test_handles_empty_file_list(self, mock_embed, mock_store, mock_client):
-        """文件列表为空时不报错"""
-        mock_client.return_value = MagicMock()
-        store_instance = MagicMock()
-        mock_store.return_value = store_instance
-        with patch("app.service.rag.vector_store.listdir_with_allowed_type", return_value=[]):
-            with patch("app.service.rag.vector_store.get_abs_path", return_value="/fake"):
-                vs = VectorStoreService()
-                vs.load_document(md5_exists=lambda md5: False)  # 不应抛出异常
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
-    def test_catches_loading_exception(self, mock_embed, mock_store, mock_client):
-        """加载异常（get_file_documents 失败）不应中断整个流程"""
-        mock_client.return_value = MagicMock()
-        store_instance = MagicMock()
-        mock_store.return_value = store_instance
-        with patch("app.service.rag.vector_store.listdir_with_allowed_type", return_value=["fake_file.txt"]):
-            with patch("app.service.rag.vector_store.get_abs_path", return_value="/fake"):
-                with patch("app.service.rag.vector_store.get_file_md5_hex", return_value="abc123"):
-                    with patch("app.service.rag.vector_store.get_file_documents", side_effect=Exception("文档解析异常")):
-                        vs = VectorStoreService()
-                        vs.load_document(md5_exists=lambda md5: False)  # 应捕获异常而不崩溃
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
-    def test_loads_document_successfully(self, mock_embed, mock_store, mock_client, tmp_path):
-        """正常加载：add_documents 被调用"""
-        mock_client.return_value = MagicMock()
-        store_instance = MagicMock()
-        mock_store.return_value = store_instance
-
-        data_dir = tmp_path / "data"
-        data_dir.mkdir()
-        test_file = data_dir / "test.txt"
-        test_file.write_text("测试内容", encoding="utf-8")
-
-        from langchain_core.documents import Document
-        with patch("app.service.rag.vector_store.listdir_with_allowed_type", return_value=[str(test_file)]):
-            with patch("app.service.rag.vector_store.get_abs_path", return_value=str(data_dir)):
-                with patch("app.service.rag.vector_store.get_file_md5_hex", return_value="def456"):
-                    with patch("app.service.rag.vector_store.get_file_documents", return_value=[Document(page_content="测试内容")]):
-                        vs = VectorStoreService()
-                        vs.load_document(md5_exists=lambda md5: False)
-                        store_instance.add_documents.assert_called_once()
-
-    @patch("app.service.rag.vector_store.QdrantClient")
-    @patch("app.service.rag.vector_store.QdrantVectorStore")
-    @patch("app.service.rag.vector_store.embed_model")
-    def test_md5_exists_defaults_to_no_dedup(self, mock_embed, mock_store, mock_client, tmp_path):
-        """未传 md5_exists（默认 None）时不做去重，全部加载"""
-        mock_client.return_value = MagicMock()
-        store_instance = MagicMock()
-        mock_store.return_value = store_instance
-
-        data_dir = tmp_path / "data"
-        data_dir.mkdir()
-        test_file = data_dir / "test.txt"
-        test_file.write_text("测试内容", encoding="utf-8")
-
-        from langchain_core.documents import Document
-        with patch("app.service.rag.vector_store.listdir_with_allowed_type", return_value=[str(test_file)]):
-            with patch("app.service.rag.vector_store.get_abs_path", return_value=str(data_dir)):
-                with patch("app.service.rag.vector_store.get_file_md5_hex", return_value="def456"):
-                    with patch("app.service.rag.vector_store.get_file_documents", return_value=[Document(page_content="测试内容")]):
-                        vs = VectorStoreService()
-                        vs.load_document()
-                        store_instance.add_documents.assert_called_once()
