@@ -25,11 +25,17 @@ def load_agent_config(config_path:str = get_abs_path("config/agent_config.yml"),
 def load_cache_config(config_path:str = get_abs_path("config/cache_config.yml"),encoding:str = "utf-8"):
     '''加载cache配置信息文件'''
     with open(config_path,"r",encoding=encoding) as f:
-        return yaml.load(f,yaml.FullLoader)
+        return yaml.load(f,Loader=yaml.FullLoader)
+
+def load_retrieval_config(config_path:str = get_abs_path("config/retrieval_config.yml"),encoding:str = "utf-8"):
+    '''加载检索链路配置信息文件（P2 起 chunk/检索参数收敛于此）'''
+    with open(config_path,"r",encoding=encoding) as f:
+        return yaml.load(f,Loader=yaml.FullLoader)
 
     
-rag_conf      = load_rag_config()
-qdrant_conf   = load_qdrant_config()
-prompts_conf  = load_prompts_config()
-agent_conf    = load_agent_config()
-cache_conf    = load_cache_config()
+rag_conf        = load_rag_config()
+qdrant_conf     = load_qdrant_config()
+prompts_conf    = load_prompts_config()
+agent_conf      = load_agent_config()
+cache_conf      = load_cache_config()
+retrieval_conf  = load_retrieval_config()

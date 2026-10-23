@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 from qdrant_client import QdrantClient                                            # Qdrant客户端
 from qdrant_client.models import Distance, VectorParams                           # Qdrant建集参数
 
-from app.utils.config_handler import qdrant_conf                                 # Qdrant配置项
+from app.utils.config_handler import qdrant_conf, retrieval_conf             # Qdrant/检索配置项
 from app.utils.logger_handler import logger                                      # 日志器
 from app.modelFactory.factory import embed_model                                 # 文本嵌入模型
 from app.service.rag.chunking import chunk_file                                  # 格式感知分块（P1）
@@ -49,9 +49,11 @@ class VectorStoreService(object):
             validate_collection_config=False,                                     # 不预校验，collection 不存在时自动创建
         )
 
-    def get_retriever(self):
-        """返回检索器"""
-        return self.vector_store.as_retriever(search_kwargs={"k": qdrant_conf["k"]})
+    def get_retriever(self, k: int | None = None):
+        """返回稠密检索器（P2 起默认 k 取 retrieval_config.yml 的 legacy_k，全开关关闭时等价旧链路）"""
+        if k is None:
+            k = int(retrieval_conf.get("legacy_k", 3))
+        return self.vector_store.as_retriever(search_kwargs={"k": k})
 
     def upload_file(self, file_path: str, document_id: Optional[int] = None) -> list[tuple[str, str]]:
         """

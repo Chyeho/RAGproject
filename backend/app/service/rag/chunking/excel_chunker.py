@@ -4,7 +4,7 @@ import logging
 from langchain_core.documents import Document
 from openpyxl import load_workbook
 
-from app.utils.config_handler import qdrant_conf
+from app.utils.config_handler import retrieval_conf
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def chunk_excel(file_path: str) -> list[Document]:
                     metadata={"sheet_name": ws.title, "row_start": header_no, "row_end": header_no},
                 ))
                 continue
-            step = int(qdrant_conf.get("excel_rows_per_chunk", _DEFAULT_ROWS_PER_CHUNK))
+            step = int(retrieval_conf.get("chunking", {}).get("excel_rows_per_chunk", _DEFAULT_ROWS_PER_CHUNK))
             for i in range(0, len(data_rows), step):
                 group = data_rows[i:i + step]
                 start_no = group[0][0]

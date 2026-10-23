@@ -14,11 +14,13 @@ import argparse
 import asyncio
 import os
 
+from langchain_core.documents import Document
 from sqlmodel import select
 
 from app.database.db import async_session
 from app.models.document_chunk import DocumentChunk
 from app.models.documents import Document
+from app.service.rag.retrieval import bm25_retriever, hybrid_enabled
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.logger_handler import logger
 
@@ -46,8 +48,9 @@ async def rebuild_document(vs: VectorStoreService, document_id: int) -> str:
         old_chunks = (await session.exec(
             select(DocumentChunk).where(DocumentChunk.document_id == document_id)
         )).all()
+        old_vector_ids = [c.vector_id for c in old_chunks if c.vector_id]
         try:
-            vs.delete_by_vector_ids([c.vector_id for c in old_chunks if c.vector_id])
+            vs.delete_by_vector_ids(old_vector_ids)
         except Exception as e:
             logger.error(f"[重建]文档(id={document_id})删除旧向量失败：{str(e)}", exc_info=True)
             return RESULT_FAILED
@@ -68,6 +71,16 @@ async def rebuild_document(vs: VectorStoreService, document_id: int) -> str:
             doc.vectorize_message = None
             session.add(doc)
             await session.commit()
+
+            # P2：BM25 内存索引同步（删旧增新，仅 hybrid 开启时维护）
+            if hybrid_enabled():
+                if old_vector_ids:
+                    bm25_retriever.remove(old_vector_ids)
+                bm25_retriever.add([
+                    Document(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
+                    for text, vector_id in chunks
+                ])
+
             logger.info(f"[重建]文档(id={document_id}) {doc.file_name} 重建成功，共 {len(chunks)} 个分块")
             return RESULT_SUCCESS
         except Exception as e:

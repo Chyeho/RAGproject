@@ -10,11 +10,13 @@ from app.utils.config_handler import (
     load_prompts_config,
     load_agent_config,
     load_cache_config,
+    load_retrieval_config,
     rag_conf,
     qdrant_conf,
     prompts_conf,
     agent_conf,
     cache_conf,
+    retrieval_conf,
 )
 
 
@@ -67,37 +69,67 @@ class TestQdrantConfig:
         assert "port" in qdrant_conf
         assert isinstance(qdrant_conf["port"], int)
 
-    def test_qdrant_conf_contains_chunk_size(self):
-        """验证包含切片大小"""
-        assert "chunk_size" in qdrant_conf
-        assert isinstance(qdrant_conf["chunk_size"], int)
-        assert qdrant_conf["chunk_size"] > 0
-
-    def test_qdrant_conf_contains_chunk_overlap(self):
-        """验证包含切片重叠大小"""
-        assert "chunk_overlap" in qdrant_conf
-        assert isinstance(qdrant_conf["chunk_overlap"], int)
-        assert qdrant_conf["chunk_overlap"] >= 0
-
-    def test_qdrant_conf_contains_k(self):
-        """验证包含检索数目 k"""
-        assert "k" in qdrant_conf
-        assert isinstance(qdrant_conf["k"], int)
-        assert qdrant_conf["k"] > 0
-
     def test_qdrant_conf_contains_data_path(self):
         """验证包含数据路径"""
         assert "data_path" in qdrant_conf
-
-    def test_qdrant_conf_contains_separators(self):
-        """验证包含分隔符"""
-        assert "separators" in qdrant_conf
-        assert isinstance(qdrant_conf["separators"], list)
 
     def test_qdrant_conf_contains_allowed_file_type(self):
         """验证包含允许上传的文件类型列表"""
         assert "allow_knowledge_file_type" in qdrant_conf
         assert isinstance(qdrant_conf["allow_knowledge_file_type"], list)
+
+    def test_qdrant_conf_chunk_params_migrated(self):
+        """P2 参数收敛：chunk/k/separators 已迁移至 retrieval_config.yml"""
+        for key in ("chunk_size", "chunk_overlap", "k", "separators",
+                    "min_chunk_size", "max_chunk_size", "excel_rows_per_chunk"):
+            assert key not in qdrant_conf
+
+
+class TestRetrievalConfig:
+    """测试检索链路配置加载（P2：chunk/检索参数收敛于此）"""
+
+    def test_load_retrieval_config_returns_dict(self):
+        config = load_retrieval_config()
+        assert isinstance(config, dict)
+
+    def test_retrieval_conf_contains_top_k_and_legacy_k(self):
+        """最终上下文条数（top_k）与旧链路稠密 k（legacy_k）"""
+        assert isinstance(retrieval_conf["top_k"], int) and retrieval_conf["top_k"] > 0
+        assert isinstance(retrieval_conf["legacy_k"], int) and retrieval_conf["legacy_k"] > 0
+
+    def test_retrieval_conf_contains_hybrid(self):
+        """混合检索参数段"""
+        hybrid = retrieval_conf["hybrid"]
+        assert isinstance(hybrid["enabled"], bool)
+        assert isinstance(hybrid["dense_topn"], int) and hybrid["dense_topn"] > 0
+        assert isinstance(hybrid["bm25_topn"], int) and hybrid["bm25_topn"] > 0
+        assert isinstance(hybrid["rrf_k"], int) and hybrid["rrf_k"] > 0
+        assert isinstance(hybrid["topn"], int) and hybrid["topn"] > 0
+
+    def test_retrieval_conf_contains_rerank(self):
+        """精排重排参数段"""
+        rerank = retrieval_conf["rerank"]
+        assert isinstance(rerank["enabled"], bool)
+        assert isinstance(rerank["remote_model"], str) and rerank["remote_model"]
+        assert isinstance(rerank["local_model"], str) and rerank["local_model"]
+        assert isinstance(rerank["top_k"], int) and rerank["top_k"] > 0
+
+    def test_retrieval_conf_contains_query_optimize(self):
+        """查询优化配置骨架（P3 使用）"""
+        qo = retrieval_conf["query_optimize"]
+        assert qo["mode"] in ("off", "multi_query", "hyde")
+        assert isinstance(qo["multi_query_count"], int)
+
+    def test_retrieval_conf_contains_chunking(self):
+        """分块参数段（自 qdrant_config.yml 迁移而来）"""
+        chunking = retrieval_conf["chunking"]
+        assert isinstance(chunking["chunk_size"], int) and chunking["chunk_size"] > 0
+        assert isinstance(chunking["chunk_overlap"], int) and chunking["chunk_overlap"] >= 0
+        assert isinstance(chunking["min_chunk_size"], int)
+        assert isinstance(chunking["max_chunk_size"], int)
+        assert chunking["max_chunk_size"] >= chunking["chunk_size"]
+        assert isinstance(chunking["excel_rows_per_chunk"], int) and chunking["excel_rows_per_chunk"] > 0
+        assert isinstance(chunking["separators"], list)
 
 
 class TestPromptsConfig:

@@ -15,6 +15,7 @@ from app.models.chat_message import ChatMessage
 from app.models.documents import Document
 from app.models.users import User
 from app.service.rag.rag_service import RagSummarizeService
+from app.service.rag.retrieval import build_retriever
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.logger_handler import logger
 
@@ -35,7 +36,8 @@ def get_rag_service() -> RagSummarizeService:
 def get_retriever():
     global _retriever
     if _retriever is None:
-        _retriever = VectorStoreService().get_retriever()
+        # P2：按 retrieval_config.yml 开关组装检索链路（hybrid/rerank，全关等价旧链路）
+        _retriever = build_retriever(VectorStoreService())
     return _retriever
 
 

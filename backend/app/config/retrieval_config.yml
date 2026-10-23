@@ -1,0 +1,42 @@
+# 检索链路统一配置（P2 起 chunk/检索参数收敛于此，qdrant_config.yml 仅保留连接类配置）
+# 最终送入生成的文档数按开关组合取值：
+#   rerank 开启        → rerank.top_k
+#   rerank 关 + hybrid 开 → top_k
+#   全关闭（旧链路）   → legacy_k（稠密检索 k，行为等价 P1）
+top_k: 5
+legacy_k: 3
+
+hybrid:
+  enabled: true
+  dense_topn: 20      # 稠密检索（Qdrant）候选数
+  bm25_topn: 20       # BM25 候选数
+  rrf_k: 60           # RRF 平滑常数：score = Σ 1/(rrf_k + rank)
+  topn: 20            # RRF 融合后送入精排的候选数
+
+rerank:
+  enabled: true
+  remote_model: gte-rerank-v2
+  local_model: BAAI/bge-reranker-v2-m3   # 需安装可选依赖组 local-rerank
+  top_k: 5            # 精排后保留条数（rerank 模式的最终上下文条数）
+
+query_optimize:       # P3 使用，本阶段先落配置骨架
+  mode: "off"         # off / multi_query / hyde（加引号防止 YAML 1.1 解析为布尔）
+  multi_query_count: 3
+
+chunking:
+  chunk_size: 500
+  chunk_overlap: 50
+  min_chunk_size: 100
+  max_chunk_size: 800
+  excel_rows_per_chunk: 20
+  separators:
+  - "\n\n"
+  - "\n"
+  - .
+  - '!'
+  - '?'
+  - 。
+  - ！
+  - ？
+  - ' '
+  - ''

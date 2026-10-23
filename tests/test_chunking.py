@@ -9,7 +9,7 @@ import pymupdf
 import pytest
 from openpyxl import Workbook
 
-from app.utils.config_handler import qdrant_conf
+from app.utils.config_handler import retrieval_conf
 from app.service.rag.chunking import apply_smart_rules, chunk_file
 from app.service.rag.chunking.docx_chunker import chunk_docx
 from app.service.rag.chunking.excel_chunker import chunk_excel
@@ -151,8 +151,8 @@ class TestChunkFileRouting:
 class TestApplySmartRules:
     def test_merges_small_sibling_sections(self, monkeypatch):
         """同父章节的相邻小单元合并，章节路径退化为父路径"""
-        monkeypatch.setitem(qdrant_conf, "max_chunk_size", 800)
-        monkeypatch.setitem(qdrant_conf, "min_chunk_size", 100)
+        monkeypatch.setitem(retrieval_conf["chunking"], "max_chunk_size", 800)
+        monkeypatch.setitem(retrieval_conf["chunking"], "min_chunk_size", 100)
         from langchain_core.documents import Document
 
         docs = [
@@ -166,8 +166,8 @@ class TestApplySmartRules:
         assert "乙" * 50 in result[0].page_content
 
     def test_no_merge_across_parents(self, monkeypatch):
-        monkeypatch.setitem(qdrant_conf, "max_chunk_size", 800)
-        monkeypatch.setitem(qdrant_conf, "min_chunk_size", 100)
+        monkeypatch.setitem(retrieval_conf["chunking"], "max_chunk_size", 800)
+        monkeypatch.setitem(retrieval_conf["chunking"], "min_chunk_size", 100)
         from langchain_core.documents import Document
 
         docs = [
@@ -179,8 +179,8 @@ class TestApplySmartRules:
 
     def test_no_merge_when_both_large(self, monkeypatch):
         """两单元均 >= min_chunk_size 时不合并"""
-        monkeypatch.setitem(qdrant_conf, "max_chunk_size", 800)
-        monkeypatch.setitem(qdrant_conf, "min_chunk_size", 100)
+        monkeypatch.setitem(retrieval_conf["chunking"], "max_chunk_size", 800)
+        monkeypatch.setitem(retrieval_conf["chunking"], "min_chunk_size", 100)
         from langchain_core.documents import Document
 
         docs = [
@@ -192,9 +192,9 @@ class TestApplySmartRules:
 
     def test_splits_oversized_at_paragraph_boundary(self, monkeypatch):
         """超长单元（> max_chunk_size）按段落边界再分并标记 split_index/split_total"""
-        monkeypatch.setitem(qdrant_conf, "max_chunk_size", 800)
-        monkeypatch.setitem(qdrant_conf, "min_chunk_size", 100)
-        monkeypatch.setitem(qdrant_conf, "chunk_overlap", 50)
+        monkeypatch.setitem(retrieval_conf["chunking"], "max_chunk_size", 800)
+        monkeypatch.setitem(retrieval_conf["chunking"], "min_chunk_size", 100)
+        monkeypatch.setitem(retrieval_conf["chunking"], "chunk_overlap", 50)
         from langchain_core.documents import Document
 
         paragraphs = "\n\n".join("段" * 350 for _ in range(3))  # 共 1052 字
@@ -212,7 +212,7 @@ class TestApplySmartRules:
 class TestTextChunker:
     def test_packs_paragraphs_to_chunk_size(self, tmp_path, monkeypatch):
         """相邻段落贪心打包至 chunk_size，只在段落边界切分"""
-        monkeypatch.setitem(qdrant_conf, "chunk_size", 100)
+        monkeypatch.setitem(retrieval_conf["chunking"], "chunk_size", 100)
         f = tmp_path / "a.txt"
         _make_txt(f, "\n\n".join(c * 40 for c in "甲乙丙丁戊"))
         docs = chunk_text(str(f))
@@ -224,7 +224,7 @@ class TestTextChunker:
 
     def test_oversized_paragraph_split(self, tmp_path, monkeypatch):
         """超长段落按句级分隔符再分，每片不超过 chunk_size"""
-        monkeypatch.setitem(qdrant_conf, "chunk_size", 500)
+        monkeypatch.setitem(retrieval_conf["chunking"], "chunk_size", 500)
         f = tmp_path / "a.txt"
         _make_txt(f, ("字" * 49 + "。") * 20)  # 1000 字无空行
         docs = chunk_text(str(f))
@@ -281,7 +281,7 @@ class TestMarkdownChunker:
 class TestExcelChunker:
     def test_groups_rows_with_header(self, tmp_path, monkeypatch):
         """按 excel_rows_per_chunk 分组，每组携带 Sheet 信息与表头，数据行带原始行号"""
-        monkeypatch.setitem(qdrant_conf, "excel_rows_per_chunk", 2)
+        monkeypatch.setitem(retrieval_conf["chunking"], "excel_rows_per_chunk", 2)
         f = tmp_path / "a.xlsx"
         _make_xlsx(f, header_only_sheet=False)
         docs = [d for d in chunk_excel(str(f)) if d.metadata["sheet_name"] == "Data"]
@@ -295,7 +295,7 @@ class TestExcelChunker:
         assert "第2行 name：Alice；qty：3" in docs[0].page_content
 
     def test_skips_empty_cells(self, tmp_path, monkeypatch):
-        monkeypatch.setitem(qdrant_conf, "excel_rows_per_chunk", 5)
+        monkeypatch.setitem(retrieval_conf["chunking"], "excel_rows_per_chunk", 5)
         f = tmp_path / "a.xlsx"
         _make_xlsx(f, header_only_sheet=False)
         docs = [d for d in chunk_excel(str(f)) if d.metadata["sheet_name"] == "Data"]

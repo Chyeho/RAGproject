@@ -195,6 +195,39 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 3. Faithfulness 保持 1.0000：分块改造未引入幻觉，未命中的 6 题模型仍如实拒答。
 4. 遗留优化空间：片段级 Precision@3 仅 0.3042——top-3 中平均混入其他文档的 chunk，精确片段排序是 P2 精排的直接量化目标；txt 0.8750 / md 0.8125 存在少量失配（chunk 边界与提问粒度不一致），留待 P2/P3 观察。
 
+### 6.4 P2：混合检索 + 精排重排（tag：`P2-*` 四组）
+
+| 报告 | 时间 | 模式 | 说明 |
+|---|---|---|---|
+| `20261023_183855_P2-dense-only` | 2026-10-23 18:38 | full | dense-only k=5（隔离"纯调大 k"效应的对照组） |
+| `20261023_185935_P2-hybrid` | 2026-10-23 18:59 | full | RRF 融合：dense(20) + bm25(20) → top 5 |
+| `20261023_194144_P2-hybrid-rerank` | 2026-10-23 19:41 | full | RRF(topn=20) → gte-rerank-v2 精排 → top 5（修复 langchain model 覆盖 bug 后重跑） |
+| `20261023_200628_P2-legacy` | 2026-10-23 20:06 | full | 开关全关回退旧链路（K=3），总体指标与 P1 逐项一致（回退等价验证） |
+| `20261023_200645_compare__P2-legacy__P2-dense-only__P2-hybrid__P2-hybrid-rerank` | 2026-10-23 20:06 | compare | 四组横向对比 |
+
+**检索指标（总体；legacy 组 K=3，其余 K=5）**：
+
+| 指标 | P2-legacy(=P1) | P2-dense-only | P2-hybrid | P2-hybrid-rerank |
+|---|---|---|---|---|
+| 文档级 HitRate@K | 0.9250 | 0.9750 | 1.0000 | 1.0000 |
+| 片段级 HitRate@K | 0.9125 | 0.9375 | 1.0000 | 1.0000 |
+| 文档级 MRR | 0.8958 | 0.9071 | 0.9563 | 1.0000 |
+| 片段级 MRR | 0.8396 | 0.8458 | 0.9067 | 1.0000 |
+| 文档级 Precision@K | 0.7792 | 0.6525 | 0.6300 | 0.6050 |
+| 片段级 Precision@K | 0.3042 | 0.1875 | 0.2000 | 0.2000 |
+| 内容召回率 | 0.9114 | 0.9390 | 0.9975 | 0.9975 |
+
+**生成指标（LLM 裁判，均 80/80 成功）**：Faithfulness 四组均 **1.0000**；AnswerRelevancy legacy 0.9500 → hybrid / hybrid-rerank **0.9875**
+
+**按类型（文档级 HitRate@K，hybrid-rerank，括号内为 P1）**：fact 1.0000（0.9355）/ longtail 1.0000（0.9200）/ term 1.0000（0.9167）
+
+**解读要点**：
+
+1. BM25 补召回兑现：dense-only 遗留的 doc miss（q013 等）在 hybrid 组全部补齐，HitRate 双满分；内容召回 0.9390→0.9975。
+2. 精排价值量化：hybrid-rerank 文档/片段 MRR 双满分（正确片段全部置于第 1 位），AnswerRelevancy 同步 0.9875；Faithfulness 四组保持 1.0000。
+3. Precision@K 下滑属口径效应：K=5 分母变大叠加精排聚焦 top1，P2 以 HitRate/MRR 为主指标（P1 报告预告的"top-3 混入其他文档 chunk"问题以 MRR 满分形式解决）。
+4. term 类（专有名词/缩写）0.9167→1.0000：BM25 字面精确匹配 + 精排组合生效。
+
 ## 7. 基线期排障记录（复现参考）
 
 | 现象 | 原因 | 处置 |
@@ -205,3 +238,4 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 | uvicorn 绑定 8000 报 winerror 10013 | Windows Hyper-V 端口保留 | 管理员执行 `net stop winnat` → 起服务 → `net start winnat` |
 | 中途 `code: Arrearage` 中断 | DashScope 欠费（`--full` 约 320+ 次调用） | 充值后直接重跑（幂等） |
 | PDF 向量化报 `surrogates not allowed (\udc80)` | pypdf 提取中文 PDF 产出代理字符，Qdrant 序列化崩溃 | **基线期保留不修**（属 P1 格式解析修复范围）；已装 pypdf 依赖 |
+| 精排全量降级 `'NoneType' object has no attribute 'results'` | langchain_community DashScopeRerank 的 model_validator 无条件覆盖 model 为已下线的 `gte-rerank`(v1)，API 403 AccessDenied 且 output=None，SDK 不抛异常 | `rerank_factory.py` RemoteReranker 构造后回写 `compressor.model = model`（P2 实测于 2026-10-23） |

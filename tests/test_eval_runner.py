@@ -5,7 +5,7 @@
 document 表反查 / 聊天历史 / 裁判函数 / 报告落盘，不连 Qdrant/MySQL/DashScope。
 """
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from langchain_core.documents import Document
@@ -62,13 +62,22 @@ def eval_env(tmp_path):
     svc = MagicMock()
     svc.get_retriever.return_value = retriever
 
-    mocks = {"svc": svc, "retriever": retriever, "saved": []}
+    # P2：默认路径走 build_retriever 组装链路；mock 掉以隔离真实链路
+    # （否则 hybrid+rerank 开启时会触网构造精排器、连库构建 BM25 索引）
+    build = MagicMock(return_value=retriever)
+    bm25 = MagicMock()
+
+    mocks = {"svc": svc, "retriever": retriever, "build_retriever": build,
+             "bm25": bm25, "saved": []}
 
     def fake_save(result, tag, reports_dir=None):
         mocks["saved"].append(result)
         return f"/tmp/fake_{tag}.json", f"/tmp/fake_{tag}.md"
 
     with patch.object(runner_mod, "VectorStoreService", return_value=svc), \
+         patch.object(runner_mod, "build_retriever", build), \
+         patch.object(runner_mod, "fetch_chunk_documents", AsyncMock(return_value=[])), \
+         patch.object(runner_mod, "bm25_retriever", bm25), \
          patch.object(runner_mod, "fetch_document_map", return_value={"A.txt": 1}), \
          patch.object(report_mod, "save_report", side_effect=fake_save):
         mocks["dataset_path"] = dataset_path
@@ -118,6 +127,43 @@ class TestRunEvalRetrieval:
                             dataset_path=eval_env["dataset_path"])
         svc.vector_store.as_retriever.assert_called_once_with(search_kwargs={"k": 5})
         assert not svc.get_retriever.called
+        assert not eval_env["build_retriever"].called   # k 覆盖直连稠密检索，不走链路组装
+
+
+# ---------- P2 链路预设 ----------
+
+class TestRunEvalPreset:
+    def test_preset_passes_overrides_and_meta(self, eval_env):
+        build = eval_env["build_retriever"]
+        result = runner_mod.run_eval(tag="t-preset", mode="retrieval", preset="hybrid-rerank",
+                                     dataset_path=eval_env["dataset_path"])
+        build.assert_called_once()
+        kwargs = build.call_args.kwargs
+        assert kwargs.get("overrides") == runner_mod.PRESETS["hybrid-rerank"]
+        # rerank 开启 → meta.k 取 rerank.top_k=5
+        assert result["meta"]["preset"] == "hybrid-rerank"
+        assert result["meta"]["k"] == 5
+        snap = result["meta"]["config_snapshot"]["retrieval"]
+        assert snap["hybrid"]["enabled"] is True
+        assert snap["rerank"]["enabled"] is True
+
+    def test_preset_hybrid_loads_bm25_and_dense_only_not(self, eval_env):
+        bm25 = eval_env["bm25"]
+        result = runner_mod.run_eval(tag="t-h", mode="retrieval", preset="hybrid",
+                                     dataset_path=eval_env["dataset_path"])
+        assert bm25.load_documents.called        # hybrid 生效前确保 BM25 就绪
+        assert result["meta"]["k"] == 5          # RRF → top_k
+
+        bm25.reset_mock()
+        result = runner_mod.run_eval(tag="t-d", mode="retrieval", preset="dense-only",
+                                     dataset_path=eval_env["dataset_path"])
+        assert not bm25.load_documents.called    # 纯稠密无需 BM25
+        assert result["meta"]["k"] == 5          # legacy_k 标量覆盖=5
+
+    def test_preset_legacy_falls_back_to_old_k(self, eval_env):
+        result = runner_mod.run_eval(tag="t-l", mode="retrieval", preset="legacy",
+                                     dataset_path=eval_env["dataset_path"])
+        assert result["meta"]["k"] == 3          # 全关闭 → dense k=legacy_k(3)
 
 
 # ---------- 全量模式 ----------

@@ -1,4 +1,7 @@
 '''RAG总结服务类'''
+from langchain_core.retrievers import BaseRetriever
+
+from app.service.rag.retrieval import build_retriever
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.prompt_loader import load_rag_prompt
 from app.modelFactory.factory import chat_model
@@ -13,10 +16,15 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
 
 class RagSummarizeService(object):
-    def __init__(self):
-        """初始化rag总结服务类"""
+    def __init__(self, retriever: BaseRetriever | None = None):
+        """初始化rag总结服务类
+
+        Args:
+            retriever: 外部注入的检索器（评测 preset / 单测用）；缺省按
+                       retrieval_config.yml 开关组装 P2 检索链路（全关等价旧链路）
+        """
         self.vertor_service = VectorStoreService()                # 获取向量存储服务类
-        self.retriever = self.vertor_service.get_retriever()      # 获取检索器
+        self.retriever = retriever if retriever is not None else build_retriever(self.vertor_service)  # 检索链路（P2）
         self.rag_prompt = load_rag_prompt()                       # 加载rag提示词模板
         self.prompt_template = ChatPromptTemplate(
             [

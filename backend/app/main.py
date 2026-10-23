@@ -8,14 +8,21 @@ from fastapi.responses import JSONResponse
 
 from app.database.db import init_db
 from app.routers import auth, chat, documents, settings, statistics
+from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents, hybrid_enabled
 from app.utils.logger_handler import logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用启动：初始化数据库表结构"""
+    """应用启动：初始化数据库表结构；hybrid 开启时全量构建 BM25 内存索引"""
     logger.info("[启动]后端服务开始启动...")
     await init_db()
+    # P2：BM25 启动全量构建（以 DB 为准）；失败不阻断启动，空索引降级（稠密路仍可用）
+    if hybrid_enabled():
+        try:
+            bm25_retriever.load_documents(await fetch_chunk_documents())
+        except Exception as e:
+            logger.error(f"[启动]BM25 索引构建失败，本次以空索引降级运行：{e}", exc_info=True)
     logger.info("[启动]后端服务启动完成")
     yield
     logger.info("[关闭]后端服务已关闭")

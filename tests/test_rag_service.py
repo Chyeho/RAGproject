@@ -9,17 +9,28 @@ from langchain_core.messages import HumanMessage, AIMessage
 class TestRagSummarizeServiceInit:
     """测试 RAG 服务初始化"""
 
+    @patch("app.service.rag.rag_service.build_retriever")
     @patch("app.service.rag.rag_service.VectorStoreService")
-    def test_init_creates_vector_store(self, mock_vs):
+    def test_init_creates_vector_store(self, mock_vs, mock_build):
+        """P2：缺省经 build_retriever 组装检索链路（全关等价旧链路）"""
         mock_vs_instance = MagicMock()
         mock_retriever = MagicMock()
-        mock_vs_instance.get_retriever.return_value = mock_retriever
+        mock_build.return_value = mock_retriever
         mock_vs.return_value = mock_vs_instance
 
         from app.service.rag.rag_service import RagSummarizeService
         service = RagSummarizeService()
         assert service.vertor_service is mock_vs_instance
+        mock_build.assert_called_once_with(mock_vs_instance)
         assert service.retriever is mock_retriever
+
+    @patch("app.service.rag.rag_service.VectorStoreService")
+    def test_init_with_injected_retriever(self, mock_vs):
+        """P2：外部注入 retriever 时直接使用（评测 preset / 单测用）"""
+        from app.service.rag.rag_service import RagSummarizeService
+        injected = MagicMock()
+        service = RagSummarizeService(retriever=injected)
+        assert service.retriever is injected
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     def test_init_loads_rag_prompt(self, mock_vs):

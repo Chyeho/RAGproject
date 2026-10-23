@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""设置路由（/api/settings）单元测试：RAG 参数读写 qdrant_config.yml"""
+"""设置路由（/api/settings）单元测试：RAG 参数读写 retrieval_config.yml（P2 参数收敛）"""
 from unittest.mock import patch
 
 import pytest
@@ -51,39 +51,51 @@ class TestUpdateRagConfig:
 
     def test_update_chunk_size_and_top_k(self, client, tmp_path):
         """写入 yaml 并同步内存配置"""
-        config_file = tmp_path / "qdrant_config.yml"
+        config_file = tmp_path / "retrieval_config.yml"
         config_file.write_text(
-            "chunk_size: 100\nchunk_overlap: 20\nk: 3\nseparators:\n- ' '\n",
+            "top_k: 3\nlegacy_k: 3\n"
+            "rerank:\n  enabled: true\n  top_k: 3\n"
+            "chunking:\n  chunk_size: 100\n  chunk_overlap: 20\n  separators:\n  - ' '\n",
             encoding="utf-8",
         )
-        in_memory_conf = {"chunk_size": 100, "chunk_overlap": 20, "k": 3, "separators": [" "]}
+        in_memory_conf = {
+            "top_k": 3, "legacy_k": 3,
+            "rerank": {"enabled": True, "top_k": 3},
+            "chunking": {"chunk_size": 100, "chunk_overlap": 20, "separators": [" "]},
+        }
 
         with patch("app.routers.settings.CONFIG_PATH", str(config_file)):
-            with patch("app.routers.settings.qdrant_conf", in_memory_conf):
+            with patch("app.routers.settings.retrieval_conf", in_memory_conf):
                 resp = client.put("/api/settings/rag-config", json={"chunkSize": 200, "topK": 5})
 
         body = resp.json()
         assert body["code"] == 0
         assert body["data"]["chunkSize"] == 200
         assert body["data"]["topK"] == 5
-        assert in_memory_conf["chunk_size"] == 200  # 内存同步
+        assert in_memory_conf["chunking"]["chunk_size"] == 200  # 内存同步
+        assert in_memory_conf["top_k"] == 5
+        assert in_memory_conf["rerank"]["top_k"] == 5  # rerank 开启时同步最终条数
 
         # 落盘验证
         written = config_file.read_text(encoding="utf-8")
         assert "chunk_size: 200" in written
-        assert "k: 5" in written
+        assert "top_k: 5" in written
 
     def test_update_only_chunk_size(self, client, tmp_path):
         """只传 chunkSize 时 topK 保持不变"""
-        config_file = tmp_path / "qdrant_config.yml"
+        config_file = tmp_path / "retrieval_config.yml"
         config_file.write_text(
-            "chunk_size: 100\nchunk_overlap: 20\nk: 3\nseparators:\n- ' '\n",
+            "top_k: 3\nlegacy_k: 3\n"
+            "chunking:\n  chunk_size: 100\n  chunk_overlap: 20\n  separators:\n  - ' '\n",
             encoding="utf-8",
         )
-        in_memory_conf = {"chunk_size": 100, "chunk_overlap": 20, "k": 3, "separators": [" "]}
+        in_memory_conf = {
+            "top_k": 3, "legacy_k": 3,
+            "chunking": {"chunk_size": 100, "chunk_overlap": 20, "separators": [" "]},
+        }
 
         with patch("app.routers.settings.CONFIG_PATH", str(config_file)):
-            with patch("app.routers.settings.qdrant_conf", in_memory_conf):
+            with patch("app.routers.settings.retrieval_conf", in_memory_conf):
                 resp = client.put("/api/settings/rag-config", json={"chunkSize": 150})
 
         body = resp.json()

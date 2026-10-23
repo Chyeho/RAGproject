@@ -4,7 +4,7 @@ import re
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.utils.config_handler import qdrant_conf
+from app.utils.config_handler import retrieval_conf
 
 _DEFAULT_CHUNK_SIZE = 500
 _DEFAULT_MAX_CHUNK_SIZE = 800
@@ -19,14 +19,15 @@ def chunk_text(file_path: str) -> list[Document]:
     if not paragraphs:
         return []
 
-    chunk_size = int(qdrant_conf.get("chunk_size", _DEFAULT_CHUNK_SIZE))
-    max_size = int(qdrant_conf.get("max_chunk_size", _DEFAULT_MAX_CHUNK_SIZE))
+    chunking_conf = retrieval_conf.get("chunking", {})
+    chunk_size = int(chunking_conf.get("chunk_size", _DEFAULT_CHUNK_SIZE))
+    max_size = int(chunking_conf.get("max_chunk_size", _DEFAULT_MAX_CHUNK_SIZE))
 
     # 1. 超长段落（> max_size）按句级分隔符再分
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
-        chunk_overlap=int(qdrant_conf.get("chunk_overlap", _DEFAULT_CHUNK_OVERLAP)),
-        separators=qdrant_conf.get("separators", _DEFAULT_SEPARATORS),
+        chunk_overlap=int(chunking_conf.get("chunk_overlap", _DEFAULT_CHUNK_OVERLAP)),
+        separators=chunking_conf.get("separators", _DEFAULT_SEPARATORS),
     )
     units: list[tuple[str, int]] = []  # (text, 段落序号)
     for no, para in enumerate(paragraphs, start=1):

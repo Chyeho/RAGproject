@@ -10,7 +10,7 @@ import os
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.utils.config_handler import qdrant_conf
+from app.utils.config_handler import retrieval_conf
 from app.service.rag.chunking.pdf_chunker import chunk_pdf
 from app.service.rag.chunking.docx_chunker import chunk_docx
 from app.service.rag.chunking.markdown_chunker import chunk_markdown
@@ -62,8 +62,9 @@ def apply_smart_rules(docs: list[Document]) -> list[Document]:
     '''智能切分规则：先超长再分，后小单元合并（合并不跨父章节）'''
     if not docs:
         return docs
-    max_size = int(qdrant_conf.get("max_chunk_size", _DEFAULT_MAX_CHUNK_SIZE))
-    min_size = int(qdrant_conf.get("min_chunk_size", _DEFAULT_MIN_CHUNK_SIZE))
+    chunking_conf = retrieval_conf.get("chunking", {})
+    max_size = int(chunking_conf.get("max_chunk_size", _DEFAULT_MAX_CHUNK_SIZE))
+    min_size = int(chunking_conf.get("min_chunk_size", _DEFAULT_MIN_CHUNK_SIZE))
     docs = _split_oversized(docs, max_size)
     docs = _merge_small(docs, min_size, max_size)
     return docs
@@ -71,10 +72,11 @@ def apply_smart_rules(docs: list[Document]) -> list[Document]:
 
 def _split_oversized(docs: list[Document], max_size: int) -> list[Document]:
     '''超长单元（> max_size）按分隔符再分，优先段落边界、不句中截断'''
+    chunking_conf = retrieval_conf.get("chunking", {})
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=max_size,
-        chunk_overlap=int(qdrant_conf.get("chunk_overlap", _DEFAULT_CHUNK_OVERLAP)),
-        separators=qdrant_conf.get("separators", _DEFAULT_SEPARATORS),
+        chunk_overlap=int(chunking_conf.get("chunk_overlap", _DEFAULT_CHUNK_OVERLAP)),
+        separators=chunking_conf.get("separators", _DEFAULT_SEPARATORS),
     )
     result = []
     for doc in docs:
