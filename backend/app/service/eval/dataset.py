@@ -1,11 +1,12 @@
 '''评测集构建（LLM 从自造样例生成 QA）与加载
 
 构建：uv run python -m app.service.eval.dataset build --num 80
-- 从 datasets/samples/ 的 5 个样例文件提取段落（txt/md/pdf/docx/xlsx 各自适配）
-- 每段落由 LLM 生成若干 QA 对（问题 + 标准答案），question_type 三类分布：
-  fact（量化事实）/ term（术语定义）/ longtail（长尾细节）
-- 跨样例文件轮转采样至 --num 条，保证 5 种格式均衡覆盖
-- 产出 datasets/eval_dataset.json，**人工校验后定稿**（执行文档 4.2）
+构建 v2：uv run python -m app.service.eval.dataset build --v2（260 题，语料取 corpus_v2 65 份）
+- 从样例目录提取段落（txt/md/pdf/docx/xlsx 各自适配）
+- 每段落由 LLM 生成若干 QA 对（问题 + 标准答案），question_type 四类分布：
+  fact（量化事实）/ term（术语定义）/ longtail（长尾细节）/ paraphrase（口语化改写）
+- 跨样例文件轮转采样至 --num 条，保证各文件覆盖均衡
+- 产出 datasets/eval_dataset.json（v2 为 eval_dataset_v2.json），**人工校验后定稿**（执行文档 4.2/4.6）
 
 与执行文档 4.2 schema 的差异（2026-10-18 决议）：评测集存 source_file
 （样例文件名）而非写死 document_id；document_id 由 runner 运行时按
@@ -29,9 +30,10 @@ from app.utils.logger_handler import logger
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLES_DIR = os.path.join(BASE_DIR, "datasets", "samples")
 DATASET_PATH = os.path.join(BASE_DIR, "datasets", "eval_dataset.json")
+DATASET_V2_PATH = os.path.join(BASE_DIR, "datasets", "eval_dataset_v2.json")
 
 MIN_PASSAGE_CHARS = 60          # 溯源段落最短字符数（过短的标题行不作为出题依据）
-QUESTION_TYPES = ("fact", "term", "longtail")
+QUESTION_TYPES = ("fact", "term", "longtail", "paraphrase")
 REQUIRED_FIELDS = ("qid", "question", "ground_truth_answer",
                    "source_passage", "source_file", "question_type")
 
@@ -40,10 +42,12 @@ QA_GEN_PROMPT = """你将获得一段企业内部文档原文，请基于该段�
 要求：
 1. 问题必须能仅凭该段原文直接回答；答案中的数字、日期、金额、天数、名称等必须与原文完全一致
 2. 问题措辞模拟真实员工提问口吻，不要照抄原文句式，也不要出现"根据文档/原文"之类的字眼
-3. question_type 三选一：
+3. question_type 四选一：
    - fact：询问数字、日期、天数、金额、比例等量化事实
    - term：询问制度名词、系统名称、专有缩写的含义或定义
    - longtail：询问原文中仅一句带过的细节信息（如某分机号、某节点名、某期限）
+   - paraphrase：不用原文措辞，用口语化、生活化的说法提问同一段原文中的事实
+     （如原文"报销时效"可问成"垫付的钱多久能报下来"），考察同义改写下的检索能力
 4. 同一段落内生成的多个问题，question_type 尽量不同
 5. 仅输出 JSON 数组，禁止输出任何其他文字，格式：
 [{{"question": "……", "answer": "……", "question_type": "fact"}}]
@@ -298,7 +302,24 @@ def dataset_md5(path: str = DATASET_PATH) -> str:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="评测集构建 CLI")
     parser.add_argument("command", choices=["build"], help="build=从样例生成评测集")
-    parser.add_argument("--num", type=int, default=80, help="目标条数（默认 80）")
+    parser.add_argument("--num", type=int, default=None, help="目标条数（默认 v1=80，--v2 时 260）")
     parser.add_argument("--per-passage", type=int, default=3, help="每段落生成 QA 数（默认 3）")
+    parser.add_argument("--samples-dir", default=None,
+                        help="语料目录（默认 datasets/samples；--v2 时 datasets/corpus_v2）")
+    parser.add_argument("--out", default=None,
+                        help="输出评测集路径（默认 datasets/eval_dataset.json；--v2 时 eval_dataset_v2.json）")
+    parser.add_argument("--v2", action="store_true",
+                        help="评测集 v2：语料取 corpus_v2（65 份），题型含 paraphrase，默认 260 题")
     args = parser.parse_args()
-    build_dataset(num=args.num, per_passage=args.per_passage)
+
+    if args.v2:
+        from app.service.eval.corpus_v2 import CORPUS_DIR
+        samples_dir = args.samples_dir or CORPUS_DIR
+        out_path = args.out or DATASET_V2_PATH
+        num = args.num or 260
+    else:
+        samples_dir = args.samples_dir or SAMPLES_DIR
+        out_path = args.out or DATASET_PATH
+        num = args.num or 80
+    build_dataset(num=num, per_passage=args.per_passage,
+                  out_path=out_path, samples_dir=samples_dir)

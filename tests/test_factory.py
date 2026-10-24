@@ -11,6 +11,7 @@ from app.modelFactory.factory import (
     BaseModelFactory,
     ChatModelFactory,
     EmbeddingFactory,
+    DEFAULT_OPENAI_CHAT_MODEL,
     _get_model_mode,
     _normalize_model_name,
     _ensure_ollama_model,
@@ -405,7 +406,7 @@ class TestChatModelFactory:
             factory = ChatModelFactory()
             factory.generator()
             call_kwargs = mock_openai.call_args[1]
-            assert call_kwargs["model"] == "deepseek-flash"
+            assert call_kwargs["model"] == DEFAULT_OPENAI_CHAT_MODEL
 
     @patch("app.modelFactory.factory.ChatOpenAI")
     def test_remote_mode_missing_key_falls_back_to_placeholder(self, mock_openai):

@@ -4,6 +4,8 @@
     uv run python -m app.service.eval.runner --tag P0-baseline --retrieval-only
     uv run python -m app.service.eval.runner --tag P0-baseline --full
     uv run python -m app.service.eval.runner --tag P2-hybrid-rerank --preset hybrid-rerank --full
+    uv run python -m app.service.eval.runner --tag EV2-hybrid-rerank --preset hybrid-rerank \
+        --dataset app/service/eval/datasets/eval_dataset_v2.json --retrieval-only
 
 流程：
 1. 加载评测集，按 source_file 反查 document 表填充 document_id（库重建后无需改评测集）
@@ -212,6 +214,7 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
             "num_questions": len(dataset),
             "k": k if k is not None else _effective_output_k(conf),
             "preset": preset,
+            "dataset": dataset_path,
             "config_snapshot": snapshot_config(overrides),
             "dataset_md5": dataset_md5(dataset_path),
         },
@@ -242,11 +245,14 @@ def main():
                         help="P2 链路预设：legacy(旧链路回退)/dense-only(纯稠密k=5)/hybrid(RRF)/hybrid-rerank(RRF+精排)")
     parser.add_argument("--k", type=int, default=None, help="覆盖 top-k（直连稠密检索，与 --preset 互斥）")
     parser.add_argument("--limit", type=int, default=None, help="只评测前 N 题（调试用）")
+    parser.add_argument("--dataset", default=None,
+                        help="评测集路径（默认 datasets/eval_dataset.json；v2 用 datasets/eval_dataset_v2.json）")
     args = parser.parse_args()
     if args.preset and args.k is not None:
         parser.error("--preset 与 --k 互斥（preset 已固定各组口径，覆盖请改 retrieval_config.yml 或 preset 定义）")
     run_eval(tag=args.tag, mode="full" if args.full else "retrieval",
-             k=args.k, limit=args.limit, preset=args.preset)
+             k=args.k, limit=args.limit, preset=args.preset,
+             dataset_path=args.dataset or DATASET_PATH)
 
 
 if __name__ == "__main__":

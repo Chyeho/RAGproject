@@ -9,7 +9,9 @@
 | `metrics.py` | 确定性检索指标（HitRate@K / MRR / Precision@K / 内容召回率，文档级与片段级双口径），纯函数、无外部依赖 |
 | `llm_judge.py` | 生成指标 LLM 裁判（Faithfulness / AnswerRelevancy），中文 Prompt 固定、temperature=0 |
 | `make_samples.py` | 自造 5 格式样例文档（txt/pdf/docx/xlsx/md，"宸甄科技"企业制度语料） |
-| `dataset.py` | 评测集构建与加载校验（`datasets/eval_dataset.json`） |
+| `corpus_v2.py` | 评测集 v2 语料生成器（10 主题 × 6 实体 = 60 份，固定种子，跨实体近似干扰项） |
+| `dataset.py` | 评测集构建与加载校验（v1 `datasets/eval_dataset.json`；v2 `datasets/eval_dataset_v2.json`，`build --v2`） |
+| `ingest.py` | 评测语料批量入库 CLI（复用上传链路；md5 幂等：success 跳过 / failed 复用原 id 重试） |
 | `runner.py` | 评测主入口：反查 document_id → 预检 → 逐题检索/生成 → 汇总 → 报告落盘 |
 | `report.py` | 单次报告读写 + 多版本横向对比（`compare` 子命令） |
 
@@ -18,6 +20,10 @@
 ```
 make_samples（一次性）→ 样例经前端/API 上传入库 → dataset build（一次性，耗 LLM tokens）
     → runner（P0/P1/P2/P3 每阶段完成后重跑）→ report compare（阶段间横向对比）
+
+评测集迭代 v2（2026-10-24，消除 P2 双满分天花板，详见 6.5）：
+corpus_v2（60 份）→ ingest 批量入库 → dataset build --v2（260 题）
+    → runner --dataset eval_dataset_v2.json（EV2-* 系列基线）
 ```
 
 ## 2. 目录与产物
@@ -25,8 +31,10 @@ make_samples（一次性）→ 样例经前端/API 上传入库 → dataset buil
 ```
 backend/app/service/eval/          # 本包
 ├── datasets/
-│   ├── eval_dataset.json          # 评测集（80 题，MD5 写入报告头保证口径可追溯）
-│   └── samples/                   # 5 格式自造样例（上传入库用）
+│   ├── eval_dataset.json          # 评测集 v1（80 题，MD5 写入报告头保证口径可追溯）
+│   ├── eval_dataset_v2.json       # 评测集 v2（260 题，2026-10-24 迭代，详见 6.5）
+│   ├── samples/                   # 5 格式自造样例（上传入库用）
+│   └── corpus_v2/                 # v2 扩容语料 60 份（10 主题 × 6 实体，ingest 批量入库用）
 
 backend/eval_reports/              # 报告输出（不在本包内）
 ├── {时间戳}_{tag}.json            # 含每题明细（检索结果、答案、裁判分）
@@ -53,7 +61,7 @@ backend/eval_reports/              # 报告输出（不在本包内）
 
 ## 4. 常用命令
 
-（全部在 `backend/` 目录执行；tag 规范：`P0-baseline` / `P1` / `P2-<配置名>` / `P3-<配置名>`）
+（全部在 `backend/` 目录执行；tag 规范：`P0-baseline` / `P1` / `P2-<配置名>` / `P3-<配置名>` / `EV2-<配置名>`（v2 口径 260 题））
 
 ```powershell
 # 0)（一次性）生成 5 格式样例文件
@@ -106,8 +114,9 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 |---|---|---|
 | P0 基线 | `P0-baseline` | 2026-10-19（retrieval + full 两份） |
 | P1 | `P1` | 2026-10-20（full） |
-| P2 四组对比 | `P2-dense-only` / `P2-hybrid` / `P2-hybrid-rerank` / `P2-legacy`（旧链路回退） | 待跑 |
+| P2 四组对比 | `P2-dense-only` / `P2-hybrid` / `P2-hybrid-rerank` / `P2-legacy`（旧链路回退） | 2026-10-23（四组 + compare，见 6.4） |
 | P3 策略对比 | `P3-multi-query` / `P3-hyde` / `P3-final`（最优配置） | 待跑 |
+| 评测集 v2 基线 | `EV2-legacy` / `EV2-dense-only` / `EV2-hybrid` / `EV2-hybrid-rerank` | 2026-10-24（四组 + compare，v2 口径 260 题，见 6.5） |
 
 补充：
 
@@ -228,6 +237,39 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 3. Precision@K 下滑属口径效应：K=5 分母变大叠加精排聚焦 top1，P2 以 HitRate/MRR 为主指标（P1 报告预告的"top-3 混入其他文档 chunk"问题以 MRR 满分形式解决）。
 4. term 类（专有名词/缩写）0.9167→1.0000：BM25 字面精确匹配 + 精排组合生效。
 
+### 6.5 评测集迭代 v2：库扩容 65 份 + 260 题新基线（tag：`EV2-*` 四组，2026-10-24）
+
+**动机**：P2 在 v1 口径（80 题 / 5 文档库）HitRate/MRR 双满分，天花板效应，无法度量后续增量（对应执行文档 4.6 节）。
+
+**迭代动作**：
+
+1. `corpus_v2.py` 生成 60 份语料（10 主题 × 6 实体，固定种子；同主题跨实体近似参数制造干扰项，如北京分机 6501 / 成都 6301），与 v1 样例合计 65 份（5 格式 × 13）
+2. `ingest.py` 批量入库 65 份（复用上传链路，md5 幂等）；实测全库 68 份 / 499 chunks，幂等重跑 65 全跳过
+3. `dataset build --v2`：806 段落 → LLM 每段 3~4 题 → 按 source_file 轮转采样 260 题（fact 118 / paraphrase 60 / term 54 / longtail 28，每文件恰 4 题）；新增 paraphrase 口语改写题型（如"没走OA审批，这笔费用能报销吗"）；MD5 `9b68db07…`
+4. `runner --dataset app/service/eval/datasets/eval_dataset_v2.json --retrieval-only` 重跑四组基线（报告头记录 dataset 路径与 MD5）
+
+**EV2 四组基线（260 题，retrieval-only）**：
+
+| 指标 | EV2-legacy(k=3) | EV2-dense-only(k=5) | EV2-hybrid | EV2-hybrid-rerank |
+|---|---|---|---|---|
+| 文档级 HitRate | 0.6000 | 0.6923 | 0.7462 | **0.8115** |
+| 片段级 HitRate | 0.4615 | 0.5115 | 0.6231 | **0.7846** |
+| 文档级 MRR | 0.4949 | 0.5152 | 0.5389 | **0.5873** |
+| 片段级 MRR | 0.3551 | 0.3662 | 0.4512 | **0.5675** |
+| 内容召回率 | 0.4847 | 0.5441 | 0.6441 | **0.7881** |
+
+| 报告 | 时间 | 说明 |
+|---|---|---|
+| `20261024_194959_EV2-legacy` | 2026-10-24 19:49 | 旧链路回退（k=3） |
+| `20261024_195437_EV2-dense-only` | 2026-10-24 19:54 | dense k=5 |
+| `20261024_195927_EV2-hybrid` | 2026-10-24 19:59 | RRF 融合 top5 |
+| `20261024_200850_EV2-hybrid-rerank` | 2026-10-24 20:08 | RRF + gte-rerank-v2 精排 top5 |
+| `20261024_200919_compare__EV2-legacy__EV2-dense-only__EV2-hybrid__EV2-hybrid-rerank` | 2026-10-24 20:09 | 四组横向对比 |
+
+**结论**：天花板效应消除（v1 双满分 → v2 最高 0.8115），四组单调递进（文档级 HitRate 0.60→0.81）；hybrid 召回增益与精排排序增益在难集上首次可分离。后续 P3/P4 评测以 v2 口径为准（`--dataset eval_dataset_v2.json`）。
+
+**迭代期间 bug 修复**（详见执行文档 4.6）：`documents.py` langchain/SQLModel `Document` import 遮蔽（P2 起新上传文档 BM25 增量实际失效，改别名 `LCDocument`）；`ingest.py` 状态核对 REPEATABLE READ 旧快照（改新 session）与 md5 幂等缺口（区分跳过/重试）。
+
 ## 7. 基线期排障记录（复现参考）
 
 | 现象 | 原因 | 处置 |
@@ -239,3 +281,4 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 | 中途 `code: Arrearage` 中断 | DashScope 欠费（`--full` 约 320+ 次调用） | 充值后直接重跑（幂等） |
 | PDF 向量化报 `surrogates not allowed (\udc80)` | pypdf 提取中文 PDF 产出代理字符，Qdrant 序列化崩溃 | **基线期保留不修**（属 P1 格式解析修复范围）；已装 pypdf 依赖 |
 | 精排全量降级 `'NoneType' object has no attribute 'results'` | langchain_community DashScopeRerank 的 model_validator 无条件覆盖 model 为已下线的 `gte-rerank`(v1)，API 403 AccessDenied 且 output=None，SDK 不抛异常 | `rerank_factory.py` RemoteReranker 构造后回写 `compressor.model = model`（P2 实测于 2026-10-23） |
+| ingest 汇总误报「向量化失败：None」（DB 实为 success） | MySQL REPEATABLE READ：主 session 在 `refresh(doc)` 后的事务快照早于 vectorize_document（独立 session）的提交，状态 SELECT 读旧快照 `processing` | 状态核对改用新 session（`async with async_session() as check:`，2026-10-24 实测） |

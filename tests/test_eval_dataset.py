@@ -198,6 +198,11 @@ class TestLoadDataset:
         with pytest.raises(ValueError, match="question_type 非法"):
             load_dataset(self._write(tmp_path, [_make_qa(question_type="open")]))
 
+    def test_paraphrase_type_accepted(self, tmp_path):
+        # v2 新增题型（执行文档 4.6）：同义改写题与 v1 三类一样可正常加载
+        path = self._write(tmp_path, [_make_qa(question_type="paraphrase")])
+        assert load_dataset(path)[0]["question_type"] == "paraphrase"
+
 
 class TestDatasetMd5:
     def test_stable_and_sensitive(self, tmp_path):

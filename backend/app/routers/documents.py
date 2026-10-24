@@ -5,7 +5,7 @@ import time
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from fastapi.responses import FileResponse
-from langchain_core.documents import Document
+from langchain_core.documents import Document as LCDocument
 from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -72,7 +72,7 @@ async def vectorize_document(document_id: int, file_path: str):
         # P2：BM25 内存索引增量添加（仅 hybrid 开启时维护）
         if hybrid_enabled():
             bm25_retriever.add([
-                Document(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
+                LCDocument(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
                 for text, vector_id in chunks
             ])
         logger.info(f"[文档]文档(id={document_id})异步向量化完成，共 {len(chunks)} 个分块")
