@@ -17,6 +17,9 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings          # 本地模�
 from app.utils.config_handler import rag_conf                     # 导入rag配置项
 from app.utils.logger_handler import logger                       # 日志器
 
+# 远程聊天模型默认值：环境变量 OPENAI_CHAT_MODEL 缺失时的兜底
+DEFAULT_OPENAI_CHAT_MODEL = "qwen-plus"
+
 
 def _get_model_mode() -> str:
     """读取环境变量 MODEL_MODE，返回 'remote' 或 'local'；非法值回退 remote 并告警"""
@@ -25,6 +28,17 @@ def _get_model_mode() -> str:
         logger.warning(f"[模型工厂]MODEL_MODE='{mode}' 不合法，回退为 'remote'")
         mode = "remote"
     return mode
+
+
+def get_remote_chat_model_name() -> str:
+    """读取远程聊天模型名：取 OPENAI_CHAT_MODEL 环境变量，未配置时回退默认值并告警"""
+    model_name = os.environ.get("OPENAI_CHAT_MODEL", "").strip()
+    if not model_name:
+        logger.warning(
+            f"[模型工厂]未配置 OPENAI_CHAT_MODEL，回退默认模型: {DEFAULT_OPENAI_CHAT_MODEL}"
+        )
+        return DEFAULT_OPENAI_CHAT_MODEL
+    return model_name
 
 
 def _normalize_model_name(name: str) -> str:
@@ -146,10 +160,7 @@ class ChatModelFactory(BaseModelFactory):
                 "模型可加载但调用时会失败。请在环境变量中设置 OPENAI_API_KEY。"
                 "通义兼容端点示例: https://dashscope.aliyuncs.com/compatible-mode/v1"
             )
-        model_name = os.environ.get(
-            "OPENAI_CHAT_MODEL",
-            rag_conf["remote"]["chat_model_name"],
-        )
+        model_name = get_remote_chat_model_name()
         base_url = os.environ.get("OPENAI_BASE_URL")
         logger.info(f"[模型工厂]聊天模型(远程): {model_name} @ {base_url}")
         return ChatOpenAI(model=model_name, api_key=api_key, base_url=base_url)

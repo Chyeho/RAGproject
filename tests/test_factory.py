@@ -397,15 +397,15 @@ class TestChatModelFactory:
             assert mock_ensure.call_args[0][0] == "llama3:8b"
 
     @patch("app.modelFactory.factory.ChatOpenAI")
-    def test_remote_mode_uses_yml_model_name_when_no_env(self, mock_openai):
-        """远程模式无环境变量覆盖时用 yml 配置的模型名"""
+    def test_remote_mode_uses_default_model_when_no_env(self, mock_openai):
+        """远程模式无 OPENAI_CHAT_MODEL 时回退默认模型名"""
         mock_openai.return_value = MagicMock()
-        env = {"MODEL_MODE": "remote", "OPENAI_API_KEY": "sk-test"}
+        env = {"MODEL_MODE": "remote", "OPENAI_API_KEY": "sk-test", "OPENAI_CHAT_MODEL": ""}
         with patch.dict(os.environ, env):
             factory = ChatModelFactory()
             factory.generator()
             call_kwargs = mock_openai.call_args[1]
-            assert call_kwargs["model"] == "qwen3.7-max"
+            assert call_kwargs["model"] == "deepseek-flash"
 
     @patch("app.modelFactory.factory.ChatOpenAI")
     def test_remote_mode_missing_key_falls_back_to_placeholder(self, mock_openai):

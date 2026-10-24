@@ -23,7 +23,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from app.modelFactory.factory import chat_model
+from app.modelFactory.factory import chat_model, get_remote_chat_model_name
 from app.service.eval import report as report_mod
 from app.service.eval.dataset import DATASET_PATH, dataset_md5, load_dataset
 from app.service.eval.llm_judge import aggregate_generation, answer_relevancy, faithfulness
@@ -59,7 +59,7 @@ def snapshot_config(overrides: dict | None = None) -> dict:
     """链路配置快照（写入报告头部，保证各期评测可追溯）
 
     模式与模型名的取值优先级与 modelFactory.factory 完全一致：
-    MODEL_MODE 环境变量定模式，模型名环境变量可覆盖 yml 配置。
+    MODEL_MODE 环境变量定模式，模型名统一从环境变量读取。
     P2 起追加 retrieval 段（hybrid/rerank 开关与口径，含 preset overrides 合并结果）。
     """
     mode = os.environ.get("MODEL_MODE", "remote").lower()
@@ -70,8 +70,7 @@ def snapshot_config(overrides: dict | None = None) -> dict:
                                     rag_conf["local"]["embedding_model_name"])
     else:
         mode = "remote"
-        chat_name = os.environ.get("OPENAI_CHAT_MODEL",
-                                   rag_conf["remote"]["chat_model_name"])
+        chat_name = get_remote_chat_model_name()
         embed_name = rag_conf["remote"]["embedding_model_name"]
     chunking = retrieval_conf.get("chunking", {})
     conf = _effective_conf(overrides)

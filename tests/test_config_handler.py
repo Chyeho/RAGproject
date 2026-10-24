@@ -29,10 +29,9 @@ class TestRagConfig:
         assert isinstance(config, dict)
 
     def test_rag_conf_contains_chat_model(self):
-        """验证 rag_conf 包含聊天模型名称（remote/local 分组下）"""
-        assert "remote" in rag_conf and "chat_model_name" in rag_conf["remote"]
+        """验证 rag_conf 本地分组仍包含聊天模型名称（remote 已迁移至环境变量）"""
+        assert "remote" in rag_conf and "chat_model_name" not in rag_conf["remote"]
         assert "local" in rag_conf and "chat_model_name" in rag_conf["local"]
-        assert isinstance(rag_conf["remote"]["chat_model_name"], str)
         assert isinstance(rag_conf["local"]["chat_model_name"], str)
 
     def test_rag_conf_contains_embedding_model(self):

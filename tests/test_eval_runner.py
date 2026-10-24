@@ -211,7 +211,7 @@ class TestSnapshotConfig:
         monkeypatch.delenv("OPENAI_CHAT_MODEL", raising=False)
         snap = runner_mod.snapshot_config()
         assert snap["model_mode"] == "remote"
-        assert snap["chat_model_name"]       # 来自 rag_config.yml remote 段
+        assert snap["chat_model_name"]       # 来自 OPENAI_CHAT_MODEL 环境变量（或默认值）
         assert snap["embedding_model_name"]
         assert "chunk_size" in snap["qdrant"] and "k" in snap["qdrant"]
 
