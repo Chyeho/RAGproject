@@ -45,15 +45,17 @@ backend/eval_reports/              # 报告输出（不在本包内）
 ## 3. 运行前置条件
 
 1. **基础设施在跑**：MySQL + Qdrant 容器已启动（`docker compose up -d`）。全新空库需先 `uv run uvicorn app.main:app` 启动一次触发建表（lifespan → `init_db()`），再 Ctrl+C 退出。
-2. **宿主机 CLI 环境变量**（⚠ 每次新开终端都要重设，`$env:` 仅当前会话有效）：
+2. **宿主机 CLI 环境变量**（⚠ `MYSQL_PORT` 每次新开终端都要重设，`$env:` 仅当前会话有效）：
 
    ```powershell
    cd backend
    $env:MYSQL_PORT='6666'      # docker 映射端口；不设则默认 3306 拒连
-   $env:OPENAI_BASE_URL='https://dashscope.aliyuncs.com/compatible-mode/v1'
-                               # 不设则 ChatOpenAI 回落 api.openai.com，全部超时（日志特征：qwen3.7-max @ None）
-   # DASHSCOPE_API_KEY 已在 backend/.env 中
    ```
+
+   模型环境变量无需手工设置：后端启动时自动按白名单从 `docker/env/.env.dev` 加载
+   （`DASHSCOPE_API_KEY` / `OPENAI_*` 等，仅注入缺失键）。评测裁判/评测集生成固定走
+   DashScope（默认 `qwen-plus`，可用 `EVAL_CHAT_MODEL` 覆盖），与业务聊天模型
+   （如 DeepSeek）解耦，保证与历史报告口径可比。
 
 3. **样例文档已入库**：5 个样例已通过上传接口完成向量化。未入库文件的题目记 0（报告头会有 missing 警告）——P0 基线期即此状态，属预期格式缺口。
 4. **评测集已构建**：`datasets/eval_dataset.json` 存在且通过加载校验。
@@ -92,10 +94,10 @@ uv run python -m app.service.eval.report compare P0-baseline P1 P2 P3
 > **统一评测命令就是 `runner` 这一条**：`uv run python -m app.service.eval.runner --tag <tag> --full`（或 `--retrieval-only`）。入口固定为 `app.service.eval.runner`，**不存在** `scripts.evaluate` 之类的其他入口（`python -m scripts.evaluate` 会报 No module named）。
 
 ```powershell
-# ── 第 0 步：环境准备（每次新开终端都要重设，$env: 仅当前会话有效）──
+# ── 第 0 步：环境准备（MYSQL_PORT 每次新开终端都要重设，$env: 仅当前会话有效）──
 cd backend
 $env:MYSQL_PORT='6666'
-$env:OPENAI_BASE_URL='https://dashscope.aliyuncs.com/compatible-mode/v1'
+# 模型变量（DASHSCOPE_API_KEY 等）启动时自动从 docker/env/.env.dev 白名单加载，无需手工设置
 # 前置：MySQL/Qdrant 容器已启动（docker compose --env-file docker/env/.env.dev up -d）
 # 注意：中文控制台输出乱码时命令前加 -X utf8，如 uv run python -X utf8 -m ...
 
@@ -308,7 +310,7 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 |---|---|---|
 | `ConnectionRefusedError 127.0.0.1:3306` | db.py 默认 3306，docker 映射 6666 | `$env:MYSQL_PORT='6666'` |
 | `Table 'privrag_dev.document' doesn't exist` | 全新空库未建表 | 启动一次 uvicorn 触发 lifespan `init_db()` |
-| 模型调用全部超时，日志 `qwen3.7-max @ None` | 缺 `OPENAI_BASE_URL`，回落 api.openai.com | `$env:OPENAI_BASE_URL='https://dashscope.aliyuncs.com/compatible-mode/v1'` |
+| 模型调用全部超时，日志 `模型名 @ None` | 历史原因：缺 `OPENAI_BASE_URL` 回落 api.openai.com | 已修复：模型变量自动从 `docker/env/.env.dev` 白名单加载（业务聊天走 `OPENAI_BASE_URL`，评测裁判走 DashScope 兼容端点）；仍超时则检查对应 env 文件配置 |
 | uvicorn 绑定 8000 报 winerror 10013 | Windows Hyper-V 端口保留 | 管理员执行 `net stop winnat` → 起服务 → `net start winnat` |
 | 中途 `code: Arrearage` 中断 | DashScope 欠费（`--full` 约 320+ 次调用） | 充值后直接重跑（幂等） |
 | PDF 向量化报 `surrogates not allowed (\udc80)` | pypdf 提取中文 PDF 产出代理字符，Qdrant 序列化崩溃 | **基线期保留不修**（属 P1 格式解析修复范围）；已装 pypdf 依赖 |

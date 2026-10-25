@@ -24,7 +24,7 @@ import fitz                      # pymupdf：读 pdf
 from docx import Document as DocxDocument
 from openpyxl import load_workbook
 
-from app.modelFactory.factory import chat_model
+from app.modelFactory.factory import get_eval_chat_model
 from app.utils.logger_handler import logger
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -225,7 +225,8 @@ def build_dataset(num: int = 80, per_passage: int = 3,
         raise RuntimeError(f"样例目录 {samples_dir} 未提取到有效段落，请先运行 make_samples 生成样例")
     logger.info(f"[评测集构建]共提取 {len(passages)} 个有效段落，开始 LLM 生成 QA")
 
-    model = chat_model.bind(temperature=0.2)
+    # 评测集生成与评测裁判同源：固定 DashScope 评测模型，与业务聊天模型解耦
+    model = get_eval_chat_model().bind(temperature=0.2)
     qas = []
     for i, p in enumerate(passages, 1):
         items = generate_qa_for_passage(model, p, per_passage)

@@ -141,7 +141,7 @@ class TestBuildDataset:
             def bind(self, **kw):
                 return self
 
-        monkeypatch.setattr(dataset_mod, "chat_model", FakeChat())
+        monkeypatch.setattr(dataset_mod, "get_eval_chat_model", lambda: FakeChat())
         monkeypatch.setattr(dataset_mod, "generate_qa_for_passage", fake_generate)
 
         out_path = str(tmp_path / "eval_dataset.json")

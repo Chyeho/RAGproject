@@ -180,7 +180,7 @@ class TestRunEvalFull:
             return history
 
         with patch.object(runner_mod, "RagSummarizeService", return_value=rag), \
-             patch.object(runner_mod, "chat_model", MagicMock()), \
+             patch.object(runner_mod, "get_eval_chat_model", return_value=MagicMock()), \
              patch.object(runner_mod, "get_chat_history", side_effect=fake_history), \
              patch.object(runner_mod, "faithfulness", return_value=0.9), \
              patch.object(runner_mod, "answer_relevancy", return_value=0.8):

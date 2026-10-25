@@ -25,7 +25,12 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from app.modelFactory.factory import chat_model, get_remote_chat_model_name
+from app.modelFactory.factory import (
+    get_eval_chat_model,
+    get_eval_chat_model_name,
+    get_remote_chat_model_name,
+    get_remote_embedding_model_name,
+)
 from app.service.eval import report as report_mod
 from app.service.eval.dataset import DATASET_PATH, dataset_md5, load_dataset
 from app.service.eval.llm_judge import aggregate_generation, answer_relevancy, faithfulness
@@ -77,13 +82,15 @@ def snapshot_config(overrides: dict | None = None) -> dict:
     else:
         mode = "remote"
         chat_name = get_remote_chat_model_name()
-        embed_name = rag_conf["remote"]["embedding_model_name"]
+        embed_name = get_remote_embedding_model_name()
     chunking = retrieval_conf.get("chunking", {})
     conf = _effective_conf(overrides)
     return {
         "model_mode": mode,
         "chat_model_name": chat_name,
         "embedding_model_name": embed_name,
+        # 评测模型（裁判/评测集生成）固定 DashScope 供应商，与业务聊天模型解耦
+        "eval_chat_model_name": get_eval_chat_model_name(),
         # P2 起 chunk/k 参数收敛于 retrieval_config.yml；qdrant 键保留原结构以便与 P0/P1 报告对比
         "qdrant": {
             "collection_name": qdrant_conf.get("collection_name"),
@@ -166,6 +173,8 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
     else:
         retriever = build_retriever(svc, overrides=overrides)
     rag = RagSummarizeService(retriever=retriever) if mode == "full" else None
+    # 评测裁判与业务聊天模型解耦：固定 DashScope（默认 qwen-plus），只构造一次
+    judge_model = get_eval_chat_model() if mode == "full" else None
 
     records, details = [], []
     faith_scores, relev_scores = [], []
@@ -201,8 +210,8 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
             get_chat_history(session_id).clear()   # 幂等：重跑同 tag 不受旧历史污染
             contexts = [d.page_content for d in docs]
             answer = rag.rag_summarize(qa["question"], session_id=session_id)
-            faith = faithfulness(chat_model, qa["question"], answer, contexts)
-            relev = answer_relevancy(chat_model, qa["question"], answer)
+            faith = faithfulness(judge_model, qa["question"], answer, contexts)
+            relev = answer_relevancy(judge_model, qa["question"], answer)
             faith_scores.append(faith)
             relev_scores.append(relev)
             detail.update({"answer": answer, "faithfulness": faith, "answer_relevancy": relev})

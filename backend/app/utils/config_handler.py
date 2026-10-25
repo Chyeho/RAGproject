@@ -1,5 +1,6 @@
 '''配置信息管理工具'''
 import yaml
+from app.utils.env_loader import load_model_env
 from app.utils.path_tool import get_abs_path
 
 def load_rag_config(config_path:str = get_abs_path("config/rag_config.yml"),encoding:str = "utf-8"):
@@ -39,3 +40,8 @@ prompts_conf    = load_prompts_config()
 agent_conf      = load_agent_config()
 cache_conf      = load_cache_config()
 retrieval_conf  = load_retrieval_config()
+
+# 模型相关环境变量兜底加载（本地直跑场景）：必须在模块尾部、先于
+# modelFactory.factory 的模块级单例构建执行（factory 导入 rag_conf 时本模块
+# 已执行完毕）。Docker Compose / 启动脚本注入的真实环境变量优先，仅注入缺失键
+load_model_env()

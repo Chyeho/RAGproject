@@ -9,6 +9,7 @@
 统一接口：rank(query, docs) -> list[(doc, score)]，精排后取 top_k（默认 5）。
 降级策略：任何异常（网络/限额/依赖缺失）→ warning 日志 + 返回 RRF 序前 top_k，链路不中断。
 '''
+import os
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -17,6 +18,19 @@ from langchain_core.documents import Document
 from app.modelFactory.factory import _get_model_mode
 from app.utils.config_handler import retrieval_conf
 from app.utils.logger_handler import logger
+
+
+def get_remote_rerank_model_name(conf: Optional[dict] = None) -> str:
+    """读取远程精排模型名：RERANK_MODEL 环境变量优先，未配置回退 rerank 配置段
+
+    Args:
+        conf: 生效的 rerank 配置段；None 时读 retrieval_config.yml
+    """
+    model_name = os.environ.get("RERANK_MODEL", "").strip()
+    if model_name:
+        return model_name
+    section = conf if conf is not None else retrieval_conf.get("rerank", {})
+    return str(section.get("remote_model", "gte-rerank-v2"))
 
 
 class BaseReranker(ABC):
@@ -108,7 +122,8 @@ def _create_reranker(rerank_conf: Optional[dict] = None) -> Optional[BaseReranke
         logger.info(f"[重排工厂]精排模型(本地): {model_name}")
         return reranker
 
-    model_name = str(conf.get("remote_model", "gte-rerank-v2"))
+    # 远程模式：DashScope 精排模型（模型名可由 RERANK_MODEL 环境变量覆盖）
+    model_name = get_remote_rerank_model_name(conf)
     reranker = RemoteReranker(model_name, top_k)
     logger.info(f"[重排工厂]精排模型(远程): {model_name}")
     return reranker

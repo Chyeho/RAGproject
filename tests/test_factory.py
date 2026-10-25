@@ -12,9 +12,14 @@ from app.modelFactory.factory import (
     ChatModelFactory,
     EmbeddingFactory,
     DEFAULT_OPENAI_CHAT_MODEL,
+    DEFAULT_DASHSCOPE_BASE_URL,
+    DEFAULT_EVAL_CHAT_MODEL,
     _get_model_mode,
     _normalize_model_name,
     _ensure_ollama_model,
+    get_remote_embedding_model_name,
+    get_eval_chat_model,
+    get_eval_chat_model_name,
 )
 from langchain_core.embeddings import Embeddings
 
@@ -471,8 +476,85 @@ class TestEmbeddingFactory:
 
     def test_remote_mode_uses_yml_model_name(self):
         """远程模式嵌入模型名取自 yml 的 remote 分组"""
-        with patch.dict(os.environ, {"MODEL_MODE": "remote"}, clear=True):
+        with patch.dict(os.environ, {"MODEL_MODE": "remote", "TEXT_EMBEDDING_MODEL": ""}, clear=False):
             factory = EmbeddingFactory()
             result = factory.generator()
             assert isinstance(result, DashScopeTextEmbeddings)
             assert result.model == "text-embedding-v4"
+
+    def test_remote_mode_uses_env_model_name(self):
+        """远程模式应支持 TEXT_EMBEDDING_MODEL 环境变量覆盖嵌入模型名"""
+        env = {"MODEL_MODE": "remote", "TEXT_EMBEDDING_MODEL": "text-embedding-v3"}
+        with patch.dict(os.environ, env):
+            factory = EmbeddingFactory()
+            result = factory.generator()
+            assert isinstance(result, DashScopeTextEmbeddings)
+            assert result.model == "text-embedding-v3"
+
+
+# ========================================
+# 远程模型名 helper 测试
+# ========================================
+class TestGetRemoteEmbeddingModelName:
+    """测试远程嵌入模型名读取：环境变量优先，回退 rag_config.yml"""
+
+    def test_env_override(self):
+        with patch.dict(os.environ, {"TEXT_EMBEDDING_MODEL": "text-embedding-v3"}):
+            assert get_remote_embedding_model_name() == "text-embedding-v3"
+
+    def test_fallback_to_yml(self):
+        with patch.dict(os.environ, {"TEXT_EMBEDDING_MODEL": ""}):
+            assert get_remote_embedding_model_name() == "text-embedding-v4"
+
+
+# ========================================
+# 评测专用聊天模型测试
+# ========================================
+class TestGetEvalChatModel:
+    """评测模型固定 DashScope 供应商（默认 qwen-plus），与业务聊天模型解耦"""
+
+    def test_name_default_and_override(self):
+        """模型名：默认 qwen-plus，EVAL_CHAT_MODEL 可覆盖"""
+        with patch.dict(os.environ, {"EVAL_CHAT_MODEL": ""}):
+            assert get_eval_chat_model_name() == DEFAULT_EVAL_CHAT_MODEL
+        with patch.dict(os.environ, {"EVAL_CHAT_MODEL": "qwen-turbo"}):
+            assert get_eval_chat_model_name() == "qwen-turbo"
+
+    @patch("app.modelFactory.factory.ChatOpenAI")
+    def test_default_dashscope_qwen_plus(self, mock_openai):
+        """默认构造：qwen-plus @ DashScope 兼容端点，key 取 DASHSCOPE_API_KEY"""
+        mock_openai.return_value = MagicMock()
+        env = {"EVAL_CHAT_MODEL": "", "DASHSCOPE_API_KEY": "sk-dash", "DASHSCOPE_BASE_URL": ""}
+        with patch.dict(os.environ, env):
+            get_eval_chat_model()
+            kwargs = mock_openai.call_args[1]
+            assert kwargs["model"] == "qwen-plus"
+            assert kwargs["api_key"] == "sk-dash"
+            assert kwargs["base_url"] == DEFAULT_DASHSCOPE_BASE_URL
+
+    @patch("app.modelFactory.factory.ChatOpenAI")
+    def test_eval_chat_model_env_override(self, mock_openai):
+        """EVAL_CHAT_MODEL 环境变量应覆盖评测模型名"""
+        mock_openai.return_value = MagicMock()
+        env = {"EVAL_CHAT_MODEL": "qwen-max", "DASHSCOPE_API_KEY": "sk-dash", "DASHSCOPE_BASE_URL": ""}
+        with patch.dict(os.environ, env):
+            get_eval_chat_model()
+            assert mock_openai.call_args[1]["model"] == "qwen-max"
+
+    @patch("app.modelFactory.factory.ChatOpenAI")
+    def test_dashscope_base_url_override(self, mock_openai):
+        """DASHSCOPE_BASE_URL 环境变量应覆盖评测端点"""
+        mock_openai.return_value = MagicMock()
+        env = {"EVAL_CHAT_MODEL": "", "DASHSCOPE_API_KEY": "sk-dash",
+               "DASHSCOPE_BASE_URL": "https://custom.example.com/v1"}
+        with patch.dict(os.environ, env):
+            get_eval_chat_model()
+            assert mock_openai.call_args[1]["base_url"] == "https://custom.example.com/v1"
+
+    @patch("app.modelFactory.factory.ChatOpenAI")
+    def test_missing_key_uses_placeholder(self, mock_openai):
+        """未配置 DASHSCOPE_API_KEY 时用占位符而非抛异常（与业务聊天模型行为一致）"""
+        mock_openai.return_value = MagicMock()
+        with patch.dict(os.environ, {}, clear=True):
+            get_eval_chat_model()
+            assert mock_openai.call_args[1]["api_key"] == "not-configured"
