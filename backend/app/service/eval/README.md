@@ -115,7 +115,7 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 | P0 基线 | `P0-baseline` | 2026-10-19（retrieval + full 两份） |
 | P1 | `P1` | 2026-10-20（full） |
 | P2 四组对比 | `P2-dense-only` / `P2-hybrid` / `P2-hybrid-rerank` / `P2-legacy`（旧链路回退） | 2026-10-23（四组 + compare，见 6.4） |
-| P3 策略对比 | `P3-multi-query` / `P3-hyde` / `P3-final`（最优配置） | 待跑 |
+| P3 策略对比 | `P3-off` / `P3-multi-query` / `P3-hyde` | 2026-10-25（三组 + compare，v2 口径 260 题，结论 mode=off，见 6.6） |
 | 评测集 v2 基线 | `EV2-legacy` / `EV2-dense-only` / `EV2-hybrid` / `EV2-hybrid-rerank` | 2026-10-24（四组 + compare，v2 口径 260 题，见 6.5） |
 
 补充：
@@ -269,6 +269,38 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 **结论**：天花板效应消除（v1 双满分 → v2 最高 0.8115），四组单调递进（文档级 HitRate 0.60→0.81）；hybrid 召回增益与精排排序增益在难集上首次可分离。后续 P3/P4 评测以 v2 口径为准（`--dataset eval_dataset_v2.json`）。
 
 **迭代期间 bug 修复**（详见执行文档 4.6）：`documents.py` langchain/SQLModel `Document` import 遮蔽（P2 起新上传文档 BM25 增量实际失效，改别名 `LCDocument`）；`ingest.py` 状态核对 REPEATABLE READ 旧快照（改新 session）与 md5 幂等缺口（区分跳过/重试）。
+
+### 6.6 P3：查询优化 A/B（tag：`P3-off` / `P3-multi-query` / `P3-hyde`，2026-10-25）
+
+**动机**：multi_query（LLM 改写 N 路 + RRF 融合）与 hyde（假设文档 embedding + 原查询双路融合）对 v2 难集是否有增量，用数据定默认 mode（执行文档 7.2）。原计划的 `P3-final`（最优配置）即结论本身——最优 = 对照组 mode=off，无需单跑。
+
+**评测方式**：v2 口径 260 题 retrieval-only，三组同底座（hybrid + rerank，等价 EV2-hybrid-rerank），仅 `query_optimize.mode` 不同（runner `--preset off/multi-query/hyde`）；multi_query_count=3（原查询 + 3 改写共 4 路并行检索）。
+
+| 报告 | 时间 | 说明 |
+|---|---|---|
+| `20261025_162418_P3-off` | 2026-10-25 16:24 | 对照组（mode=off 透传，约 9 分钟） |
+| `20261025_170001_P3-multi-query` | 2026-10-25 17:00 | 4 路并行检索 + RRF 融合 topn=5（约 35 分钟） |
+| `20261025_173253_P3-hyde` | 2026-10-25 17:32 | 原查询 + 假设文档双路融合（约 32 分钟） |
+| `20261025_173326_compare__P3-off__P3-multi-query__P3-hyde` | 2026-10-25 17:33 | 三组横向对比 |
+
+**检索指标（总体）**：
+
+| 指标 | P3-off | P3-multi-query | P3-hyde |
+|---|---|---|---|
+| 文档级 HitRate@K | **0.8115** | 0.8115（持平） | 0.7769（-3.46pp） |
+| 片段级 HitRate@K | **0.7846** | 0.7808（-0.38pp） | 0.7077（-7.69pp） |
+| 文档级 MRR | **0.5813** | 0.5744 | 0.5683 |
+| 片段级 MRR | **0.5615** | 0.5527 | 0.5220 |
+| 文档级 Precision@K | 0.3092 | 0.3046 | 0.3254 |
+| 内容召回率 | **0.7881** | 0.7850 | 0.7193 |
+
+**按问题类型（文档级 HitRate，off → multi-query → hyde）**：fact 0.8220 → 0.8220 → 0.8051；longtail 0.8214 → 0.8214 → **0.7143**；paraphrase 0.7667 → 0.7500 → 0.7167；term 0.8333 → 0.8519 → 0.8148。
+
+**结论与决策**：**默认 mode 维持 `off`**（已回写 retrieval_config.yml 注释）：
+
+1. **multi_query 无净收益**：文档级 HitRate 持平，片段级/MRR 微降（4 路结果 RRF 融合稀释精排排序，个别题被改写变体带偏）；term +1.9pp 与 paraphrase -1.7pp 基本相抵。成本侧每题多 1 次 LLM（改写）+ 3 次 rerank API（评测耗时 9→35 分钟），性价比为负。
+2. **hyde 明显负收益**：假设文档 embedding 把召回拉向 LLM 想象内容——longtail 类（细节参数题）最差（文档级 0.8214→0.7143、片段级 0.7857→0.6071），fact 题假设文档常编造具体参数导致 embedding 偏移；全题型无一获益。
+3. 与 7.1 调研结论印证：HyDE 对表述类/术语类查询的理论收益，在本企业制度语料（短查询 + 跨实体近似干扰项）上不成立。
 
 ## 7. 基线期排障记录（复现参考）
 

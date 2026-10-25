@@ -33,7 +33,11 @@ from app.service.eval.metrics import aggregate, aggregate_by, judge_retrieval
 from app.service.history.history_store import get_chat_history
 from app.service.rag.rag_service import RagSummarizeService
 from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents
-from app.service.rag.retrieval.hybrid_retriever import _effective_conf, build_retriever
+from app.service.rag.retrieval.hybrid_retriever import (
+    _effective_conf,
+    build_retriever,
+    effective_output_k,
+)
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.config_handler import qdrant_conf, rag_conf, retrieval_conf
 from app.utils.logger_handler import logger
@@ -47,14 +51,14 @@ PRESETS: dict[str, dict] = {
     "hybrid-rerank": {"hybrid": {"enabled": True}, "rerank": {"enabled": True}},      # RRF(topn) → 精排 → top_k(5)
 }
 
-
-def _effective_output_k(conf: dict) -> int:
-    """链路最终送入生成的文档数（与 retrieval_config.yml 头部注释口径一致）"""
-    if bool(conf["rerank"].get("enabled", False)):
-        return int(conf["rerank"].get("top_k", 5))
-    if bool(conf["hybrid"].get("enabled", False)):
-        return int(conf["top_k"])
-    return int(conf["legacy_k"])
+# P3 三组查询优化预设（执行文档 7.2）：基于 P2 最优链路 hybrid+rerank 强制开，只变
+# query_optimize.mode；off 为对照组，检索口径等价 P2-hybrid-rerank
+_P3_BASE = {"hybrid": {"enabled": True}, "rerank": {"enabled": True}}
+PRESETS.update({
+    "off": {**_P3_BASE, "query_optimize": {"mode": "off"}},
+    "multi-query": {**_P3_BASE, "query_optimize": {"mode": "multi_query"}},
+    "hyde": {**_P3_BASE, "query_optimize": {"mode": "hyde"}},
+})
 
 
 def snapshot_config(overrides: dict | None = None) -> dict:
@@ -104,6 +108,10 @@ def snapshot_config(overrides: dict | None = None) -> dict:
             },
             "top_k": conf["top_k"],
             "legacy_k": conf["legacy_k"],
+            "query_optimize": {
+                "mode": str(conf.get("query_optimize", {}).get("mode", "off")),
+                "multi_query_count": conf.get("query_optimize", {}).get("multi_query_count"),
+            },
         },
     }
 
@@ -132,7 +140,8 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
         mode: "retrieval" 仅检索 / "full" 检索+生成
         k: 覆盖 top-k（直连稠密检索，与 --preset 互斥）
         limit: 只评测前 N 题（调试用）
-        preset: P2 链路预设（legacy/dense-only/hybrid/hybrid-rerank），
+        preset: 链路预设。P2：legacy/dense-only/hybrid/hybrid-rerank；
+                P3：off/multi-query/hyde（基于 hybrid+rerank，只变查询优化模式）。
                 None 时用 retrieval_config.yml 文件配置组装
     """
     dataset = load_dataset(dataset_path)
@@ -212,7 +221,7 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
             "mode": mode,
             "finished_at": datetime.now().isoformat(timespec="seconds"),
             "num_questions": len(dataset),
-            "k": k if k is not None else _effective_output_k(conf),
+            "k": k if k is not None else effective_output_k(conf),
             "preset": preset,
             "dataset": dataset_path,
             "config_snapshot": snapshot_config(overrides),
@@ -242,7 +251,7 @@ def main():
     group.add_argument("--retrieval-only", action="store_true", help="仅评测检索指标（快）")
     group.add_argument("--full", action="store_true", help="评测检索+生成全量")
     parser.add_argument("--preset", choices=sorted(PRESETS), default=None,
-                        help="P2 链路预设：legacy(旧链路回退)/dense-only(纯稠密k=5)/hybrid(RRF)/hybrid-rerank(RRF+精排)")
+                        help="链路预设：P2 legacy(旧链路回退)/dense-only(纯稠密k=5)/hybrid(RRF)/hybrid-rerank(RRF+精排)；P3 off/multi-query/hyde(基于 hybrid+rerank，只变查询优化模式)")
     parser.add_argument("--k", type=int, default=None, help="覆盖 top-k（直连稠密检索，与 --preset 互斥）")
     parser.add_argument("--limit", type=int, default=None, help="只评测前 N 题（调试用）")
     parser.add_argument("--dataset", default=None,

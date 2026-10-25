@@ -19,7 +19,12 @@ rerank:
   local_model: BAAI/bge-reranker-v2-m3   # 需安装可选依赖组 local-rerank
   top_k: 5            # 精排后保留条数（rerank 模式的最终上下文条数）
 
-query_optimize:       # P3 使用，本阶段先落配置骨架
+# P3 查询优化（QueryEnhancer 前置包装，mode=off 时不包装直接透传）
+# P3 评测结论（260 题 v2 口径，2026-10-25）：off 最优，默认维持 off——
+#   multi_query 文档级 HitRate 持平（0.8115）但片段级/MRR 微降，每题多 1 次 LLM + 3 次 rerank 调用；
+#   hyde 全面下降（片段级 HitRate -7.7pp，longtail 类最差，假设文档 embedding 拉向 LLM 编造内容）
+# 对比报告：backend/eval_reports/20261025_173326_compare__P3-off__P3-multi-query__P3-hyde.md
+query_optimize:
   mode: "off"         # off / multi_query / hyde（加引号防止 YAML 1.1 解析为布尔）
   multi_query_count: 3
 

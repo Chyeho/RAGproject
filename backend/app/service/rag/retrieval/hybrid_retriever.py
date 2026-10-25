@@ -5,6 +5,8 @@ HybridRetriever：稠密（Qdrant）+ 稀疏（BM25）双路召回 → RRF 融�
 RerankRetriever：包装任意检索器，召回后精排取 top_k
 build_retriever：按 retrieval_config.yml 开关组装最终链路（支持 overrides 覆盖，
                 供评测 --preset 注入开关组合），全关闭时行为等价旧链路。
+P3 起末端按 query_optimize.mode 包装 QueryEnhancer（off/multi_query/hyde），
+默认 off，链路行为与 P2 完全一致。
 
 开关组合语义（最终送入生成的文档数）：
   hybrid off + rerank off → 稠密检索 k=legacy_k（等价 P1 旧链路）
@@ -26,6 +28,8 @@ from app.utils.config_handler import retrieval_conf
 from app.utils.logger_handler import logger
 
 if TYPE_CHECKING:  # 仅类型标注，避免导入期依赖
+    from langchain_core.language_models.chat_models import BaseChatModel
+
     from app.service.rag.vector_store import VectorStoreService
 
 
@@ -87,6 +91,7 @@ def _effective_conf(overrides: Optional[dict]) -> dict:
     conf = {
         "hybrid": dict(retrieval_conf.get("hybrid", {})),
         "rerank": dict(retrieval_conf.get("rerank", {})),
+        "query_optimize": dict(retrieval_conf.get("query_optimize", {})),
         "top_k": int(retrieval_conf.get("top_k", 5)),
         "legacy_k": int(retrieval_conf.get("legacy_k", 3)),
     }
@@ -99,11 +104,59 @@ def _effective_conf(overrides: Optional[dict]) -> dict:
     return conf
 
 
+def effective_output_k(conf: dict) -> int:
+    """链路最终送入生成的文档数（与 retrieval_config.yml 头部注释口径一致）
+
+    rerank 开启 → rerank.top_k；否则 hybrid 开启 → top_k；全关闭 → legacy_k。
+    评测报告 meta.k 与 QueryEnhancer 融合 topn 均取此口径。
+    """
+    if bool(conf["rerank"].get("enabled", False)):
+        return int(conf["rerank"].get("top_k", 5))
+    if bool(conf["hybrid"].get("enabled", False)):
+        return int(conf["top_k"])
+    return int(conf["legacy_k"])
+
+
+def _wrap_query_enhancer(
+    retriever: BaseRetriever, conf: dict, chat_model: Optional["BaseChatModel"]
+) -> BaseRetriever:
+    '''P3 查询优化包装（链路最外层前置处理；mode=off 或构造失败时原样返回）
+
+    QueryEnhancer 懒导入：mode=off（默认）时不加载 query 包零开销，且避免
+    query 包 → rrf → retrieval/__init__ → 本模块 → query.enhancer 的导入环。
+    '''
+    mode = str(conf.get("query_optimize", {}).get("mode", "off")).lower()
+    if mode not in ("multi_query", "hyde"):
+        if mode != "off":
+            logger.warning(f"[检索链路]未知 query_optimize.mode='{mode}'，按 off 处理")
+        return retriever
+    try:
+        from app.service.rag.query import QueryEnhancer
+
+        if chat_model is None:
+            from app.modelFactory.factory import chat_model as _default_chat_model
+            chat_model = _default_chat_model
+        enhancer = QueryEnhancer(
+            base=retriever,
+            chat_model=chat_model,
+            mode=mode,
+            topn=effective_output_k(conf),
+            rrf_k=int(conf["hybrid"].get("rrf_k", 60)),
+            multi_query_count=int(conf.get("query_optimize", {}).get("multi_query_count", 3)),
+        )
+    except Exception as e:
+        logger.warning(f"[检索链路]查询优化包装失败，本次降级不启用：{e}", exc_info=True)
+        return retriever
+    logger.info(f"[检索链路]query_optimize={mode} 前置包装（融合 topn={enhancer.topn}）")
+    return enhancer
+
+
 def build_retriever(
     vector_store_service: "VectorStoreService",
     bm25: Optional[BM25Retriever] = None,
     reranker: Optional[BaseReranker] = None,
     overrides: Optional[dict] = None,
+    chat_model: Optional["BaseChatModel"] = None,
 ) -> BaseRetriever:
     '''按开关组装检索链路（P2 链路入口，替换直接调用 get_retriever）
 
@@ -112,6 +165,7 @@ def build_retriever(
         bm25: 稀疏路检索器；缺省用模块单例（应用启动时已 rebuild）
         reranker: 精排器；缺省按生效配置懒创建，不可用时自动降级关闭精排
         overrides: 开关覆盖（如 {"rerank": {"enabled": False}}），供评测 preset 使用
+        chat_model: 查询优化生成变体用聊天模型；缺省用模型工厂共享单例（仅 P3 模式用到）
     '''
     conf = _effective_conf(overrides)
     hybrid_on = bool(conf["hybrid"].get("enabled", False))
@@ -134,29 +188,33 @@ def build_retriever(
     )
     dense = vector_store_service.get_retriever(k=dense_k)
 
-    # 组合 1：全关闭 → 稠密 k=legacy_k，行为等价旧链路
     if not hybrid_on and not rerank_on:
+        # 组合 1：全关闭 → 稠密 k=legacy_k，行为等价旧链路
         logger.info(f"[检索链路]dense-only（旧链路等价），k={dense_k}")
-        return dense
-
-    # 组合 3：仅精排 → 稠密候选直送精排
-    if not hybrid_on and rerank_on:
+        retriever: BaseRetriever = dense
+    elif rerank_on and not hybrid_on:
+        # 组合 3：仅精排 → 稠密候选直送精排
         logger.info(
             f"[检索链路]dense({dense_k}) → rerank({conf['rerank'].get('remote_model') or conf['rerank'].get('local_model')})"
         )
-        return RerankRetriever(base=dense, reranker=reranker)
-
-    # 组合 2/4：混合检索（rerank 开启时融合 topn 为精排候选数，关闭时即为最终条数）
-    if bm25 is None:
-        bm25 = bm25_retriever
-    if not rerank_on:
+        retriever = RerankRetriever(base=dense, reranker=reranker)
+    elif not rerank_on:
+        # 组合 2：混合检索，融合 topn 即最终条数
+        if bm25 is None:
+            bm25 = bm25_retriever
         topn = int(conf["top_k"])
         logger.info(f"[检索链路]dense({dense_k}) + bm25({bm25.topn}) → RRF → top_k={topn}")
-        return HybridRetriever(dense=dense, bm25=bm25, rrf_k=int(conf["hybrid"].get("rrf_k", 60)), topn=topn)
+        retriever = HybridRetriever(dense=dense, bm25=bm25, rrf_k=int(conf["hybrid"].get("rrf_k", 60)), topn=topn)
+    else:
+        # 组合 4：RRF 融合 topn 为精排候选数
+        if bm25 is None:
+            bm25 = bm25_retriever
+        topn = int(conf["hybrid"].get("topn", 20))
+        hybrid = HybridRetriever(dense=dense, bm25=bm25, rrf_k=int(conf["hybrid"].get("rrf_k", 60)), topn=topn)
+        logger.info(
+            f"[检索链路]dense({dense_k}) + bm25({bm25.topn}) → RRF(topn={topn}) → rerank(top_k={reranker.top_k})"
+        )
+        retriever = RerankRetriever(base=hybrid, reranker=reranker)
 
-    topn = int(conf["hybrid"].get("topn", 20))
-    hybrid = HybridRetriever(dense=dense, bm25=bm25, rrf_k=int(conf["hybrid"].get("rrf_k", 60)), topn=topn)
-    logger.info(
-        f"[检索链路]dense({dense_k}) + bm25({bm25.topn}) → RRF(topn={topn}) → rerank(top_k={reranker.top_k})"
-    )
-    return RerankRetriever(base=hybrid, reranker=reranker)
+    # P3：查询优化最外层包装（mode=off 时原样返回）
+    return _wrap_query_enhancer(retriever, conf, chat_model)
