@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（225 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（432 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -33,7 +33,8 @@ RAGproject_demo/
 ├── docker/                              # 部署配置（nginx / 环境变量 / 中间件）
 │   ├── env/
 │   │   ├── .env.dev                     # 开发环境变量
-│   │   └── .env.prod                    # 生产环境变量
+│   │   ├── .env.prod                    # 生产环境变量
+│   │   └── *.example                    # 变量模板（仓库内置，供复制使用）
 │   ├── middleware/
 │   │   ├── my.cnf                       # MySQL 自定义配置
 │   │   └── qdrant_config.yaml           # Qdrant 向量库配置
@@ -48,51 +49,87 @@ RAGproject_demo/
 │   │   │   ├── agent_config.yml         # Agent 配置
 │   │   │   ├── cache_config.yml         # 缓存配置
 │   │   │   ├── prompts_config.yml       # 提示词配置
-│   │   │   ├── qdrant_config.yml        # Qdrant 向量库 + RAG 参数配置
-│   │   │   └── rag_config.yml           # RAG 服务配置
+│   │   │   ├── qdrant_config.yml        # Qdrant 连接与集合配置
+│   │   │   ├── rag_config.yml           # 模型配置（聊天 / 嵌入，remote / local 分组）
+│   │   │   └── retrieval_config.yml     # 检索链路配置（分块 / hybrid / rerank / 查询优化）
 │   │   ├── core/                        # 核心模块
 │   │   │   ├── response.py              # 统一响应 {code, message, data}
 │   │   │   └── security.py              # 密码哈希 / JWT 签发与校验
-│   │   ├── data/                        # 私有知识库原始文件（上传落盘目录）
-│   │   │   └── 员工手册.txt
+│   │   ├── data/                        # 上传文件落盘目录（文件名前缀时间戳）
 │   │   ├── database/                    # 数据库连接层
 │   │   │   └── db.py                    # 环境变量连接 / get_session / init_db 建表
 │   │   ├── dependencies.py              # 全局依赖（get_current_user）
 │   │   ├── logs/                        # 运行日志
-│   │   ├── modelFactory/                # 模型工厂
-│   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
+│   │   ├── modelFactory/                # 模型工厂（本地 / 远程双模式）
+│   │   │   ├── factory.py               # 聊天 / 嵌入模型实例化
+│   │   │   └── rerank_factory.py        # 精排模型实例化（远端 / 本地，含降级）
 │   │   ├── models/                      # SQLModel 数据模型（5 张表）
 │   │   │   ├── __init__.py
 │   │   │   ├── chat_conversation.py     # 会话表
 │   │   │   ├── chat_message.py          # 消息表（含 citations）
-│   │   │   ├── document_chunk.py        # 文档分块表
+│   │   │   ├── document_chunk.py        # 文档分块表（含章节 / 页码元数据）
 │   │   │   ├── documents.py             # 文档表（含 md5 去重）
 │   │   │   └── users.py                 # 用户表
-│   │   ├── prompts/                     # 系统提示词模板
-│   │   │   ├── rag_summarize.txt
-│   │   │   └── system_prompt.txt
+│   │   ├── prompts/                     # 提示词模板
+│   │   │   ├── rag_summarize.txt        # RAG 总结提示词
+│   │   │   ├── system_prompt.txt
+│   │   │   ├── multi_query.txt          # 多查询改写（可选链路）
+│   │   │   ├── hyde.txt                 # HyDE 假设文档（可选链路）
+│   │   │   ├── faithfulness_judge.txt   # 评测：忠实度裁判
+│   │   │   └── relevancy_judge.txt      # 评测：相关性裁判
 │   │   ├── routers/                     # FastAPI 路由层
 │   │   │   ├── auth.py                  # 认证（登录/注册/个人信息/改密）
 │   │   │   ├── chat.py                  # 会话 CRUD + 问答 + 引用来源
 │   │   │   ├── documents.py             # 文档上传/列表/预览/下载/删除
-│   │   │   ├── settings.py              # RAG 参数配置读写
+│   │   │   ├── settings.py              # RAG 全参数读写与热更新
 │   │   │   └── statistics.py            # 统计数据查询
 │   │   ├── service/                     # 业务服务层
 │   │   │   ├── agent/                   # Agent 服务
-│   │   │   │   └── react_agent.py
+│   │   │   │   ├── react_agent.py
+│   │   │   │   └── tools/               # Agent 工具与中间件
+│   │   │   ├── eval/                    # RAG 评测框架
+│   │   │   │   ├── runner.py            # 检索评测运行器（链路组合 / preset）
+│   │   │   │   ├── metrics.py           # HitRate / 召回率等指标
+│   │   │   │   ├── llm_judge.py         # LLM 裁判
+│   │   │   │   ├── dataset.py           # 评测集加载
+│   │   │   │   ├── corpus_v2.py         # v2 语料与评测集生成
+│   │   │   │   ├── ingest.py            # 评测语料入库
+│   │   │   │   ├── report.py            # 报告输出与对比
+│   │   │   │   ├── make_samples.py      # 样例文档生成
+│   │   │   │   ├── datasets/            # 评测集（v1 80 题 / v2 260 题）与语料
+│   │   │   │   └── README.md            # 评测框架使用说明
 │   │   │   ├── history/                 # 对话历史管理（按会话隔离）
 │   │   │   │   └── history_store.py
 │   │   │   └── rag/                     # RAG 问答核心
-│   │   │       ├── rag_service.py       # RAG 总结服务（支持多会话历史隔离）
+│   │   │       ├── chunking/            # 格式感知分块（pdf/docx/md/xlsx/txt）
+│   │   │       │   ├── strategy.py      # 分块策略入口（按格式分发）
+│   │   │       │   ├── pdf_chunker.py
+│   │   │       │   ├── docx_chunker.py
+│   │   │       │   ├── markdown_chunker.py
+│   │   │       │   ├── excel_chunker.py
+│   │   │       │   └── text_chunker.py
+│   │   │       ├── retrieval/           # 检索层
+│   │   │       │   ├── bm25_retriever.py    # BM25 稀疏检索
+│   │   │       │   ├── rrf.py               # RRF 融合
+│   │   │       │   └── hybrid_retriever.py  # 混合检索链路工厂
+│   │   │       ├── query/              # 查询优化（可选，默认关闭）
+│   │   │       │   ├── enhancer.py      # 查询增强总入口
+│   │   │       │   ├── multi_query.py   # 多查询改写
+│   │   │       │   └── hyde.py          # HyDE
+│   │   │       ├── rag_service.py       # RAG 总结服务（检索与生成分离）
+│   │   │       ├── registry.py          # RAG 单例注册表（线程安全 + 热更新重建）
+│   │   │       ├── rebuild.py           # 存量文档向量重建脚本
 │   │   │       └── vector_store.py      # Qdrant 向量库服务
 │   │   ├── utils/                       # 工具模块
 │   │   │   ├── config_handler.py        # 配置加载器
+│   │   │   ├── env_loader.py            # docker/env 环境变量白名单加载
 │   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
 │   │   │   ├── logger_handler.py        # 日志配置
 │   │   │   ├── path_tool.py             # 路径工具（绝对路径计算）
 │   │   │   └── prompt_loader.py         # 提示词模板加载
 │   │   └── main.py                      # FastAPI 应用入口（lifespan 建表 + 路由注册）
 │   ├── chat_history/                    # 用户对话历史持久化（按会话独立文件）
+│   ├── eval_reports/                    # 评测运行输出（JSON / 报告）
 │   ├── pyproject.toml                   # 项目依赖配置
 │   └── uv.lock
 ├── frontend/                            # 前端（Vue 3 + Element Plus + ECharts）
@@ -114,15 +151,22 @@ RAGproject_demo/
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（225 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（432 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
 ├── docs/                                # 项目开发文档目录
-│   ├── 技术文档.md                       # 项目阶段、期望与 Docker 部署设计说明
-│   ├── 前后端开发执行文档.md               # 前后端开发计划与实施记录
-│   └── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 技术文档.md                       # 项目阶段、期望与部署设计说明
+│   ├── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 常见报错问题解决方案速查.md         # 高频报错与排查速查
+│   ├── development_docs/                # 各阶段开发执行文档
+│   │   ├── 前后端开发执行文档.md
+│   │   ├── 模型加载双模式改造执行文档.md
+│   │   └── RAG链路升级执行文档.md
+│   └── rag_eval_reports/                # RAG 评测实验报告归档
+│       ├── RAG评测实验总结报告.md
+│       └── RAG评测实验时间线.md
 └── README.md
 ```
 
@@ -136,6 +180,56 @@ RAGproject_demo/
                           Qdrant(:6333)  向量数据库
                           Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
 ```
+
+### 2.4 RAG 检索链路架构
+
+系统经过 P0→P4 五个阶段升级，当前生产链路为「双路召回 → RRF 融合 → 精排截断」，最终只把 **5 个**最相关片段送入大模型生成回答：
+
+```
+用户提问
+   │
+   ▼
+[查询优化]  mode=off（multi_query / HyDE 为可选实验开关）
+   │
+   ├──────────────────┐
+   ▼                  ▼
+[稠密召回]          [稀疏召回]
+Qdrant 向量检索      BM25 倒排索引
+dense_topn=20       bm25_topn=20
+   └────────┬─────────┘
+            ▼
+[RRF 融合]  rrf_k=60，两路按排名融合，保留 topn=20
+            ▼
+[精排]      gte-rerank-v2 逐条打分，取 top_k=5（异常自动降级）
+            ▼
+[生成]      5 个片段拼入提示词 → 大模型回答 + 引用溯源
+```
+
+| 环节 | 关键参数 | 说明 |
+|---|---|---|
+| 格式感知分块 | `chunk_size=500` / `chunk_overlap=50` | pdf/docx/md/xlsx/txt 分别用专用分块器，保留章节路径与页码 |
+| 稠密召回 | `hybrid.dense_topn=20` | Qdrant 语义向量检索 |
+| 稀疏召回 | `hybrid.bm25_topn=20` | BM25 关键词检索，文档入库时增量维护索引 |
+| RRF 融合 | `hybrid.rrf_k=60` / `hybrid.topn=20` | 两路排名融合去重，作为精排候选 |
+| 精排 | `rerank.remote_model=gte-rerank-v2` / `rerank.top_k=5` | 精排不可用时自动降级，链路不中断 |
+| 查询优化 | `query_optimize.mode=off` | multi_query / HyDE 已实现，实测无净收益故默认关闭 |
+
+**四组合链路语义**（可在设置页或 `retrieval_config.yml` 切换）：
+
+| 混合检索 | 精排 | 链路行为 | 最终条数 |
+|---|---|---|---|
+| 关 | 关 | 纯稠密检索（等价升级前旧链路） | `legacy_k=3` |
+| 开 | 关 | dense + bm25 → RRF | `hybrid.topn` |
+| 关 | 开 | dense 候选 → 精排 | `rerank.top_k` |
+| 开 | 开（**当前默认**） | dense + bm25 → RRF(20) → 精排 | `rerank.top_k=5` |
+
+**评测结论**（retrieval-only，v2 评测集 260 题）：
+
+- v1 集（80 题）：P0 基线因仅 txt 入库、文档级 HitRate 仅 0.2000，逐步升级至 P1 的 0.9250、P2 hybrid+rerank 的 **1.0000**；
+- v2 集（68 份高度近似制度文档、260 题）文档级 HitRate **0.8115**、片段级 HitRate **0.7846**、内容召回率 **0.7881**，全程零幻觉；
+- multi-query、HyDE 等查询优化在该语料下无净收益，故默认关闭，仅作可选实验变体保留。
+
+> 检索参数支持**热更新**：设置页保存后写入 `retrieval_config.yml`、同步内存配置并重建检索单例，无需重启服务；分块参数在下次上传向量化时生效。
 
 ## 第三章 安装运行指南
 

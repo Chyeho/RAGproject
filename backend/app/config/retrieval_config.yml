@@ -1,46 +1,17 @@
-# 检索链路统一配置（P2 起 chunk/检索参数收敛于此，qdrant_config.yml 仅保留连接类配置）
-# 最终送入生成的文档数按开关组合取值：
-#   rerank 开启        → rerank.top_k
-#   rerank 关 + hybrid 开 → top_k
-#   全关闭（旧链路）   → legacy_k（稠密检索 k，行为等价 P1）
-top_k: 5
-legacy_k: 3
-
-hybrid:
-  enabled: true
-  dense_topn: 20      # 稠密检索（Qdrant）候选数
-  bm25_topn: 20       # BM25 候选数
-  rrf_k: 60           # RRF 平滑常数：score = Σ 1/(rrf_k + rank)
-  topn: 20            # RRF 融合后送入精排的候选数
-
-rerank:
-  enabled: true
-  remote_model: gte-rerank-v2
-  local_model: BAAI/bge-reranker-v2-m3   # 需安装可选依赖组 local-rerank
-  top_k: 5            # 精排后保留条数（rerank 模式的最终上下文条数）
-
-# P3 查询优化（QueryEnhancer 前置包装，mode=off 时不包装直接透传）
-# P3 评测结论（260 题 v2 口径，2026-10-25）：off 最优，默认维持 off——
-#   multi_query 文档级 HitRate 持平（0.8115）但片段级/MRR 微降，每题多 1 次 LLM + 3 次 rerank 调用；
-#   hyde 全面下降（片段级 HitRate -7.7pp，longtail 类最差，假设文档 embedding 拉向 LLM 编造内容）
-# 对比报告：backend/eval_reports/20261025_173326_compare__P3-off__P3-multi-query__P3-hyde.md
-query_optimize:
-  mode: "off"         # off / multi_query / hyde（加引号防止 YAML 1.1 解析为布尔）
-  multi_query_count: 3
-  # 融合后统一精排（仅 mode=multi_query/hyde 且 rerank 开启时生效）：
-  # true  → 每路仅混合检索+RRF，全路 RRF 融合取 hybrid.topn 条候选，最后用原查询统一精排
-  # false → 每路各自完整走 精排→top_k，末端 RRF 融合（P3 实测口径）
-  fuse_then_rerank: false
-
 chunking:
-  chunk_size: 500
   chunk_overlap: 50
-  min_chunk_size: 100
-  max_chunk_size: 800
+  chunk_size: 500
   excel_rows_per_chunk: 20
+  max_chunk_size: 800
+  min_chunk_size: 100
   separators:
-  - "\n\n"
-  - "\n"
+  - '
+
+
+    '
+  - '
+
+    '
   - .
   - '!'
   - '?'
@@ -49,3 +20,20 @@ chunking:
   - ？
   - ' '
   - ''
+hybrid:
+  bm25_topn: 20
+  dense_topn: 20
+  enabled: true
+  rrf_k: 60
+  topn: 20
+legacy_k: 3
+query_optimize:
+  fuse_then_rerank: false
+  mode: 'off'
+  multi_query_count: 3
+rerank:
+  enabled: true
+  local_model: BAAI/bge-reranker-v2-m3
+  remote_model: gte-rerank-v2
+  top_k: 5
+top_k: 5
