@@ -7,6 +7,9 @@ build_retriever：按 retrieval_config.yml 开关组装最终链路（支持 ove
                 供评测 --preset 注入开关组合），全关闭时行为等价旧链路。
 P3 起末端按 query_optimize.mode 包装 QueryEnhancer（off/multi_query/hyde），
 默认 off，链路行为与 P2 完全一致。
+query_optimize.fuse_then_rerank=true 时组合 4 改为「融合后统一精排」变体：
+QueryEnhancer 包 Hybrid（每路仅混合检索，全路 RRF 融合输出=精排候选数），
+RerankRetriever 再包外层（原查询统一精排，最终序=精排序，消除变体打分噪声）。
 
 开关组合语义（最终送入生成的文档数）：
   hybrid off + rerank off → 稠密检索 k=legacy_k（等价 P1 旧链路）
@@ -118,12 +121,14 @@ def effective_output_k(conf: dict) -> int:
 
 
 def _wrap_query_enhancer(
-    retriever: BaseRetriever, conf: dict, chat_model: Optional["BaseChatModel"]
+    retriever: BaseRetriever, conf: dict, chat_model: Optional["BaseChatModel"],
+    topn: Optional[int] = None,
 ) -> BaseRetriever:
-    '''P3 查询优化包装（链路最外层前置处理；mode=off 或构造失败时原样返回）
+    '''P3 查询优化包装（mode=off 或构造失败时原样返回）
 
     QueryEnhancer 懒导入：mode=off（默认）时不加载 query 包零开销，且避免
     query 包 → rrf → retrieval/__init__ → 本模块 → query.enhancer 的导入环。
+    topn 缺省取链路有效输出 k；融合后统一精排变体下由调用方传入精排候选数。
     '''
     mode = str(conf.get("query_optimize", {}).get("mode", "off")).lower()
     if mode not in ("multi_query", "hyde"):
@@ -140,7 +145,7 @@ def _wrap_query_enhancer(
             base=retriever,
             chat_model=chat_model,
             mode=mode,
-            topn=effective_output_k(conf),
+            topn=topn if topn is not None else effective_output_k(conf),
             rrf_k=int(conf["hybrid"].get("rrf_k", 60)),
             multi_query_count=int(conf.get("query_optimize", {}).get("multi_query_count", 3)),
         )
@@ -211,6 +216,17 @@ def build_retriever(
             bm25 = bm25_retriever
         topn = int(conf["hybrid"].get("topn", 20))
         hybrid = HybridRetriever(dense=dense, bm25=bm25, rrf_k=int(conf["hybrid"].get("rrf_k", 60)), topn=topn)
+        if bool(conf.get("query_optimize", {}).get("fuse_then_rerank", False)):
+            # 「融合后统一精排」变体：QueryEnhancer 包 hybrid（每路仅混合检索+路内 RRF，
+            # 全路 RRF 融合输出 topn 条精排候选），RerankRetriever 包最外层用原查询
+            # 统一精排——最终序=精排序，且精排调用从 N 路×topn 降为 1 次×topn
+            enhanced = _wrap_query_enhancer(hybrid, conf, chat_model, topn=topn)
+            if enhanced is not hybrid:  # mode 生效；off/包装失败时回退常规链路
+                logger.info(
+                    f"[检索链路]fuse-then-rerank：dense({dense_k}) + bm25({bm25.topn}) ×多路 → "
+                    f"全路RRF(topn={topn}) → rerank(top_k={reranker.top_k}，原查询统一精排)"
+                )
+                return RerankRetriever(base=enhanced, reranker=reranker)
         logger.info(
             f"[检索链路]dense({dense_k}) + bm25({bm25.topn}) → RRF(topn={topn}) → rerank(top_k={reranker.top_k})"
         )

@@ -63,6 +63,9 @@ PRESETS.update({
     "off": {**_P3_BASE, "query_optimize": {"mode": "off"}},
     "multi-query": {**_P3_BASE, "query_optimize": {"mode": "multi_query"}},
     "hyde": {**_P3_BASE, "query_optimize": {"mode": "hyde"}},
+    # P3b 融合后统一精排变体：每路仅混合检索+RRF，全路融合后再用原查询统一精排
+    # （常规 multi-query 是每路完整精排后末端 RRF，最终序退化为 RRF 序）
+    "multi-query-fuse": {**_P3_BASE, "query_optimize": {"mode": "multi_query", "fuse_then_rerank": True}},
 })
 
 

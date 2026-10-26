@@ -27,6 +27,10 @@ rerank:
 query_optimize:
   mode: "off"         # off / multi_query / hyde（加引号防止 YAML 1.1 解析为布尔）
   multi_query_count: 3
+  # 融合后统一精排（仅 mode=multi_query/hyde 且 rerank 开启时生效）：
+  # true  → 每路仅混合检索+RRF，全路 RRF 融合取 hybrid.topn 条候选，最后用原查询统一精排
+  # false → 每路各自完整走 精排→top_k，末端 RRF 融合（P3 实测口径）
+  fuse_then_rerank: false
 
 chunking:
   chunk_size: 500

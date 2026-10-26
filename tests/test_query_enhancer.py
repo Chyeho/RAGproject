@@ -20,6 +20,7 @@ from app.service.rag.query import MODES, QueryEnhancer, parse_multi_queries
 from app.service.rag.query.hyde import generate_hypothetical_document
 from app.service.rag.query.multi_query import generate_multi_queries
 from app.service.rag.retrieval.hybrid_retriever import (
+    HybridRetriever,
     RerankRetriever,
     _effective_conf,
     build_retriever,
@@ -273,7 +274,7 @@ def test_hyde_empty_document_fallback():
 # ========================================
 
 
-def _integration_env(mode: str, mq_count: int = 2):
+def _integration_env(mode: str, mq_count: int = 2, fuse: bool = False):
     dense = FakeRetriever(mapping={
         "Q": _docs("dense-Q", ["a", "b"]),
         "R1": _docs("dense-R1", ["a", "c"]),
@@ -285,10 +286,13 @@ def _integration_env(mode: str, mq_count: int = 2):
         "R2": _docs("bm25-R2", ["e"]),
     }, topn=5)
     svc = FakeVectorStoreService(dense)
+    qo = {"mode": mode, "multi_query_count": mq_count}
+    if fuse:
+        qo["fuse_then_rerank"] = True
     overrides = {
         "hybrid": {"enabled": True},
         "rerank": {"enabled": True},
-        "query_optimize": {"mode": mode, "multi_query_count": mq_count},
+        "query_optimize": qo,
     }
     retriever = build_retriever(
         svc, bm25=bm25, reranker=FakeReranker(top_k=5),
@@ -320,3 +324,29 @@ def test_build_retriever_wraps_query_enhancer_multi_query():
     assert sorted(bm25._queries) == ["Q", "R1", "R2"]
     assert 0 < len(result) <= retriever.topn
     assert all("rrf_score" in d.metadata for d in result)
+
+
+def test_build_retriever_fuse_then_rerank_chain_structure():
+    """fuse_then_rerank=true：RerankRetriever 最外层（原查询统一精排），QueryEnhancer 包 Hybrid；
+    融合输出为精排候选数（hybrid.topn=20），最终序=精排序（rerank_score）"""
+    retriever, dense, bm25 = _integration_env("multi_query", fuse=True)
+    assert isinstance(retriever, RerankRetriever)
+    assert not isinstance(retriever, QueryEnhancer)
+    enhancer = retriever._base
+    assert isinstance(enhancer, QueryEnhancer)
+    assert isinstance(enhancer._base, HybridRetriever)
+    assert enhancer.topn == 20          # 融合 topn=精排候选数，非最终 k(5)
+
+    result = retriever.invoke("Q")
+    assert sorted(dense._queries) == ["Q", "R1", "R2"]
+    assert sorted(bm25._queries) == ["Q", "R1", "R2"]
+    assert 0 < len(result) <= 5
+    assert all("rerank_score" in d.metadata for d in result)
+
+
+def test_build_retriever_fuse_flag_ignored_when_mode_off():
+    """mode=off 时 fuse 标志无效：常规 Rerank(Hybrid) 链路，不包装 QueryEnhancer"""
+    retriever, _, _ = _integration_env("off", fuse=True)
+    assert isinstance(retriever, RerankRetriever)
+    assert isinstance(retriever._base, HybridRetriever)
+    assert not isinstance(retriever, QueryEnhancer)
