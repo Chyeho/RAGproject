@@ -119,6 +119,7 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 | P2 四组对比 | `P2-dense-only` / `P2-hybrid` / `P2-hybrid-rerank` / `P2-legacy`（旧链路回退） | 2026-10-23（四组 + compare，见 docs/rag_eval_reports） |
 | P3 策略对比 | `P3-off` / `P3-multi-query` / `P3-hyde` | 2026-10-25（三组 + compare，v2 口径 260 题，结论 mode=off） |
 | P3b 变体补测 | `P3b-off` / `P3b-multi-query` / `P3b-multi-query-fuse` | 2026-10-26（三组 + compare，v2 口径，结论 fuse_then_rerank=false） |
+| P4 收尾验证 | `P4`（文件配置直组链路，无 preset） | 2026-10-26（retrieval-only + v1/v2 双口径终局 compare，与 P3-off 七项指标逐项一致） |
 | 评测集 v2 基线 | `EV2-legacy` / `EV2-dense-only` / `EV2-hybrid` / `EV2-hybrid-rerank` | 2026-10-24（四组 + compare，v2 口径 260 题） |
 
 补充：
@@ -136,11 +137,11 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 | Faithfulness | 答案论断被检索上下文支持的程度（LLM 裁判 0~1） |
 | AnswerRelevancy | 答案与问题的相关性（LLM 裁判 0~1）。⚠ 度量主题相关而非事实正确：基线中 7 题检索未命中、模型如实拒答，仍因话题相关得 1.0 |
 
-> ground truth 采用「document_id + 溯源原文段落」而非 vector_id：当前向量 ID 为随机 UUID，且 P1 重建后 chunk 边界与 ID 均会变化；此口径保证同一份评测集在 P0~P3 全程复用。
+> ground truth 采用「document_id + 溯源原文段落」而非 vector_id：当前向量 ID 为随机 UUID，且 P1 重建后 chunk 边界与 ID 均会变化；此口径保证同一份评测集在 P0~P4 全程复用。
 
 ## 6. 已跑实验报告归档
 
-过往实验报告（P0 / P1 / P2 / EV2 / P3 / P3b 各阶段的评测记录、指标与结论）已整理归档至项目根目录 `/docs/rag_eval_reports/`，具体可查看该目录的实验报告内容：
+过往实验报告（P0 / P1 / P2 / EV2 / P3 / P3b / P4 各阶段的评测记录、指标与结论）已整理归档至项目根目录 `/docs/rag_eval_reports/`，具体可查看该目录的实验报告内容：
 
 - 《RAG评测实验总结报告.md》——各阶段实验动机、配置、完整指标与结论
 - 《RAG评测实验时间线.md》——全部报告按时间排列的清单与演进脉络

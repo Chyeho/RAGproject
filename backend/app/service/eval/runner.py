@@ -212,7 +212,7 @@ def run_eval(tag: str, mode: str, k: int | None = None, limit: int | None = None
             session_id = f"eval_{tag}_{qa['qid']}"
             get_chat_history(session_id).clear()   # 幂等：重跑同 tag 不受旧历史污染
             contexts = [d.page_content for d in docs]
-            answer = rag.rag_summarize(qa["question"], session_id=session_id)
+            answer, _ = rag.rag_summarize(qa["question"], session_id=session_id)
             faith = faithfulness(judge_model, qa["question"], answer, contexts)
             relev = answer_relevancy(judge_model, qa["question"], answer)
             faith_scores.append(faith)

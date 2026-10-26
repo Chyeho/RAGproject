@@ -67,8 +67,8 @@ class TestRagSummarize:
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     @patch("app.service.rag.rag_service.get_chat_history")
-    def test_rag_summarize_returns_string(self, mock_get_history, mock_vs):
-        """验证 rag_summarize 返回字符串"""
+    def test_rag_summarize_returns_answer_and_docs(self, mock_get_history, mock_vs):
+        """P4：rag_summarize 返回 (answer, retrieved_docs)，引用与回答同源"""
         mock_vs.return_value = MagicMock()
 
         # mock 历史消息服务
@@ -83,9 +83,10 @@ class TestRagSummarize:
         service.chain = MagicMock()
         service.chain.invoke.return_value = "这是根据参考资料生成的总结回答"
 
-        result = service.rag_summarize("公司的考勤制度是什么")
-        assert isinstance(result, str)
-        assert len(result) > 0
+        answer, docs = service.rag_summarize("公司的考勤制度是什么")
+        assert isinstance(answer, str)
+        assert len(answer) > 0
+        assert isinstance(docs, list)  # 命中文档列表（供 citations 同源拼装）
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     @patch("app.service.rag.rag_service.get_chat_history")

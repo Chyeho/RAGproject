@@ -23,35 +23,30 @@ class TestRagSummarizeTool:
         assert isinstance(desc, str)
         assert len(desc) > 0
 
-    @patch("app.service.agent.tools.agent_tools.RagSummarizeService")
-    def test_tool_calls_rag_summarize(self, mock_rag_service):
-        """验证工具调用底层 rag_summarize 方法"""
-        # 由于 rag 在模块导入时就创建了，需要 patch RagSummarizeService
-        mock_instance = MagicMock()
-        mock_instance.rag_summarize.return_value = "检索结果"
-        mock_rag_service.return_value = mock_instance
+    @patch("app.service.agent.tools.agent_tools.registry")
+    def test_tool_calls_rag_summarize(self, mock_registry):
+        """验证工具经 registry 懒加载调用底层 rag_summarize（tuple 取 answer）"""
+        mock_service = MagicMock()
+        mock_service.rag_summarize.return_value = ("检索结果", [])
+        mock_registry.get_rag_service.return_value = mock_service
 
-        # 单独导入工具（需要重新加载以使用 mock）
-        import importlib
         import app.service.agent.tools.agent_tools as agent_tools_module
 
-        # 重新 patched 导入
-        with patch.object(agent_tools_module, "rag", mock_instance):
-            result = agent_tools_module.rag_summarize.invoke({"query": "测试问题"})
-            mock_instance.rag_summarize.assert_called_once_with("测试问题")
-            assert result == "检索结果"
+        result = agent_tools_module.rag_summarize.invoke({"query": "测试问题"})
+        mock_service.rag_summarize.assert_called_once_with("测试问题")
+        assert result == "检索结果"
 
 
-class TestModuleLevelRag:
-    """测试模块级 rag 实例"""
+class TestLazyRegistry:
+    """P4：agent_tools 经 registry 懒加载，导入期不构建 RAG 链"""
 
-    @patch("app.service.agent.tools.agent_tools.RagSummarizeService")
-    def test_rag_is_initialized(self, mock_service):
-        """RagSummarizeService 实例在模块导入时创建"""
-        mock_service.return_value = MagicMock()
-        # 重新导入以触发初始化
+    def test_import_does_not_build_rag_service(self):
+        """重载模块不触发 get_rag_service（消除原导入期 eager 构造开销）"""
         import importlib
         import app.service.agent.tools.agent_tools as at
-        importlib.reload(at)
-        # 由于 RagSummarizeService 的初始化需要 VectorStoreService 等，这里只验证模块结构
+
+        with patch("app.service.rag.registry.get_rag_service") as mock_get:
+            importlib.reload(at)
+
+        mock_get.assert_not_called()
         assert hasattr(at, "rag_summarize")

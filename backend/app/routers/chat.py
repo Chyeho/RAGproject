@@ -14,31 +14,10 @@ from app.models.chat_conversation import ChatConversation
 from app.models.chat_message import ChatMessage
 from app.models.documents import Document
 from app.models.users import User
-from app.service.rag.rag_service import RagSummarizeService
-from app.service.rag.retrieval import build_retriever
-from app.service.rag.vector_store import VectorStoreService
+from app.service.rag import registry
 from app.utils.logger_handler import logger
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
-
-# RAG 服务与检索器：懒加载复用单例（历史按执行文档 4.5 限制共享）
-_rag_service: RagSummarizeService | None = None
-_retriever = None
-
-
-def get_rag_service() -> RagSummarizeService:
-    global _rag_service
-    if _rag_service is None:
-        _rag_service = RagSummarizeService()
-    return _rag_service
-
-
-def get_retriever():
-    global _retriever
-    if _retriever is None:
-        # P2：按 retrieval_config.yml 开关组装检索链路（hybrid/rerank，全关等价旧链路）
-        _retriever = build_retriever(VectorStoreService())
-    return _retriever
 
 
 class CreateConversationReq(BaseModel):
@@ -165,23 +144,16 @@ async def clear_messages(
     return ok(None, "清空成功")
 
 
-def _search_citations(query: str):
-    """检索命中的知识库文档（同步，在线程池中执行）"""
-    return get_retriever().invoke(query)
+async def build_citations_from_docs(docs, session: AsyncSession) -> list[dict]:
+    """用与回答同一次检索的命中文档拼装引用来源（P4：删除 build_citations 二次检索）
 
-
-async def build_citations(query: str, session: AsyncSession) -> list[dict]:
-    """单独检索命中文档，反查 document 表拼装引用来源"""
-    try:
-        docs = await asyncio.to_thread(_search_citations, query)
-    except Exception as e:
-        logger.warning(f"[会话]引用来源检索失败：{str(e)}")
-        return []
-
+    引用按 document_id 去重（每篇文档取排序最靠前的命中块），携带章节路径与页码。
+    """
     citations = []
     seen = set()
     for doc in docs:
-        doc_id = doc.metadata.get("document_id")
+        meta = doc.metadata or {}
+        doc_id = meta.get("document_id")
         if doc_id is None:
             continue
         try:
@@ -201,6 +173,9 @@ async def build_citations(query: str, session: AsyncSession) -> list[dict]:
         citations.append({
             "documentId": db_doc.id,
             "documentName": db_doc.file_name,
+            "sectionPath": meta.get("section_path"),
+            "pageStart": meta.get("page_start"),
+            "pageEnd": meta.get("page_end"),
             "snippet": (doc.page_content or "")[:200],
         })
     return citations
@@ -238,15 +213,18 @@ async def send_message(
     await session.commit()
 
     # 3. 调用 RAG 服务生成回答（每个会话独立历史：session_id = user_{uid}_conv_{cid}，同步调用放线程池）
+    #    P4：rag_summarize 返回 (answer, retrieved_docs)，回答与引用同源
     try:
         rag_session_id = f"user_{current_user.id}_conv_{conv.id}"
-        answer = await asyncio.to_thread(get_rag_service().rag_summarize, req.content, rag_session_id)
+        answer, retrieved_docs = await asyncio.to_thread(
+            registry.get_rag_service().rag_summarize, req.content, rag_session_id
+        )
     except Exception as e:
         logger.error(f"[会话]RAG 回答生成失败：{str(e)}", exc_info=True)
         return err(5000, f"回答生成失败：{str(e)}")
 
-    # 4. 检索拼装引用来源
-    citations = await build_citations(req.content, session)
+    # 4. 用同一次检索结果拼装引用来源
+    citations = await build_citations_from_docs(retrieved_docs, session)
 
     # 5. 入库 assistant 消息
     try:

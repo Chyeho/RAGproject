@@ -15,6 +15,7 @@
 | 2026-10-24 | 评测集 v2 迭代（扩库 65 份 + 260 题）；EV2 四组基线（retrieval-only × 4 + compare） | 4 + 1 |
 | 2026-10-25 | P3 查询优化三组 A/B（retrieval-only × 3 + compare） | 3 + 1 |
 | 2026-10-26 | P3b fuse_then_rerank 变体补测三组（retrieval-only × 3 + compare） | 3 + 1 |
+| 2026-10-26 | P4 热更新收尾验证（retrieval-only × 1 + 双口径终局 compare × 2） | 1 + 2 |
 
 ## 2026-10-19 · 评测集 v1 构建 + P0 基线
 
@@ -73,6 +74,16 @@
 | 14:46 | `20261026_144647_P3b-multi-query-fuse` | retrieval | 260 / v2 | 融合后统一精排：doc 0.8115 / passage 0.7808 / doc MRR 0.5806——无净收益 |
 | 14:47 | `20261026_144722_compare__P3-off__P3-multi-query__P3b-off__P3b-multi-query__P3b-multi-query-fuse` | compare | — | 五组对比；**决策 fuse_then_rerank=false，链路顺序非 P3 下降主因** |
 
+## 2026-10-26 · P4 热更新收尾验证
+
+**当日非评测动作**：P4 开发收官——settings API 扩展读写 `retrieval_config.yml` 全参数 + 注册表单例线程安全重建 + 审计日志；`rag_summarize` 引用合并（tuple 返回、citations 同源、section_path/页码）；前端设置页「检索增强」区块 + ChatView 引用增强（`npm run build` 通过）；新增单测 15 例，全量回归 432 passed。另完成接口级热更新验证：PUT `hybrid.bm25Topn` 20→15→20 全程不重启即时生效（GET 即时反映 + 审计日志留痕），验证后配置还原（git diff 空）。
+
+| 时间 | 报告 | 模式 | 题数/口径 | 关键结果 |
+|---|---|---|---|---|
+| 18:31 | `20261026_183124_P4` | retrieval | 260 / v2 | 文件配置直组（无 preset）：**七项检索指标与 P3-off 逐项一致**（0.8115/0.7846/0.5813/0.5615/0.3092/0.1623/0.7881）——工程改造零回归 + 热更新重建等价 |
+| 18:32 | `20261026_183233_compare__P0-baseline__P1__P2-legacy__P2-dense-only__P2-hybrid__P2-hybrid-rerank` | compare | — | v1 口径终局总对比（P0 0.2000 → P2-hybrid-rerank 双满分） |
+| 18:32 | `20261026_183236_compare__EV2-legacy__EV2-dense-only__EV2-hybrid__EV2-hybrid-rerank__P3-off__P4` | compare | — | v2 口径终局总对比（EV2 四组 + P3-off + P4）；P0→P4 全阶段收官 |
+
 ## 演进脉络
 
 ```
@@ -89,13 +100,15 @@ EV2-legacy 0.6000/0.4615 ←─────────────────�
             └─ hybrid+rerank 0.8115/0.7846（v2 最优检索配置 = 生产默认）
                  ├─ P3 multi_query 0.8115/0.7808（持平/微降，弃用）
                  ├─ P3 hyde 0.7769/0.7077（明显下降，弃用）
-                 └─ P3b multi-query 0.8192/0.7808、multi-query-fuse 0.8115/0.7808
-                    （改写模型 deepseek-flash 复测：差异 ≤2 题属噪声，fuse 无净收益，均不启用）
+                 ├─ P3b multi-query 0.8192/0.7808、multi-query-fuse 0.8115/0.7808
+                 │  （改写模型 deepseek-flash 复测：差异 ≤2 题属噪声，fuse 无净收益，均不启用）
+                 └─ P4 收尾验证 0.8115/0.7846 ≡ P3-off（工程改造零回归，热更新重建等价）
 
 生产链路定格：dense(20)+bm25(20) → RRF(20) → gte-rerank-v2 top5，query_optimize.mode=off，fuse_then_rerank=false
 全程 Faithfulness 1.0000（零幻觉）
+P4 起全部检索参数可经设置页热更新在线调整（不重启即时生效）
 ```
 
 ## 待办（后续评测）
 
-- P4（多轮对话/引用溯源等，视项目推进）完成后的 v2 口径评测与对比，回填执行文档附录 A 并更新本目录两份报告。
+- P0→P4 已全部收官，暂无待评测阶段；后续新增能力（多轮对话/引用溯源增强等）视项目推进按需追加 v2 口径评测与对比，并同步回填执行文档附录 A 与本目录两份报告。

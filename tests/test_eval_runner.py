@@ -171,7 +171,7 @@ class TestRunEvalPreset:
 class TestRunEvalFull:
     def test_generation_and_session_isolation(self, eval_env):
         rag = MagicMock()
-        rag.rag_summarize.return_value = "标准答案"
+        rag.rag_summarize.return_value = ("标准答案", [])
         history = MagicMock()
         sessions = []
 
