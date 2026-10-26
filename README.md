@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（225 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（432 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -33,7 +33,8 @@ RAGproject_demo/
 ├── docker/                              # 部署配置（nginx / 环境变量 / 中间件）
 │   ├── env/
 │   │   ├── .env.dev                     # 开发环境变量
-│   │   └── .env.prod                    # 生产环境变量
+│   │   ├── .env.prod                    # 生产环境变量
+│   │   └── *.example                    # 变量模板（仓库内置，供复制使用）
 │   ├── middleware/
 │   │   ├── my.cnf                       # MySQL 自定义配置
 │   │   └── qdrant_config.yaml           # Qdrant 向量库配置
@@ -48,51 +49,87 @@ RAGproject_demo/
 │   │   │   ├── agent_config.yml         # Agent 配置
 │   │   │   ├── cache_config.yml         # 缓存配置
 │   │   │   ├── prompts_config.yml       # 提示词配置
-│   │   │   ├── qdrant_config.yml        # Qdrant 向量库 + RAG 参数配置
-│   │   │   └── rag_config.yml           # RAG 服务配置
+│   │   │   ├── qdrant_config.yml        # Qdrant 连接与集合配置
+│   │   │   ├── rag_config.yml           # 模型配置（聊天 / 嵌入，remote / local 分组）
+│   │   │   └── retrieval_config.yml     # 检索链路配置（分块 / hybrid / rerank / 查询优化）
 │   │   ├── core/                        # 核心模块
 │   │   │   ├── response.py              # 统一响应 {code, message, data}
 │   │   │   └── security.py              # 密码哈希 / JWT 签发与校验
-│   │   ├── data/                        # 私有知识库原始文件（上传落盘目录）
-│   │   │   └── 员工手册.txt
+│   │   ├── data/                        # 上传文件落盘目录（文件名前缀时间戳）
 │   │   ├── database/                    # 数据库连接层
 │   │   │   └── db.py                    # 环境变量连接 / get_session / init_db 建表
 │   │   ├── dependencies.py              # 全局依赖（get_current_user）
 │   │   ├── logs/                        # 运行日志
-│   │   ├── modelFactory/                # 模型工厂
-│   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
+│   │   ├── modelFactory/                # 模型工厂（本地 / 远程双模式）
+│   │   │   ├── factory.py               # 聊天 / 嵌入模型实例化
+│   │   │   └── rerank_factory.py        # 精排模型实例化（远端 / 本地，含降级）
 │   │   ├── models/                      # SQLModel 数据模型（5 张表）
 │   │   │   ├── __init__.py
 │   │   │   ├── chat_conversation.py     # 会话表
 │   │   │   ├── chat_message.py          # 消息表（含 citations）
-│   │   │   ├── document_chunk.py        # 文档分块表
+│   │   │   ├── document_chunk.py        # 文档分块表（含章节 / 页码元数据）
 │   │   │   ├── documents.py             # 文档表（含 md5 去重）
 │   │   │   └── users.py                 # 用户表
-│   │   ├── prompts/                     # 系统提示词模板
-│   │   │   ├── rag_summarize.txt
-│   │   │   └── system_prompt.txt
+│   │   ├── prompts/                     # 提示词模板
+│   │   │   ├── rag_summarize.txt        # RAG 总结提示词
+│   │   │   ├── system_prompt.txt
+│   │   │   ├── multi_query.txt          # 多查询改写（可选链路）
+│   │   │   ├── hyde.txt                 # HyDE 假设文档（可选链路）
+│   │   │   ├── faithfulness_judge.txt   # 评测：忠实度裁判
+│   │   │   └── relevancy_judge.txt      # 评测：相关性裁判
 │   │   ├── routers/                     # FastAPI 路由层
 │   │   │   ├── auth.py                  # 认证（登录/注册/个人信息/改密）
 │   │   │   ├── chat.py                  # 会话 CRUD + 问答 + 引用来源
 │   │   │   ├── documents.py             # 文档上传/列表/预览/下载/删除
-│   │   │   ├── settings.py              # RAG 参数配置读写
+│   │   │   ├── settings.py              # RAG 全参数读写与热更新
 │   │   │   └── statistics.py            # 统计数据查询
 │   │   ├── service/                     # 业务服务层
 │   │   │   ├── agent/                   # Agent 服务
-│   │   │   │   └── react_agent.py
+│   │   │   │   ├── react_agent.py
+│   │   │   │   └── tools/               # Agent 工具与中间件
+│   │   │   ├── eval/                    # RAG 评测框架
+│   │   │   │   ├── runner.py            # 检索评测运行器（链路组合 / preset）
+│   │   │   │   ├── metrics.py           # HitRate / 召回率等指标
+│   │   │   │   ├── llm_judge.py         # LLM 裁判
+│   │   │   │   ├── dataset.py           # 评测集加载
+│   │   │   │   ├── corpus_v2.py         # v2 语料与评测集生成
+│   │   │   │   ├── ingest.py            # 评测语料入库
+│   │   │   │   ├── report.py            # 报告输出与对比
+│   │   │   │   ├── make_samples.py      # 样例文档生成
+│   │   │   │   ├── datasets/            # 评测集（v1 80 题 / v2 260 题）与语料
+│   │   │   │   └── README.md            # 评测框架使用说明
 │   │   │   ├── history/                 # 对话历史管理（按会话隔离）
 │   │   │   │   └── history_store.py
 │   │   │   └── rag/                     # RAG 问答核心
-│   │   │       ├── rag_service.py       # RAG 总结服务（支持多会话历史隔离）
+│   │   │       ├── chunking/            # 格式感知分块（pdf/docx/md/xlsx/txt）
+│   │   │       │   ├── strategy.py      # 分块策略入口（按格式分发）
+│   │   │       │   ├── pdf_chunker.py
+│   │   │       │   ├── docx_chunker.py
+│   │   │       │   ├── markdown_chunker.py
+│   │   │       │   ├── excel_chunker.py
+│   │   │       │   └── text_chunker.py
+│   │   │       ├── retrieval/           # 检索层
+│   │   │       │   ├── bm25_retriever.py    # BM25 稀疏检索
+│   │   │       │   ├── rrf.py               # RRF 融合
+│   │   │       │   └── hybrid_retriever.py  # 混合检索链路工厂
+│   │   │       ├── query/              # 查询优化（可选，默认关闭）
+│   │   │       │   ├── enhancer.py      # 查询增强总入口
+│   │   │       │   ├── multi_query.py   # 多查询改写
+│   │   │       │   └── hyde.py          # HyDE
+│   │   │       ├── rag_service.py       # RAG 总结服务（检索与生成分离）
+│   │   │       ├── registry.py          # RAG 单例注册表（线程安全 + 热更新重建）
+│   │   │       ├── rebuild.py           # 存量文档向量重建脚本
 │   │   │       └── vector_store.py      # Qdrant 向量库服务
 │   │   ├── utils/                       # 工具模块
 │   │   │   ├── config_handler.py        # 配置加载器
+│   │   │   ├── env_loader.py            # docker/env 环境变量白名单加载
 │   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
 │   │   │   ├── logger_handler.py        # 日志配置
 │   │   │   ├── path_tool.py             # 路径工具（绝对路径计算）
 │   │   │   └── prompt_loader.py         # 提示词模板加载
 │   │   └── main.py                      # FastAPI 应用入口（lifespan 建表 + 路由注册）
 │   ├── chat_history/                    # 用户对话历史持久化（按会话独立文件）
+│   ├── eval_reports/                    # 评测运行输出（JSON / 报告）
 │   ├── pyproject.toml                   # 项目依赖配置
 │   └── uv.lock
 ├── frontend/                            # 前端（Vue 3 + Element Plus + ECharts）
@@ -114,15 +151,22 @@ RAGproject_demo/
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（225 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（432 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
 ├── docs/                                # 项目开发文档目录
-│   ├── 技术文档.md                       # 项目阶段、期望与 Docker 部署设计说明
-│   ├── 前后端开发执行文档.md               # 前后端开发计划与实施记录
-│   └── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 技术文档.md                       # 项目阶段、期望与部署设计说明
+│   ├── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 常见报错问题解决方案速查.md         # 高频报错与排查速查
+│   ├── development_docs/                # 各阶段开发执行文档
+│   │   ├── 前后端开发执行文档.md
+│   │   ├── 模型加载双模式改造执行文档.md
+│   │   └── RAG链路升级执行文档.md
+│   └── rag_eval_reports/                # RAG 评测实验报告归档
+│       ├── RAG评测实验总结报告.md
+│       └── RAG评测实验时间线.md
 └── README.md
 ```
 
@@ -137,11 +181,63 @@ RAGproject_demo/
                           Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
 ```
 
+### 2.4 RAG 检索链路架构
+
+系统经过 P0→P4 五个阶段升级，当前生产链路为「双路召回 → RRF 融合 → 精排截断」，最终只把 **5 个**最相关片段送入大模型生成回答：
+
+```
+用户提问
+   │
+   ▼
+[查询优化]  mode=off（multi_query / HyDE 为可选实验开关）
+   │
+   ├──────────────────┐
+   ▼                  ▼
+[稠密召回]          [稀疏召回]
+Qdrant 向量检索      BM25 倒排索引
+dense_topn=20       bm25_topn=20
+   └────────┬─────────┘
+            ▼
+[RRF 融合]  rrf_k=60，两路按排名融合，保留 topn=20
+            ▼
+[精排]      gte-rerank-v2 逐条打分，取 top_k=5（异常自动降级）
+            ▼
+[生成]      5 个片段拼入提示词 → 大模型回答 + 引用溯源
+```
+
+| 环节 | 关键参数 | 说明 |
+|---|---|---|
+| 格式感知分块 | `chunk_size=500` / `chunk_overlap=50` | pdf/docx/md/xlsx/txt 分别用专用分块器，保留章节路径与页码 |
+| 稠密召回 | `hybrid.dense_topn=20` | Qdrant 语义向量检索 |
+| 稀疏召回 | `hybrid.bm25_topn=20` | BM25 关键词检索，文档入库时增量维护索引 |
+| RRF 融合 | `hybrid.rrf_k=60` / `hybrid.topn=20` | 两路排名融合去重，作为精排候选 |
+| 精排 | `rerank.remote_model=gte-rerank-v2` / `rerank.top_k=5` | 精排不可用时自动降级，链路不中断 |
+| 查询优化 | `query_optimize.mode=off` | multi_query / HyDE 已实现，实测无净收益故默认关闭 |
+
+**四组合链路语义**（可在设置页或 `retrieval_config.yml` 切换）：
+
+| 混合检索 | 精排 | 链路行为 | 最终条数 |
+|---|---|---|---|
+| 关 | 关 | 纯稠密检索（等价升级前旧链路） | `legacy_k=3` |
+| 开 | 关 | dense + bm25 → RRF | `hybrid.topn` |
+| 关 | 开 | dense 候选 → 精排 | `rerank.top_k` |
+| 开 | 开（**当前默认**） | dense + bm25 → RRF(20) → 精排 | `rerank.top_k=5` |
+
+**评测结论**（retrieval-only，v2 评测集 260 题）：
+
+- v1 集（80 题）：P0 基线因仅 txt 入库、文档级 HitRate 仅 0.2000，逐步升级至 P1 的 0.9250、P2 hybrid+rerank 的 **1.0000**；
+- v2 集（68 份高度近似制度文档、260 题）文档级 HitRate **0.8115**、片段级 HitRate **0.7846**、内容召回率 **0.7881**，全程零幻觉；
+- multi-query、HyDE 等查询优化在该语料下无净收益，故默认关闭，仅作可选实验变体保留。
+
+> 检索参数支持**热更新**：设置页保存后写入 `retrieval_config.yml`、同步内存配置并重建检索单例，无需重启服务；分块参数在下次上传向量化时生效。
+
 ## 第三章 安装运行指南
 
 本章介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
 
 ### 3.1 环境准备
+
+#### 3.1.1 依赖版本说明
 
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
@@ -152,6 +248,26 @@ RAGproject_demo/
 
 > Windows 提示：执行下述命令前，请确认 **Docker Desktop 已启动**（任务栏图标处于运行状态），否则 `docker compose` 会报连接错误。
 
+#### 3.1.2 环境变量文件配置
+
+环境变量统一放在 `docker/env/` 目录，仓库已提供模板文件，复制一份即可：
+
+```bash
+cp docker/env/.env.dev.example docker/env/.env.dev    # 开发环境（快速启动用它）
+cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
+```
+
+复制后只需填写以下 **4 个必填项**即可启动，其余变量均有默认值，无需改动：
+
+| 必填项 | 说明 |
+|--------|------|
+| `OPENAI_CHAT_MODEL` | 业务聊天模型名，随所选供应商填写（如 `deepseek-flash`、`qwen-plus`） |
+| `OPENAI_API_KEY` | 业务聊天模型的 API Key |
+| `OPENAI_BASE_URL` | 业务聊天模型端点（如 `https://api.deepseek.com/v1`） |
+| `DASHSCOPE_API_KEY` | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
+
+> 嵌入、精排、评测等其他远程模型默认走 DashScope，配好 `DASHSCOPE_API_KEY` 即可，无需额外配置。生产环境还需将 `.env.prod` 中 `<strong_production_password>` 等 MySQL 密码占位符替换为强密码（开发模板已内置默认密码）。各变量完整说明见 3.4 节。
+
 ### 3.2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
 
 **前置准备**：仅需 Docker Desktop；无需本地安装 Python / Node.js。
@@ -159,7 +275,7 @@ RAGproject_demo/
 ```bash
 # 1. 首次使用：从模板复制环境变量文件并编辑
 cp docker/env/.env.dev.example docker/env/.env.dev
-#    至少需填写：DASHSCOPE_API_KEY（问答与向量化必需）、MYSQL_ROOT_PASSWORD 等
+#    只需填写 3.1.2 所列 4 个必填项（聊天模型三件套 + DASHSCOPE_API_KEY）
 
 # 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx / ollama）
 docker compose --env-file docker/env/.env.dev up -d --build
@@ -231,31 +347,37 @@ docker compose down
 
 **说明**：仅运行 MySQL/Qdrant 两个容器（local模式为加上ollama的共计三个容器），资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
 
-### 3.4 模型加载模式切换（remote / local）
+### 3.4 模型配置与环境变量说明
 
-系统支持两种模型加载模式，通过环境变量 **`MODEL_MODE`** 一键切换，无需改代码：
+  快速上手只需配置 3.1.2 中的 4 个必填项，本节为完整参考。变量按用途分为两类：**可自主配置的模型项**（模型名 / API Key / base_url，可按需替换供应商）与**保留在原位置的编排项**（Docker 容器编排注入信息、模型加载模式等，一般无需改动）。
+
+#### 3.4.1 模型加载模式说明
+
+通过环境变量 **`MODEL_MODE`** 一键切换，无需改代码：
 
 | 模式 | 聊天模型（LLM） | 嵌入模型（Embed） | 适用场景 |
 |------|----------------|-------------------|----------|
 | `remote`（默认） | `langchain_openai.ChatOpenAI`，兼容任意 OpenAI 协议模型（通义/DeepSeek/月之暗面等） | DashScope `text-embedding-v4` | 有 API Key、低延迟需求 |
 | `local` | `langchain_ollama.ChatOllama`，本地 Ollama | `langchain_ollama.OllamaEmbeddings`，本地 Ollama | 私有化部署、数据不出域 |
 
-#### 切换方法
+##### 切换方法
 
 修改 `.env` 文件中的 `MODEL_MODE` 值即可：
 
 ```ini
-# 远程模式（默认）
+# 远程模式（默认）：聊天模型指向任意 OpenAI 协议供应商
 MODEL_MODE=remote
-OPENAI_API_KEY=your_openai_compatible_api_key
-OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+OPENAI_CHAT_MODEL=deepseek-flash
+OPENAI_API_KEY=your_deepseek_api_key
+OPENAI_BASE_URL=https://api.deepseek.com
+DASHSCOPE_API_KEY=your_dashscope_api_key   # 嵌入/精排/评测模型仍走 DashScope
 
 # 本地模式
 MODEL_MODE=local
 OLLAMA_BASE_URL=http://ollama:11434
 ```
 
-#### 本地模式首次使用：Ollama 模型自动拉取
+##### 本地模式首次使用：Ollama 模型自动拉取
 
 Docker Compose 已内置 `ollama` 服务。切换为 `MODEL_MODE=local` 后，后端启动时会**自动检测** `qwen2.5:7b`（聊天）和 `bge-m3`（嵌入）两个模型是否存在，缺失则自动 `pull`，无需手动执行：
 
@@ -273,15 +395,53 @@ OLLAMA_CHAT_MODEL=qwen2.5:14b
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
+##### 远程模式兼容的模型端点（业务聊天模型）
+
+| 服务商               | `OPENAI_BASE_URL`                                   | 模型名示例       |
+| -------------------- | --------------------------------------------------- | ---------------- |
+| 通义千问（兼容端点） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus`      |
+| DeepSeek             | `https://api.deepseek.com/v1`                       | `deepseek-flash` |
+| 月之暗面             | `https://api.moonshot.cn/v1`                        | `moonshot-v1-8k` |
+
+#### 3.4.2 配置项说明
+
+##### .env 需自主配置的模型项
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `OPENAI_CHAT_MODEL` | 是 | 业务聊天模型名，随所选供应商填写 |
+| `OPENAI_API_KEY` | 是 | 业务聊天模型的 API Key |
+| `OPENAI_BASE_URL` | 是 | 业务聊天模型端点，见下方兼容端点表 |
+| `DASHSCOPE_API_KEY` | 是 | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
+
+> **供应商策略**：只有业务聊天模型（`OPENAI_*` 三件套）可指向任意 OpenAI 协议供应商；**聊天模型除外的其他远程模型（嵌入、精排、评测）默认走 DashScope 供应商**，仅需配好 `DASHSCOPE_API_KEY` 即可，无需其他配置。
+
+##### 可选覆盖项（默认值即可用，无需配置）
+
+| 变量 | 默认值（均为 DashScope） | 说明 |
+|------|--------------------------|------|
+| `TEXT_EMBEDDING_MODEL` | `rag_config.yml` 的 `remote.embedding_model_name`（text-embedding-v4） | 覆盖嵌入模型名 |
+| `RERANK_MODEL` | `retrieval_config.yml` 的 `rerank.remote_model`（gte-rerank-v2） | 覆盖精排模型名 |
+| `EVAL_CHAT_MODEL` | `qwen-plus` | 覆盖评测模型名（裁判/评测集生成）。固定走 DashScope，与业务聊天模型解耦，保证与历史评测报告口径可比 |
+| `DASHSCOPE_BASE_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 覆盖 DashScope OpenAI 协议端点（仅评测模型使用） |
+
 > **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。
 
-#### 远程模式兼容的模型端点
+##### 保留在原位置的编排项（不要在 .env 之外自定义）
 
-| 服务商 | `OPENAI_BASE_URL` | 模型名示例 |
-|--------|-------------------|-----------|
-| 通义千问（兼容端点） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3.7-max` |
-| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
-| 月之暗面 | `https://api.moonshot.cn/v1` | `moonshot-v1-8k` |
+以下变量由 Docker Compose / 启动脚本按部署形态注入，属于编排信息，**不属于模型自定义项**：
+
+- `MODEL_MODE`：模型加载模式（remote/local），见上表
+- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + 宿主机映射端口
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：同上，编排内为 `qdrant`
+- `OLLAMA_BASE_URL` / `OLLAMA_PORT`：编排内为 `http://ollama:11434`；本地直连为 `http://localhost:21434`
+- `ENV` / `DEBUG` / `LOG_LEVEL`：后端服务运行参数
+
+#### 3.4.3 本地直跑时 .env 如何生效
+
+- **Docker 部署**：Compose 自动把 env 文件注入容器环境。
+- **本地启动后端**：`scripts/start-backend.ps1` / `start-backend.sh` 解析 `.env.dev` 注入（并自动做本地连接覆盖）。
+- **`uv run` 直跑脚本/评测**：后端启动时会自动按白名单从 `docker/env/.env.dev` 加载**模型相关变量**（仅注入缺失键，已注入的真实环境变量优先；可用 `PRIVRAG_ENV_FILE` 指定其他 env 文件）。白名单只含模型项，`MYSQL_HOST=mysql` 等编排值不会被误注入本地进程。
 
 ## 第四章 团队信息
 

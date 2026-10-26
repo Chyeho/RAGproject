@@ -1,26 +1,11 @@
 allow_knowledge_file_type:
 - txt
 - pdf
-chunk_overlap: 20
-chunk_size: 150
+- docx
+- doc
+- md
+- xlsx
 collection_name: privrag_dev
 data_path: data
 host: 127.0.0.1
-k: 3
 port: 6333
-separators:
-- '
-
-
-  '
-- '
-
-  '
-- .
-- '!'
-- '?'
-- 。
-- ！
-- ？
-- ' '
-- ''

@@ -1,6 +1,5 @@
 # ---------- 远程模式（MODEL_MODE=remote）----------
 remote:
-  chat_model_name: qwen3.7-max              # 兼容 OpenAI 协议的聊天模型名
   embedding_model_name: text-embedding-v4   # DashScope 嵌入模型名
 
 # ---------- 本地模式（MODEL_MODE=local，Ollama）----------

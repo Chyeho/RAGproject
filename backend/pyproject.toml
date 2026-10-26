@@ -10,20 +10,32 @@ dependencies = [
     "cryptography>=47.0.0",
     "dashscope>=1.25.17",
     "fastapi[standard]>=0.136.3",
+    "jieba>=0.42.1",
     "langchain>=1.3.4",
     "langchain-community>=0.4.1",
     "langchain-ollama>=0.3.0",
     "langchain-openai>=0.3.0",
     "langchain-qdrant>=1.1.0",
+    "openpyxl>=3.1.5",
     "protobuf==3.20.3",
     "pyjwt>=2.13.0",
+    "pymupdf>=1.28.2",
     "pymysql>=1.2.0",
+    "pypdf>=6.21.1",
     "pytest>=9.1.1",
+    "python-docx>=1.2.0",
     "python-multipart>=0.0.31",
     "qdrant-client>=1.19.0",
+    "rank-bm25>=0.2.2",
     "sqlalchemy[asyncio]>=2.0.49",
     "sqlmodel>=0.0.38",
     "streamlit>=1.56.0",
+]
+
+[dependency-groups]
+# 本地重排模型（可选）：uv sync --group local-rerank 安装；未安装时 rerank 自动降级/跳过
+local-rerank = [
+    "sentence-transformers>=3.0.0",
 ]
 
 [tool.fastapi]

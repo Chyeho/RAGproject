@@ -1,0 +1,39 @@
+chunking:
+  chunk_overlap: 50
+  chunk_size: 500
+  excel_rows_per_chunk: 20
+  max_chunk_size: 800
+  min_chunk_size: 100
+  separators:
+  - '
+
+
+    '
+  - '
+
+    '
+  - .
+  - '!'
+  - '?'
+  - 。
+  - ！
+  - ？
+  - ' '
+  - ''
+hybrid:
+  bm25_topn: 20
+  dense_topn: 20
+  enabled: true
+  rrf_k: 60
+  topn: 20
+legacy_k: 3
+query_optimize:
+  fuse_then_rerank: false
+  mode: 'off'
+  multi_query_count: 3
+rerank:
+  enabled: true
+  local_model: BAAI/bge-reranker-v2-m3
+  remote_model: gte-rerank-v2
+  top_k: 5
+top_k: 5

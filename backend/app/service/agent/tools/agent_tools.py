@@ -1,9 +1,9 @@
 '''agent工具库'''
 from langchain_core.tools import tool
-from app.service.rag.rag_service import RagSummarizeService
+from app.service.rag import registry
 
-rag = RagSummarizeService()
 
 @tool(description="从向量存储中检索参考资料")
-def rag_summarize(query:str) ->str:
-    return rag.rag_summarize(query)
+def rag_summarize(query: str) -> str:
+    answer, _ = registry.get_rag_service().rag_summarize(query)
+    return answer

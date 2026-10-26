@@ -17,6 +17,13 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings          # 本地模�
 from app.utils.config_handler import rag_conf                     # 导入rag配置项
 from app.utils.logger_handler import logger                       # 日志器
 
+# 远程聊天模型默认值：环境变量 OPENAI_CHAT_MODEL 缺失时的兜底
+DEFAULT_OPENAI_CHAT_MODEL = "qwen-plus"
+# DashScope OpenAI 协议兼容端点：评测聊天模型默认供应商
+DEFAULT_DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# 评测模型默认值：固定 DashScope qwen-plus，与 EV2/P0-P3 历史报告口径可比
+DEFAULT_EVAL_CHAT_MODEL = "qwen-plus"
+
 
 def _get_model_mode() -> str:
     """读取环境变量 MODEL_MODE，返回 'remote' 或 'local'；非法值回退 remote 并告警"""
@@ -25,6 +32,50 @@ def _get_model_mode() -> str:
         logger.warning(f"[模型工厂]MODEL_MODE='{mode}' 不合法，回退为 'remote'")
         mode = "remote"
     return mode
+
+
+def get_remote_chat_model_name() -> str:
+    """读取远程聊天模型名：取 OPENAI_CHAT_MODEL 环境变量，未配置时回退默认值并告警"""
+    model_name = os.environ.get("OPENAI_CHAT_MODEL", "").strip()
+    if not model_name:
+        logger.warning(
+            f"[模型工厂]未配置 OPENAI_CHAT_MODEL，回退默认模型: {DEFAULT_OPENAI_CHAT_MODEL}"
+        )
+        return DEFAULT_OPENAI_CHAT_MODEL
+    return model_name
+
+
+def get_remote_embedding_model_name() -> str:
+    """读取远程嵌入模型名：TEXT_EMBEDDING_MODEL 环境变量优先，未配置回退 rag_config.yml"""
+    model_name = os.environ.get("TEXT_EMBEDDING_MODEL", "").strip()
+    if model_name:
+        return model_name
+    return str(rag_conf["remote"]["embedding_model_name"])
+
+
+def get_eval_chat_model_name() -> str:
+    """读取评测模型名（裁判/评测集生成）：EVAL_CHAT_MODEL 环境变量优先，回退 qwen-plus"""
+    model_name = os.environ.get("EVAL_CHAT_MODEL", "").strip()
+    return model_name or DEFAULT_EVAL_CHAT_MODEL
+
+
+def get_eval_chat_model() -> BaseChatModel:
+    """评测专用聊天模型：固定 DashScope 供应商（默认 qwen-plus），与业务聊天模型解耦
+
+    业务聊天切第三方供应商（如 DeepSeek）后，评测裁判与评测集生成仍走 DashScope，
+    保证与 EV2/P0-P3 历史报告的 qwen-plus 口径可比。
+    凭据取 DASHSCOPE_API_KEY，端点取 DASHSCOPE_BASE_URL（缺省为 DashScope 兼容端点）。
+    """
+    api_key = os.environ.get("DASHSCOPE_API_KEY", "not-configured")
+    if api_key == "not-configured":
+        logger.warning(
+            "[模型工厂]评测模型未配置 DASHSCOPE_API_KEY，"
+            "模型可加载但调用时会失败。请在环境变量中设置 DASHSCOPE_API_KEY。"
+        )
+    base_url = os.environ.get("DASHSCOPE_BASE_URL", "").strip() or DEFAULT_DASHSCOPE_BASE_URL
+    model_name = get_eval_chat_model_name()
+    logger.info(f"[模型工厂]评测模型(远程-DashScope): {model_name} @ {base_url}")
+    return ChatOpenAI(model=model_name, api_key=api_key, base_url=base_url)
 
 
 def _normalize_model_name(name: str) -> str:
@@ -146,10 +197,7 @@ class ChatModelFactory(BaseModelFactory):
                 "模型可加载但调用时会失败。请在环境变量中设置 OPENAI_API_KEY。"
                 "通义兼容端点示例: https://dashscope.aliyuncs.com/compatible-mode/v1"
             )
-        model_name = os.environ.get(
-            "OPENAI_CHAT_MODEL",
-            rag_conf["remote"]["chat_model_name"],
-        )
+        model_name = get_remote_chat_model_name()
         base_url = os.environ.get("OPENAI_BASE_URL")
         logger.info(f"[模型工厂]聊天模型(远程): {model_name} @ {base_url}")
         return ChatOpenAI(model=model_name, api_key=api_key, base_url=base_url)
@@ -170,8 +218,8 @@ class EmbeddingFactory(BaseModelFactory):
             logger.info(f"[模型工厂]嵌入模型(本地): {model_name} @ {base_url}")
             return OllamaEmbeddings(model=model_name, base_url=base_url, keep_alive=3600)
 
-        # 远程模式：DashScope 嵌入模型（保持不变）
-        model_name = rag_conf["remote"]["embedding_model_name"]
+        # 远程模式：DashScope 嵌入模型（模型名可由 TEXT_EMBEDDING_MODEL 环境变量覆盖）
+        model_name = get_remote_embedding_model_name()
         logger.info(f"[模型工厂]嵌入模型(远程-DashScope): {model_name}")
         return DashScopeTextEmbeddings(model=model_name)
 

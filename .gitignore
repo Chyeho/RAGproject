@@ -49,6 +49,7 @@ backend/chroma_db/
 backend/app/chroma_db/       # 旧版本 Chroma 遗留数据，已迁移至 Qdrant
 backend/chat_history/
 backend/app/logs/
+backend/app/data/
 
 # ============================================================
 # IDE & 编辑器
@@ -66,6 +67,14 @@ backend/app/logs/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ============================================================
+# RAG评测体系
+# ============================================================
+backend/eval_reports/
+backend/app/service/eval/datasets/corpus_v2/
+backend/app/service/eval/datasets/samples/
+backend/app/service/eval/datasets/*.json
 
 # ============================================================
 # 敏感文件

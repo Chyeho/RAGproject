@@ -122,12 +122,123 @@
           <span class="field-hint">每次回答检索的知识库文本块数量</span>
         </el-form-item>
 
-        <!-- 预留后续参数扩展位置 -->
-        <el-form-item>
-          <div class="reserved-hint">
-            <el-icon :size="14"><InfoFilled /></el-icon>
-            <span>更多参数（如向量模型、召回重排、相似度阈值等）将在后续版本开放配置</span>
-          </div>
+        <!-- ================= 检索增强（P4：混合检索/精排/查询优化，保存后热更新生效） ================= -->
+        <div class="group-divider">检索增强</div>
+
+        <el-form-item label="混合检索">
+          <el-switch v-model="ragForm.hybridEnabled" />
+          <span class="field-hint">向量 + BM25 关键词双路召回，RRF 融合去重</span>
+        </el-form-item>
+        <template v-if="ragForm.hybridEnabled">
+          <el-form-item label="稠密候选数">
+            <el-input-number
+              v-model="ragForm.hybridDenseTopn"
+              :min="1"
+              :max="100"
+              :step="5"
+              controls-position="right"
+            />
+            <span class="field-hint">向量检索候选条数</span>
+          </el-form-item>
+          <el-form-item label="BM25 候选数">
+            <el-input-number
+              v-model="ragForm.hybridBm25Topn"
+              :min="1"
+              :max="100"
+              :step="5"
+              controls-position="right"
+            />
+            <span class="field-hint">关键词检索候选条数</span>
+          </el-form-item>
+          <el-form-item label="融合候选数">
+            <el-input-number
+              v-model="ragForm.hybridTopn"
+              :min="1"
+              :max="100"
+              :step="5"
+              controls-position="right"
+            />
+            <span class="field-hint">RRF 融合后送入精排的候选条数</span>
+          </el-form-item>
+          <el-form-item label="RRF 平滑常数">
+            <el-input-number
+              v-model="ragForm.hybridRrfK"
+              :min="1"
+              :max="500"
+              :step="10"
+              controls-position="right"
+            />
+            <span class="field-hint">排名融合平滑参数，越大排名差异越平缓</span>
+          </el-form-item>
+        </template>
+
+        <el-form-item label="结果精排">
+          <el-switch v-model="ragForm.rerankEnabled" />
+          <span class="field-hint">重排模型精排候选块，开启时精排保留数与 Top-K 联动</span>
+        </el-form-item>
+        <template v-if="ragForm.rerankEnabled">
+          <el-form-item label="精排保留数">
+            <el-input-number
+              v-model="ragForm.rerankTopK"
+              :min="1"
+              :max="20"
+              :step="1"
+              controls-position="right"
+            />
+            <span class="field-hint">精排后保留并送入生成的条数</span>
+          </el-form-item>
+          <el-form-item label="远端精排模型">
+            <el-input
+              v-model="ragForm.rerankRemoteModel"
+              placeholder="远端精排模型名（如 gte-rerank）"
+              class="field-input"
+              clearable
+            />
+          </el-form-item>
+          <el-form-item label="本地精排模型">
+            <el-input
+              v-model="ragForm.rerankLocalModel"
+              placeholder="本地精排模型名（可留空）"
+              class="field-input"
+              clearable
+            />
+          </el-form-item>
+        </template>
+
+        <el-form-item label="查询优化">
+          <el-select v-model="ragForm.queryMode" class="field-input">
+            <el-option label="关闭" value="off" />
+            <el-option label="多查询扩展（Multi-Query）" value="multi_query" />
+            <el-option label="假设文档（HyDE）" value="hyde" />
+          </el-select>
+          <span class="field-hint">检索前改写问题，提升召回覆盖</span>
+        </el-form-item>
+        <template v-if="ragForm.queryMode === 'multi_query'">
+          <el-form-item label="变体查询数">
+            <el-input-number
+              v-model="ragForm.multiQueryCount"
+              :min="2"
+              :max="5"
+              :step="1"
+              controls-position="right"
+            />
+            <span class="field-hint">扩展生成的问题数量</span>
+          </el-form-item>
+          <el-form-item label="融合后精排">
+            <el-switch v-model="ragForm.fuseThenRerank" />
+            <span class="field-hint">多路召回 RRF 融合后再统一精排</span>
+          </el-form-item>
+        </template>
+
+        <el-form-item label="兜底检索数">
+          <el-input-number
+            v-model="ragForm.legacyK"
+            :min="1"
+            :max="20"
+            :step="1"
+            controls-position="right"
+          />
+          <span class="field-hint">检索增强全部关闭时的向量检索条数</span>
         </el-form-item>
 
         <el-form-item>
@@ -148,7 +259,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, InfoFilled } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { updateProfile, updatePassword } from '../../api/auth'
 import { getRagConfig, saveRagConfig } from '../../api/settings'
 import { getUser, setUser } from '../../utils/auth'
@@ -243,6 +354,20 @@ const ragSaving = ref(false)
 const ragForm = reactive({
   chunkSize: 200,
   topK: 3,
+  // ---- 检索增强（P4）----
+  legacyK: 3,
+  hybridEnabled: false,
+  hybridDenseTopn: 20,
+  hybridBm25Topn: 20,
+  hybridTopn: 30,
+  hybridRrfK: 60,
+  rerankEnabled: false,
+  rerankTopK: 5,
+  rerankRemoteModel: '',
+  rerankLocalModel: '',
+  queryMode: 'off',
+  multiQueryCount: 3,
+  fuseThenRerank: false,
 })
 
 const ragRules = {
@@ -254,6 +379,23 @@ onMounted(async () => {
   const config = await getRagConfig()
   ragForm.chunkSize = config.chunkSize
   ragForm.topK = config.topK
+  // 检索增强分组回填（P4）
+  ragForm.legacyK = config.legacyK ?? ragForm.legacyK
+  const h = config.hybrid || {}
+  ragForm.hybridEnabled = !!h.enabled
+  ragForm.hybridDenseTopn = h.denseTopn ?? ragForm.hybridDenseTopn
+  ragForm.hybridBm25Topn = h.bm25Topn ?? ragForm.hybridBm25Topn
+  ragForm.hybridTopn = h.topn ?? ragForm.hybridTopn
+  ragForm.hybridRrfK = h.rrfK ?? ragForm.hybridRrfK
+  const r = config.rerank || {}
+  ragForm.rerankEnabled = !!r.enabled
+  ragForm.rerankTopK = r.topK ?? ragForm.rerankTopK
+  ragForm.rerankRemoteModel = r.remoteModel || ''
+  ragForm.rerankLocalModel = r.localModel || ''
+  const q = config.queryOptimize || {}
+  ragForm.queryMode = q.mode || 'off'
+  ragForm.multiQueryCount = q.multiQueryCount ?? ragForm.multiQueryCount
+  ragForm.fuseThenRerank = !!q.fuseThenRerank
   // 回填个人信息
   const user = getUser()
   if (user) {
@@ -268,8 +410,30 @@ async function handleSaveRag() {
 
   ragSaving.value = true
   try {
-    await saveRagConfig({ chunkSize: ragForm.chunkSize, topK: ragForm.topK })
-    ElMessage.success('RAG 参数保存成功')
+    await saveRagConfig({
+      chunkSize: ragForm.chunkSize,
+      topK: ragForm.topK,
+      legacyK: ragForm.legacyK,
+      hybrid: {
+        enabled: ragForm.hybridEnabled,
+        denseTopn: ragForm.hybridDenseTopn,
+        bm25Topn: ragForm.hybridBm25Topn,
+        rrfK: ragForm.hybridRrfK,
+        topn: ragForm.hybridTopn,
+      },
+      rerank: {
+        enabled: ragForm.rerankEnabled,
+        remoteModel: ragForm.rerankRemoteModel || null, // 空值置 null → 后端跳过不覆盖
+        localModel: ragForm.rerankLocalModel || null,
+        topK: ragForm.rerankTopK,
+      },
+      queryOptimize: {
+        mode: ragForm.queryMode,
+        multiQueryCount: ragForm.multiQueryCount,
+        fuseThenRerank: ragForm.fuseThenRerank,
+      },
+    })
+    ElMessage.success('RAG 参数保存成功，已即时生效')
   } catch (e) {
     ElMessage.error(e.message || '保存失败')
   } finally {
@@ -361,17 +525,6 @@ async function handleSaveRag() {
   margin-left: 12px;
   font-size: 12px;
   color: var(--text-secondary);
-}
-
-.reserved-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  background-color: var(--brand-color-light);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-main);
 }
 
 .save-btn {
