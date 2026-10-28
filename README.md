@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（432 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（500 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -151,7 +151,7 @@ RAGproject_demo/
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（432 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（500 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
@@ -230,6 +230,39 @@ dense_topn=20       bm25_topn=20
 - multi-query、HyDE 等查询优化在该语料下无净收益，故默认关闭，仅作可选实验变体保留。
 
 > 检索参数支持**热更新**：设置页保存后写入 `retrieval_config.yml`、同步内存配置并重建检索单例，无需重启服务；分块参数在下次上传向量化时生效。
+
+#### 2.4.1 RAG+ReAct 混合架构
+
+在上述检索链路之上增加一层**窄规则路由**：绝大多数问题仍走 RAG 直调（行为与改造前一致），只有命中"多实体对比 / 多步计算"等明确规则的问题才进入 ReAct 复杂通道，失败自动降级回直调。
+
+```
+用户提问
+   │
+   ▼
+[规则路由]  config/router_rules.yml（强规则直接命中；弱规则累计 ≥ 阈值 2）
+   │
+   ├── rag_direct（默认，占绝大多数）──→ [RAG 直调] 见 2.4 检索链路
+   │
+   └── react_complex（多实体/多步骤/对比计算）
+             ▼
+       [ReAct Agent] 最多 3 轮工具调用 + 1 次收尾总结（总超时 30s，单工具 10s）
+             工具：rag_search（检索 + 片段摘要）
+                   compare_calc（compare / diff / sum / condition_check）
+             ▼
+       成功 → 回答 + 引用来源；失败/超时 → 自动降级 RAG 直调（用户无感）
+```
+
+| 配置项（`backend/app/config/hybrid_config.yml`） | 默认值 | 说明 |
+|---|---|---|
+| `ENABLE_HYBRID_ROUTER` | `true` | 总开关；置 `false` 时全部走 RAG 直调，行为与改造前一致 |
+| `REACT_MAX_STEPS` | `3` | ReAct 最大工具轮次（用尽后追加一次纯总结，仍不产生新工具调用） |
+| `REACT_TIMEOUT_MS` / `TOOL_TIMEOUT_MS` | `30000` / `10000` | ReAct 总超时 / 单次工具超时 |
+| `ENABLE_REACT_FALLBACK` | `true` | ReAct 失败时是否降级回 RAG 直调 |
+| `ROUTER_RULES_PATH` | `config/router_rules.yml` | 路由规则文件（强/弱规则、权重、阈值） |
+| `LOG_TRACE_LEVEL` | `summary` | trace 级别：`off` / `summary` / `full`（full 含每轮 thought/action/observation） |
+| `ENABLE_TRACE_API` | `false` | 是否开放 `/api/debug/trace` 调试查询接口 |
+
+> **一键关闭**：设置环境变量 `ENABLE_HYBRID_ROUTER=false`（优先级高于 YAML）或直接改 YAML，即可完全回到纯 RAG 直调，无需改代码。
 
 ## 第三章 安装运行指南
 
@@ -436,6 +469,10 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 - `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：同上，编排内为 `qdrant`
 - `OLLAMA_BASE_URL` / `OLLAMA_PORT`：编排内为 `http://ollama:11434`；本地直连为 `http://localhost:21434`
 - `ENV` / `DEBUG` / `LOG_LEVEL`：后端服务运行参数
+
+##### RAG+ReAct 混合架构配置（可选）
+
+路由与 ReAct 参数集中在 `backend/app/config/hybrid_config.yml`，**均可用同名环境变量覆盖**（环境变量 > YAML > 代码默认值），完整键说明见 2.4.1。最常用的是 `ENABLE_HYBRID_ROUTER`：设为 `false` 即完全回到纯 RAG 直调，无需改代码或改规则文件。
 
 #### 3.4.3 本地直跑时 .env 如何生效
 

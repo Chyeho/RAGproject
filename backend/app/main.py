@@ -7,8 +7,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.database.db import init_db
-from app.routers import auth, chat, documents, settings, statistics
+from app.routers import auth, chat, debug, documents, settings, statistics
 from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents, hybrid_enabled
+from app.utils.config_handler import hybrid_conf
 from app.utils.logger_handler import logger
 
 
@@ -72,3 +73,6 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(statistics.router)
 app.include_router(settings.router)
+# 调试 trace 接口：生产默认关闭，演示环境通过 ENABLE_TRACE_API=true 开启
+if bool(hybrid_conf.get("ENABLE_TRACE_API", False)):
+    app.include_router(debug.router)

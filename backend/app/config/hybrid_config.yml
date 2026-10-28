@@ -1,0 +1,14 @@
+# RAG + ReAct 混合架构配置（所有键均可用同名环境变量覆盖）
+# 读取优先级：环境变量 > 本文件 > config_handler.py 代码默认值
+ENABLE_HYBRID_ROUTER: true        # 总开关；false 时全部走 RAG 直调，行为与改造前一致
+REACT_MAX_STEPS: 3                # ReAct 最大轮次（含工具调用轮）
+REACT_TIMEOUT_MS: 30000           # ReAct 总超时（30s）
+TOOL_TIMEOUT_MS: 10000            # 单次工具超时（10s）
+ENABLE_REACT_FALLBACK: true       # ReAct 失败时是否降级回 RAG 直调
+ROUTER_RULES_PATH: config/router_rules.yml
+LOG_TRACE_LEVEL: summary          # off | summary | full
+OBS_TRACE_DIR: logs/traces        # trace JSONL 落盘目录（相对 backend/app）
+OBS_TEXT_MAX_CHARS: 200           # observation 文本截断长度
+ENABLE_TRACE_API: false           # 是否开放 /api/debug/trace 调试接口
+RETURN_TRACE_TO_CLIENT: false     # 是否在用户响应中返回可选 traceId
+COMPARE_CALC_MAX_ITEMS: 20        # compare_calc 最大 item 数
