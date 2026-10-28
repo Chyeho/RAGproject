@@ -4,7 +4,7 @@
 > 整理时间：2026-10-26（P5 增补：2026-10-28）。
 >
 > - 评测框架说明（模块组成、运行命令、指标口径）：见 `backend/app/service/eval/README.md`
-> - 原始单次/对比报告（json + md，含每题明细）：`backend/eval_reports/`
+> - 原始单次/对比报告（json + md，含每题明细）：`docs/rag_eval_reports/YYYY-MM-DD/<报告名>/`
 > - 按时间排列的全部报告清单与演进脉络：见同目录《RAG评测实验时间线.md》
 > - 升级方案与阶段验收：见项目根目录《RAG链路升级执行文档.md》
 

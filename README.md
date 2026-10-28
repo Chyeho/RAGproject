@@ -277,7 +277,8 @@ dense_topn=20       bm25_topn=20
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
 | Docker Desktop | ≥ 4.x（Windows 需启用 WSL2 后端） | 提供 MySQL / Qdrant / 完整容器化部署的运行环境；镜像源可配置加速 |
-| Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；可选 `uv` 作为包管理器（项目已提供 `pyproject.toml` / `uv.lock`） |
+| Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；项目已提供 `pyproject.toml` / `uv.lock` |
+| uv | 最新版（推荐安装） | **推荐的 Python 包管理器**：统一管理虚拟环境与依赖，支持 `uv sync` / `uv run`；安装见 [uv 官方文档](https://docs.astral.sh/uv/) |
 | Node.js | ≥ 18 | 方式二本地运行前端所需 |
 | Git | 任意 | 拉取/管理项目代码 |
 
