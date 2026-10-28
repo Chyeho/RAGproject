@@ -15,6 +15,7 @@ from app.utils.prompt_loader import load_prompt
 
 FAITHFULNESS_PROMPT = load_prompt("faithfulness_judge_prompt_path")
 RELEVANCY_PROMPT = load_prompt("relevancy_judge_prompt_path")
+CORRECTNESS_PROMPT = load_prompt("correctness_judge_prompt_path")
 
 
 # ---------- 解析与调用 ----------
@@ -65,6 +66,32 @@ def answer_relevancy(chat_model, question: str, answer: str) -> float | None:
     """答案相关性：答案与问题的相关程度（0~1）"""
     prompt = RELEVANCY_PROMPT.format(question=question, answer=answer)
     return _invoke_judge(chat_model.bind(temperature=0), prompt)
+
+
+def correctness(chat_model, question: str, reference: str, answer: str) -> float | None:
+    """答案正确率（A/B 专用）：对比标准答案，输出 0 / 0.5 / 1 三档
+
+    - 空回答直接记 0（无需调用裁判）
+    - 裁判输出非标准档位时，就近吸附到 0/0.5/1，保证报告口径统一
+    - 调用/解析失败返回 None，不计入均值（沿用现有裁判口径）
+    """
+    if not str(answer or "").strip():
+        return 0.0
+    prompt = CORRECTNESS_PROMPT.format(question=question, reference=reference, answer=answer)
+    score = _invoke_judge(chat_model.bind(temperature=0), prompt)
+    if score is None:
+        return None
+    return min((0.0, 0.5, 1.0), key=lambda level: abs(level - score))
+
+
+def aggregate_correctness(scores: list[float | None]) -> dict:
+    """聚合正确率：None（裁判失败）不计入均值，单独计数"""
+    valid = [s for s in scores if s is not None]
+    return {
+        "num_judged": len(valid),
+        "num_judge_error": len(scores) - len(valid),
+        "mean": (sum(valid) / len(valid)) if valid else None,
+    }
 
 
 def aggregate_generation(scores: list[float | None]) -> dict:

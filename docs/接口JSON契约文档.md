@@ -348,11 +348,51 @@
 
 错误：内容为空 `1001`；会话不存在或不属于当前用户 `5001`；生成失败 `5000`（message 含原因）。
 
+> **可选字段 `traceId`**：仅当后端环境变量 `RETURN_TRACE_TO_CLIENT=true` 时，响应 `data` 追加 `traceId`（字符串），前端可忽略；默认不返回，响应结构与改造前一致。
+
 ### 2.8 清空会话消息
 
 `DELETE /api/chat/conversations/{id}/messages`
 
 响应 `data`：`null`
+
+### 2.9 调试 trace 查询（可选）
+
+`GET /api/debug/trace/{trace_id}`
+
+- 仅当 `ENABLE_TRACE_API=true` 时开放；否则返回 `4044`「调试 trace 接口未开启」。
+- `traceId` 不存在或已过期返回 `4045`。
+
+响应 `data`：
+
+```json
+{
+  "trace_id": "a21bfe20260a486d862f131cc8cd2014",
+  "query": "对比上海和北京的住宿标准差异",
+  "route": "react_complex",
+  "route_reason": "命中强规则 compare",
+  "matched_rules": ["compare"],
+  "route_score": 2,
+  "tool_calls": 3,
+  "fallback": false,
+  "fallback_reason": null,
+  "answer_source": "react",
+  "total_ms": 18698,
+  "started_at": "2026-10-28T16:21:51.123",
+  "steps": [
+    {
+      "step": 1,
+      "thought": "先查上海住宿标准",
+      "action": "rag_search",
+      "action_input": {"query": "上海 住宿标准", "top_k": 5},
+      "observation": {"passages": [], "summary": "..."},
+      "elapsed_ms": 4693
+    }
+  ]
+}
+```
+
+> `LOG_TRACE_LEVEL=summary` 时落盘不含 `steps`，接口仍返回内存缓存中的完整 trace（进程内最近 200 条）；`off` 时不缓存也不落盘。
 
 ---
 

@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（432 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（505 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -151,7 +151,7 @@ RAGproject_demo/
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（432 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（505 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
@@ -173,13 +173,15 @@ RAGproject_demo/
 ### 2.3 Docker 架构概览
 
 ```
-互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
-                          → Backend API(:8000)  数据处理
+互联网用户 → Nginx(:18080) → Frontend Vue(:13000)  静态页面
+                          → Backend API(:18000)  数据处理
                                    ↓
-                          MySQL(:3306)   关系型数据库
-                          Qdrant(:6333)  向量数据库
-                          Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
+                          MySQL(:16666→3306)   关系型数据库
+                          Qdrant(:16333→6333)  向量数据库
+                          Ollama(:21434→11434) 本地模型服务（MODEL_MODE=local 时使用）
 ```
+
+> 用高位端口是为了预防端口占用问题，详见文档 [`docs/常见报错问题解决方案速查.md`](docs/常见报错问题解决方案速查.md)。容器内部端口保持不变，仅宿主机映射/本地启动端口改为高位；完整清单见 3.4.4 节。
 
 ### 2.4 RAG 检索链路架构
 
@@ -231,6 +233,39 @@ dense_topn=20       bm25_topn=20
 
 > 检索参数支持**热更新**：设置页保存后写入 `retrieval_config.yml`、同步内存配置并重建检索单例，无需重启服务；分块参数在下次上传向量化时生效。
 
+#### 2.4.1 RAG+ReAct 混合架构
+
+在上述检索链路之上增加一层**窄规则路由**：绝大多数问题仍走 RAG 直调（行为与改造前一致），只有命中"多实体对比 / 多步计算"等明确规则的问题才进入 ReAct 复杂通道，失败自动降级回直调。
+
+```
+用户提问
+   │
+   ▼
+[规则路由]  config/router_rules.yml（强规则直接命中；弱规则累计 ≥ 阈值 2）
+   │
+   ├── rag_direct（默认，占绝大多数）──→ [RAG 直调] 见 2.4 检索链路
+   │
+   └── react_complex（多实体/多步骤/对比计算）
+             ▼
+       [ReAct Agent] 最多 3 轮工具调用 + 1 次收尾总结（总超时 30s，单工具 10s）
+             工具：rag_search（检索 + 片段摘要）
+                   compare_calc（compare / diff / sum / condition_check）
+             ▼
+       成功 → 回答 + 引用来源；失败/超时 → 自动降级 RAG 直调（用户无感）
+```
+
+| 配置项（`backend/app/config/hybrid_config.yml`） | 默认值 | 说明 |
+|---|---|---|
+| `ENABLE_HYBRID_ROUTER` | `true` | 总开关；置 `false` 时全部走 RAG 直调，行为与改造前一致 |
+| `REACT_MAX_STEPS` | `3` | ReAct 最大工具轮次（用尽后追加一次纯总结，仍不产生新工具调用） |
+| `REACT_TIMEOUT_MS` / `TOOL_TIMEOUT_MS` | `30000` / `10000` | ReAct 总超时 / 单次工具超时 |
+| `ENABLE_REACT_FALLBACK` | `true` | ReAct 失败时是否降级回 RAG 直调 |
+| `ROUTER_RULES_PATH` | `config/router_rules.yml` | 路由规则文件（强/弱规则、权重、阈值） |
+| `LOG_TRACE_LEVEL` | `summary` | trace 级别：`off` / `summary` / `full`（full 含每轮 thought/action/observation） |
+| `ENABLE_TRACE_API` | `false` | 是否开放 `/api/debug/trace` 调试查询接口 |
+
+> **一键关闭**：设置环境变量 `ENABLE_HYBRID_ROUTER=false`（优先级高于 YAML）或直接改 YAML，即可完全回到纯 RAG 直调，无需改代码。
+
 ## 第三章 安装运行指南
 
 本章介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
@@ -242,7 +277,8 @@ dense_topn=20       bm25_topn=20
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
 | Docker Desktop | ≥ 4.x（Windows 需启用 WSL2 后端） | 提供 MySQL / Qdrant / 完整容器化部署的运行环境；镜像源可配置加速 |
-| Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；可选 `uv` 作为包管理器（项目已提供 `pyproject.toml` / `uv.lock`） |
+| Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；项目已提供 `pyproject.toml` / `uv.lock` |
+| uv | 最新版（推荐安装） | **推荐的 Python 包管理器**：统一管理虚拟环境与依赖，支持 `uv sync` / `uv run`；安装见 [uv 官方文档](https://docs.astral.sh/uv/) |
 | Node.js | ≥ 18 | 方式二本地运行前端所需 |
 | Git | 任意 | 拉取/管理项目代码 |
 
@@ -285,9 +321,9 @@ docker compose ps                 # 5 个服务均应为 Up (healthy)[本地模�
 docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 
 # 4. 访问应用
-#    Nginx 入口：http://localhost
-#    后端 API：  http://localhost:8000/docs
-#    前端页面：  http://localhost:3000
+#    Nginx 入口：http://localhost:18080
+#    后端 API：  http://localhost:18000/docs
+#    前端页面：  http://localhost:13000
 
 # 日常停止（仅删除容器，数据卷保留，数据不丢失）
 docker compose --env-file docker/env/.env.dev down
@@ -318,7 +354,7 @@ docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
 # 2. 本地启动后端服务（新终端窗口，在项目根目录执行）
 # 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
-# （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
+# （MySQL/Qdrant 主机名改为 127.0.0.1，端口改用宿主机映射端口 MYSQL_HOST_PORT / QDRANT_HOST_PORT）
 # 注意：脚本路径是相对于项目根目录的；若当前在 backend 目录，改用 ..\scripts\start-backend.ps1
 
 # Windows PowerShell:
@@ -332,13 +368,13 @@ chmod +x scripts/start-backend.sh   # 首次需加执行权限
 #   .\scripts\start-backend.ps1 docker/env/.env.prod
 #   ./scripts/start-backend.sh docker/env/.env.prod
 
-# 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
+# 启动时自动建表（幂等）；访问 http://localhost:18000/docs 查看全部接口
 
 # 3. 本地启动前端服务（新终端窗口）
 cd frontend
 npm install  # 首次运行
 npm run dev
-# 访问 http://localhost:3000 查看前端页面（已对接后端真实接口）
+# 访问 http://localhost:13000 查看前端页面（已对接后端真实接口）
 # 测试账号：注册后登录（注册验证码固定为 123456）
 
 # 4. 停止基础设施
@@ -432,16 +468,34 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 以下变量由 Docker Compose / 启动脚本按部署形态注入，属于编排信息，**不属于模型自定义项**：
 
 - `MODEL_MODE`：模型加载模式（remote/local），见上表
-- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + 宿主机映射端口
-- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：同上，编排内为 `qdrant`
+- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + `MYSQL_HOST_PORT`
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：编排内为 `qdrant:6333`；本地直跑由脚本覆盖为 `127.0.0.1` + `QDRANT_HOST_PORT`
+- `MYSQL_HOST_PORT` / `QDRANT_HOST_PORT` / `QDRANT_GRPC_HOST_PORT` / `OLLAMA_PORT`：仅宿主机映射端口，见 3.4.4
 - `OLLAMA_BASE_URL` / `OLLAMA_PORT`：编排内为 `http://ollama:11434`；本地直连为 `http://localhost:21434`
 - `ENV` / `DEBUG` / `LOG_LEVEL`：后端服务运行参数
+
+##### RAG+ReAct 混合架构配置（可选）
+
+路由与 ReAct 参数集中在 `backend/app/config/hybrid_config.yml`，**均可用同名环境变量覆盖**（环境变量 > YAML > 代码默认值），完整键说明见 2.4.1。最常用的是 `ENABLE_HYBRID_ROUTER`：设为 `false` 即完全回到纯 RAG 直调，无需改代码或改规则文件。
 
 #### 3.4.3 本地直跑时 .env 如何生效
 
 - **Docker 部署**：Compose 自动把 env 文件注入容器环境。
 - **本地启动后端**：`scripts/start-backend.ps1` / `start-backend.sh` 解析 `.env.dev` 注入（并自动做本地连接覆盖）。
 - **`uv run` 直跑脚本/评测**：后端启动时会自动按白名单从 `docker/env/.env.dev` 加载**模型相关变量**（仅注入缺失键，已注入的真实环境变量优先；可用 `PRIVRAG_ENV_FILE` 指定其他 env 文件）。白名单只含模型项，`MYSQL_HOST=mysql` 等编排值不会被误注入本地进程。
+
+#### 3.4.4 端口清单（高位端口）
+
+| 服务 | 宿主机 / 本地端口 | 容器内端口 | 配置位置 |
+|---|---|---|---|
+| Nginx 入口 | `18080`（HTTP）/ `18443`（HTTPS） | `80` / `443` | `docker-compose.yml` |
+| Frontend（Vite / 容器） | `13000` | `80` | `frontend/vite.config.js`、`docker-compose.yml` |
+| Backend API | `18000` | `18000` | `backend/Dockerfile`、`scripts/start-backend.*` |
+| MySQL | `16666` | `3306` | `docker/env/.env.dev` → `MYSQL_HOST_PORT` |
+| Qdrant HTTP / gRPC | `16333` / `16334` | `6333` / `6334` | `.env.dev` → `QDRANT_HOST_PORT` / `QDRANT_GRPC_HOST_PORT` |
+| Ollama | `21434` | `11434` | `.env.dev` → `OLLAMA_PORT` |
+
+> 用高位端口是为了预防端口占用问题，详见 [`docs/常见报错问题解决方案速查.md`](docs/常见报错问题解决方案速查.md)。本地直跑脚本会自动把 `MYSQL_PORT` / `QDRANT_PORT` 覆盖为上述宿主机端口，无需手工设置。
 
 ## 第四章 团队信息
 

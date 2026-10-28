@@ -14,7 +14,8 @@ from app.models.chat_conversation import ChatConversation
 from app.models.chat_message import ChatMessage
 from app.models.documents import Document
 from app.models.users import User
-from app.service.rag import registry
+from app.service.orchestration import get_orchestrator
+from app.utils.config_handler import hybrid_conf
 from app.utils.logger_handler import logger
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -212,13 +213,14 @@ async def send_message(
     session.add(conv)
     await session.commit()
 
-    # 3. 调用 RAG 服务生成回答（每个会话独立历史：session_id = user_{uid}_conv_{cid}，同步调用放线程池）
-    #    P4：rag_summarize 返回 (answer, retrieved_docs)，回答与引用同源
+    # 3. 调用混合编排（每个会话独立历史：session_id = user_{uid}_conv_{cid}，同步调用放线程池）
+    #    开关关闭时行为与改造前一致：RAG 直调返回 (answer, retrieved_docs)
     try:
         rag_session_id = f"user_{current_user.id}_conv_{conv.id}"
-        answer, retrieved_docs = await asyncio.to_thread(
-            registry.get_rag_service().rag_summarize, req.content, rag_session_id
+        result = await asyncio.to_thread(
+            get_orchestrator().answer, req.content, rag_session_id
         )
+        answer, retrieved_docs = result.answer, result.documents
     except Exception as e:
         logger.error(f"[会话]RAG 回答生成失败：{str(e)}", exc_info=True)
         return err(5000, f"回答生成失败：{str(e)}")
@@ -241,5 +243,13 @@ async def send_message(
         logger.error(f"[会话]助手消息入库失败：{str(e)}", exc_info=True)
         return err(5000, "回答已生成但保存失败，请重试")
 
-    logger.info(f"[会话]用户{current_user.id}会话(id={conv.id})问答完成，引用 {len(citations)} 条")
-    return ok(msg_to_dict(assistant_msg))
+    logger.info(
+        f"[会话]用户{current_user.id}会话(id={conv.id})问答完成，引用 {len(citations)} 条，"
+        f"route={result.trace.get('route')} source={result.trace.get('answer_source')} "
+        f"fallback={result.trace.get('fallback')} total_ms={result.trace.get('total_ms')}"
+    )
+    data = msg_to_dict(assistant_msg)
+    # 可选字段：默认不返回；答辩/调试环境可开启，旧前端忽略未知字段
+    if bool(hybrid_conf.get("RETURN_TRACE_TO_CLIENT", False)) and result.trace_id:
+        data["traceId"] = result.trace_id
+    return ok(data)

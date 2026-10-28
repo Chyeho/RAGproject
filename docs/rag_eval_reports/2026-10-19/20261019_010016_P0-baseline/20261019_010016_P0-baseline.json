@@ -1,0 +1,2135 @@
+{
+  "meta": {
+    "tag": "P0-baseline",
+    "mode": "retrieval",
+    "finished_at": "2026-10-19T01:00:16",
+    "num_questions": 80,
+    "k": 3,
+    "config_snapshot": {
+      "model_mode": "remote",
+      "chat_model_name": "qwen3.7-max",
+      "embedding_model_name": "text-embedding-v4",
+      "qdrant": {
+        "collection_name": "privrag_dev",
+        "chunk_size": 150,
+        "chunk_overlap": 20,
+        "k": 3,
+        "separators": [
+          "\n\n",
+          "\n",
+          ".",
+          "!",
+          "?",
+          "。",
+          "！",
+          "？",
+          " ",
+          ""
+        ]
+      }
+    },
+    "dataset_md5": "ff39e8051a07422862206a02d07e0de9"
+  },
+  "missing_source_files": [
+    "信息安全管理制度.pdf",
+    "办公用品领用标准.xlsx",
+    "研发管理制度.docx",
+    "部门职责说明.md"
+  ],
+  "retrieval": {
+    "num_questions": 80,
+    "hit_rate_doc": 0.2,
+    "hit_rate_passage": 0.2,
+    "mrr_doc": 0.2,
+    "mrr_passage": 0.18125,
+    "precision_doc": 0.2,
+    "precision_passage": 0.06666666666666667,
+    "recall_content": 0.2
+  },
+  "retrieval_by_type": {
+    "fact": {
+      "num_questions": 31,
+      "hit_rate_doc": 0.22580645161290322,
+      "hit_rate_passage": 0.22580645161290322,
+      "mrr_doc": 0.22580645161290322,
+      "mrr_passage": 0.22580645161290322,
+      "precision_doc": 0.22580645161290322,
+      "precision_passage": 0.07526881720430108,
+      "recall_content": 0.22580645161290322
+    },
+    "longtail": {
+      "num_questions": 25,
+      "hit_rate_doc": 0.2,
+      "hit_rate_passage": 0.2,
+      "mrr_doc": 0.2,
+      "mrr_passage": 0.16,
+      "precision_doc": 0.2,
+      "precision_passage": 0.06666666666666667,
+      "recall_content": 0.2
+    },
+    "term": {
+      "num_questions": 24,
+      "hit_rate_doc": 0.16666666666666666,
+      "hit_rate_passage": 0.16666666666666666,
+      "mrr_doc": 0.16666666666666666,
+      "mrr_passage": 0.14583333333333334,
+      "precision_doc": 0.16666666666666666,
+      "precision_passage": 0.05555555555555555,
+      "recall_content": 0.16666666666666666
+    }
+  },
+  "retrieval_by_source_file": {
+    "信息安全管理制度.pdf": {
+      "num_questions": 16,
+      "hit_rate_doc": 0.0,
+      "hit_rate_passage": 0.0,
+      "mrr_doc": 0.0,
+      "mrr_passage": 0.0,
+      "precision_doc": 0.0,
+      "precision_passage": 0.0,
+      "recall_content": 0.0
+    },
+    "办公用品领用标准.xlsx": {
+      "num_questions": 16,
+      "hit_rate_doc": 0.0,
+      "hit_rate_passage": 0.0,
+      "mrr_doc": 0.0,
+      "mrr_passage": 0.0,
+      "precision_doc": 0.0,
+      "precision_passage": 0.0,
+      "recall_content": 0.0
+    },
+    "员工手册.txt": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 0.90625,
+      "precision_doc": 1.0,
+      "precision_passage": 0.3333333333333333,
+      "recall_content": 1.0
+    },
+    "研发管理制度.docx": {
+      "num_questions": 16,
+      "hit_rate_doc": 0.0,
+      "hit_rate_passage": 0.0,
+      "mrr_doc": 0.0,
+      "mrr_passage": 0.0,
+      "precision_doc": 0.0,
+      "precision_passage": 0.0,
+      "recall_content": 0.0
+    },
+    "部门职责说明.md": {
+      "num_questions": 16,
+      "hit_rate_doc": 0.0,
+      "hit_rate_passage": 0.0,
+      "mrr_doc": 0.0,
+      "mrr_passage": 0.0,
+      "precision_doc": 0.0,
+      "precision_passage": 0.0,
+      "recall_content": 0.0
+    }
+  },
+  "details": [
+    {
+      "qid": "q001",
+      "question": "咱们公司的信息资产按敏感程度一共划分成了几个级别？",
+      "ground_truth_answer": "四级",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        }
+      ]
+    },
+    {
+      "qid": "q002",
+      "question": "铅笔库存低于多少会触发预警？",
+      "ground_truth_answer": "100",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "第七章 奖惩制度\n\n7.1 奖励：合理化建议被采纳的每次奖励 500 元；年度优秀员工奖励 5000 元并额外赠送 2 天带薪假。\n\n7.2 处罚：旷工 1 天"
+        }
+      ]
+    },
+    {
+      "qid": "q003",
+      "question": "咱们公司的员工手册是从哪天开始施行的？",
+      "ground_truth_answer": "2025 年 1 月 1 日",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q004",
+      "question": "研发管理制度什么时候开始施行？",
+      "ground_truth_answer": "2025 年 2 月 1 日",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q005",
+      "question": "咱们后端组主要用哪些技术栈做开发？",
+      "ground_truth_answer": "Python/FastAPI 与 Java/Spring",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        }
+      ]
+    },
+    {
+      "qid": "q006",
+      "question": "制度里提到的“秘密级”信息资产具体是指什么范围？",
+      "ground_truth_answer": "限指定项目组",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q007",
+      "question": "物资编码BG-010对应的是什么东西？",
+      "ground_truth_answer": "笔记本",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q008",
+      "question": "想在线查看最新版员工手册，应该去哪个平台？",
+      "ground_truth_answer": "内网 HR 门户",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q009",
+      "question": "制度里提到的四大领域具体包括哪些？",
+      "ground_truth_answer": "代码管理、发布流程、质量保障与技术评审",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q010",
+      "question": "Qdrant 在咱们这边是当什么用的？",
+      "ground_truth_answer": "向量库",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q011",
+      "question": "给文档定好密级之后，密级标注必须写在文档的什么位置？",
+      "ground_truth_answer": "文档页眉",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q012",
+      "question": "B5 80页的笔记本一个月最多能领几本？",
+      "ground_truth_answer": "3本",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q013",
+      "question": "员工手册的内容由哪个部门负责解释和修订？",
+      "ground_truth_answer": "人力资源部",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q014",
+      "question": "这个研发管理制度适用于哪些人？",
+      "ground_truth_answer": "研发中心全体成员",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q015",
+      "question": "后端组除了业务开发，还顺带维护哪些公共的东西？",
+      "ground_truth_answer": "公司统一的脚手架与公共组件库",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q016",
+      "question": "咱们的系统密码最多能用多少天就得换一次？",
+      "ground_truth_answer": "每 90 天",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        }
+      ]
+    },
+    {
+      "qid": "q017",
+      "question": "文件夹每个月最多能领多少个？",
+      "ground_truth_answer": "5",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q018",
+      "question": "咱们公司一天最少得上满几个小时班？",
+      "ground_truth_answer": "每日工作时长不少于 8 小时。",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        }
+      ]
+    },
+    {
+      "qid": "q019",
+      "question": "功能分支的生命周期上限是多少天？",
+      "ground_truth_answer": "单个功能分支生命周期不得超过 14 天",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q020",
+      "question": "咱们前端组用的是哪个版本的 Vue？",
+      "ground_truth_answer": "Vue3",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第五章 报销管理\n\n5.1 差旅交通标准：高铁一律二等座；单程 4 小时以上可申请一等座；经济舱机票需提前 3 天预订；市内交通实报实销，单日上限 100 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q021",
+      "question": "制度里说的“高危操作”具体包含哪几项？",
+      "ground_truth_answer": "删库、批量更新、密钥变更",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q022",
+      "question": "物资编码BG-021对应的是哪种办公用品？",
+      "ground_truth_answer": "档案盒",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        }
+      ]
+    },
+    {
+      "qid": "q023",
+      "question": "弹性打卡具体是怎么规定的？",
+      "ground_truth_answer": "上班时间可在 9:00 至 9:30 之间自由选择，对应下班时间顺延，每日工作时长不少于 8 小时。",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q024",
+      "question": "GitFlow 分支模型里，哪些分支属于长期保留的？",
+      "ground_truth_answer": "长期分支仅保留 main 与 develop",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q025",
+      "question": "ChenUI 具体是指什么？",
+      "ground_truth_answer": "ChenUI 是前端组负责维护的设计系统组件库。",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q026",
+      "question": "员工离职后，IT回收权限和注销账号的时间要求是多久？",
+      "ground_truth_answer": "离职生效后 24 小时内",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q027",
+      "question": "便签纸的具体规格是什么？",
+      "ground_truth_answer": "76x76mm 100张",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "第五章 报销管理\n\n5.1 差旅交通标准：高铁一律二等座；单程 4 小时以上可申请一等座；经济舱机票需提前 3 天预订；市内交通实报实销，单日上限 100 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q028",
+      "question": "中午休息是从几点到几点？",
+      "ground_truth_answer": "12:00-13:30",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q029",
+      "question": "功能分支到期还没合并的话会怎么处理？",
+      "ground_truth_answer": "到期未合并的由技术负责人评估后关闭",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q030",
+      "question": "业务页面为什么非得基于 ChenUI 组件来搭建？",
+      "ground_truth_answer": "为了保证视觉一致性。",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q031",
+      "question": "机密级数据的备份文件能保留多少天？",
+      "ground_truth_answer": "90天",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        }
+      ]
+    },
+    {
+      "qid": "q032",
+      "question": "鼠标一个月最多可以领几个？",
+      "ground_truth_answer": "1",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q033",
+      "question": "什么情况下会被算作早退？",
+      "ground_truth_answer": "提前30分钟以上下班且未请假视为早退",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q034",
+      "question": "一个合并请求最少要几个评审人同意才行？",
+      "ground_truth_answer": "至少获得两名评审人批准，其中一名须为模块 Owner。",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q035",
+      "question": "咱们自动化回归覆盖率最低要求是多少？",
+      "ground_truth_answer": "不低于 80%",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q036",
+      "question": "外发秘密级及以上数据时，必须通过哪个系统进行并全程留痕？",
+      "ground_truth_answer": "公司文档水印系统",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q037",
+      "question": "物资编码BG-050对应的是什么办公用品？",
+      "ground_truth_answer": "胶带",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q038",
+      "question": "一个月迟到早退几次会开始扣钱？扣多少？",
+      "ground_truth_answer": "当月迟到或早退累计3次以内不作处理，第4次起每次扣减当月全勤奖100元",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "第七章 奖惩制度\n\n7.1 奖励：合理化建议被采纳的每次奖励 500 元；年度优秀员工奖励 5000 元并额外赠送 2 天带薪假。\n\n7.2 处罚：旷工 1 天"
+        }
+      ]
+    },
+    {
+      "qid": "q039",
+      "question": "研发流程里常说的 MR 指的是什么？",
+      "ground_truth_answer": "MR 是合并请求（Merge Request）的缩写，所有代码合入 develop 及以上分支必须通过合并请求。",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q040",
+      "question": "缺陷生命周期归哪个组管？",
+      "ground_truth_answer": "测试组",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q041",
+      "question": "普通办公终端允许使用什么样的U盘？",
+      "ground_truth_answer": "公司发放的加密 U 盘",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q042",
+      "question": "剪刀的具体规格是什么？",
+      "ground_truth_answer": "不锈钢 6寸",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        },
+        {
+          "document_id": 5,
+          "text": "第七章 奖惩制度\n\n7.1 奖励：合理化建议被采纳的每次奖励 500 元；年度优秀员工奖励 5000 元并额外赠送 2 天带薪假。\n\n7.2 处罚：旷工 1 天"
+        }
+      ]
+    },
+    {
+      "qid": "q043",
+      "question": "迟到早退扣的是哪项奖金？",
+      "ground_truth_answer": "全勤奖",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "第七章 奖惩制度\n\n7.1 奖励：合理化建议被采纳的每次奖励 500 元；年度优秀员工奖励 5000 元并额外赠送 2 天带薪假。\n\n7.2 处罚：旷工 1 天"
+        }
+      ]
+    },
+    {
+      "qid": "q044",
+      "question": "评审人给了意见但提交人迟迟不回复，这个 MR 会怎么处理？",
+      "ground_truth_answer": "MR 在评审人提出意见后 48 小时内未响应的，评审人有权关闭。",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        }
+      ]
+    },
+    {
+      "qid": "q045",
+      "question": "严重缺陷需要在多长时间内完成复现与分派？",
+      "ground_truth_answer": "24 小时内",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        }
+      ]
+    },
+    {
+      "qid": "q046",
+      "question": "公司要求统一安装的 EDR 软件全称是什么，具体指什么？",
+      "ground_truth_answer": "Endpoint Detection and Response，终端检测与响应",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q047",
+      "question": "鼠标垫库存低于多少会触发预警？",
+      "ground_truth_answer": "50",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "第七章 奖惩制度\n\n7.1 奖励：合理化建议被采纳的每次奖励 500 元；年度优秀员工奖励 5000 元并额外赠送 2 天带薪假。\n\n7.2 处罚：旷工 1 天"
+        }
+      ]
+    },
+    {
+      "qid": "q048",
+      "question": "周末加了班的话，调休是按什么比例折算的？",
+      "ground_truth_answer": "周末加班按 1:1.5 折算调休",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "3.2 病假：病假需提供二级甲等及以上医院开具的病假建议书。医疗期按国家规定执行，病假期间工资按基本工资的 70% 发放。单次病假 3 天及以上的需补交诊断证明"
+        }
+      ]
+    },
+    {
+      "qid": "q049",
+      "question": "咱们版本号管理用的semver是什么的缩写？",
+      "ground_truth_answer": "语义化版本（semver）规范",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q050",
+      "question": "告警响了之后，DevOps那边要求多长时间内必须响应？",
+      "ground_truth_answer": "工作时间15分钟内响应",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q051",
+      "question": "电脑系统出了新补丁，规定最多几天内得更新好？",
+      "ground_truth_answer": "操作系统补丁须在发布后 14 天内完成更新。",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q052",
+      "question": "IT-020这个物资编码对应的是什么东西？",
+      "ground_truth_answer": "USB集线器",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        }
+      ]
+    },
+    {
+      "qid": "q053",
+      "question": "提加班申请走的是哪个系统？",
+      "ground_truth_answer": "OA 系统",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q054",
+      "question": "对外交付的版本号格式具体是怎样的？",
+      "ground_truth_answer": "主版本号.次版本号.修订号",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q055",
+      "question": "DevOps组具体负责哪些系统和体系？",
+      "ground_truth_answer": "CI/CD流水线、容器平台与监控告警体系",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q056",
+      "question": "发我的办公笔记本需要开启什么加密设置吗？",
+      "ground_truth_answer": "笔记本须启用全盘加密。",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q057",
+      "question": "咱们公司配的显示器支架是什么规格的？",
+      "ground_truth_answer": "单臂承重9kg",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "4.2 五险一金：公司自入职当月起缴纳五险一金，公积金缴存比例为 12%。补充商业医疗保险覆盖员工本人，入职满一年后可自费为直系家属加购团体方案。\n\n4.3 年"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q058",
+      "question": "调休一直没用的话，多久会过期清零？",
+      "ground_truth_answer": "调休有效期自产生之日起 6 个月内有效，逾期清零",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q059",
+      "question": "修了个bug发版的话，应该升哪个版本号？",
+      "ground_truth_answer": "修订号",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        }
+      ]
+    },
+    {
+      "qid": "q060",
+      "question": "容灾切换演练多久搞一次？",
+      "ground_truth_answer": "每季度组织一次",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q061",
+      "question": "平时在家办公连VPN，如果中途离开没操作，多久会自动断开？",
+      "ground_truth_answer": "30 分钟",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        }
+      ]
+    },
+    {
+      "qid": "q062",
+      "question": "洗手液一个月最多能领几瓶？",
+      "ground_truth_answer": "1",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "4.4 节日福利：春节、中秋、端午发放节日礼品，生日当月发放 200 元生日礼金，随工资发放。\n\n4.5 全勤奖：当月无迟到、早退、缺卡、事假、病假的，发放全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q063",
+      "question": "社会工龄满5年但不到10年，年假有几天？",
+      "ground_truth_answer": "10天",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        },
+        {
+          "document_id": 5,
+          "text": "3.2 病假：病假需提供二级甲等及以上医院开具的病假建议书。医疗期按国家规定执行，病假期间工资按基本工资的 70% 发放。单次病假 3 天及以上的需补交诊断证明"
+        }
+      ]
+    },
+    {
+      "qid": "q064",
+      "question": "灰度发布第一步放量比例是多少，最少要观察多长时间才能继续？",
+      "ground_truth_answer": "先放量 5%，观察不少于 2 小时",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q065",
+      "question": "产品设计部的路线图多久输出一次？",
+      "ground_truth_answer": "按季度输出路线图。",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        }
+      ]
+    },
+    {
+      "qid": "q066",
+      "question": "登录VPN时要求的双因素认证，具体是指哪两种认证方式？",
+      "ground_truth_answer": "密码加动态令牌",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        }
+      ]
+    },
+    {
+      "qid": "q067",
+      "question": "HC-010这个编码对应的是什么物资？",
+      "ground_truth_answer": "洗手液",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        }
+      ]
+    },
+    {
+      "qid": "q068",
+      "question": "因为工作太忙年假没休完，最多可以延期到什么时候？",
+      "ground_truth_answer": "次年3月31日",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        },
+        {
+          "document_id": 5,
+          "text": "3.2 病假：病假需提供二级甲等及以上医院开具的病假建议书。医疗期按国家规定执行，病假期间工资按基本工资的 70% 发放。单次病假 3 天及以上的需补交诊断证明"
+        }
+      ]
+    },
+    {
+      "qid": "q069",
+      "question": "每个梯度观察期需要盯的指标具体是哪几个？",
+      "ground_truth_answer": "错误率、P99 延迟、核心业务成功率",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        }
+      ]
+    },
+    {
+      "qid": "q070",
+      "question": "产品设计部给研发提需求用的是什么文档？",
+      "ground_truth_answer": "PRD文档。",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "宸甄科技员工手册（版本 V3.2）\n\n第一章 总则\n\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q071",
+      "question": "接待客户时用的访客WiFi密码，更新频率是怎样的？",
+      "ground_truth_answer": "每日更换",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "3.6 调休与年假冲突处理：员工可优先使用即将过期的调休，年假与调休不可折算互换。\n\n第四章 薪酬福利\n\n4.1 发薪日：每月 10 日发放上一自然月工资，遇节"
+        }
+      ]
+    },
+    {
+      "qid": "q072",
+      "question": "纸巾的库存预警阈值设的是多少？",
+      "ground_truth_answer": "300",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        }
+      ]
+    },
+    {
+      "qid": "q073",
+      "question": "刚工作满2年的同事能休多少天年假？",
+      "ground_truth_answer": "5天",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        },
+        {
+          "document_id": 5,
+          "text": "3.2 病假：病假需提供二级甲等及以上医院开具的病假建议书。医疗期按国家规定执行，病假期间工资按基本工资的 70% 发放。单次病假 3 天及以上的需补交诊断证明"
+        }
+      ]
+    },
+    {
+      "qid": "q074",
+      "question": "指标越界触发回滚的话，回滚操作最多允许花多久？",
+      "ground_truth_answer": "10 分钟",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q075",
+      "question": "满意度调研最少要收集多少份样本？",
+      "ground_truth_answer": "不少于500份。",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        }
+      ]
+    },
+    {
+      "qid": "q076",
+      "question": "P1级安全事件的处置进展需要多久同步一次？",
+      "ground_truth_answer": "每2小时",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "附则\n\n本手册与国家法律法规冲突时以法律法规为准。手册修订后将通过内网公告，员工应在公告后 7 个工作日内完成线上确认。"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        },
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ]
+    },
+    {
+      "qid": "q077",
+      "question": "提交办公用品领用申请后，主管审批一般要多久？",
+      "ground_truth_answer": "1 个工作日",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "第二章 考勤管理\n\n2.1 工作时间：公司实行标准工时制，工作日为周一至周五，每日 9:00-18:00，其中 12:00-13:30 为午休时间。公司提供弹性"
+        }
+      ]
+    },
+    {
+      "qid": "q078",
+      "question": "请病假的话工资按什么比例发？",
+      "ground_truth_answer": "病假期间工资按基本工资的70%发放。",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 5,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "3.2 病假：病假需提供二级甲等及以上医院开具的病假建议书。医疗期按国家规定执行，病假期间工资按基本工资的 70% 发放。单次病假 3 天及以上的需补交诊断证明"
+        },
+        {
+          "document_id": 5,
+          "text": "3.4 产假与陪产假：女员工产假为 158 天（含法定 98 天与地方奖励假 60 天），男员工陪产假为 15 天，须在子女出生后 6 个月内休完。\n\n3.5 "
+        },
+        {
+          "document_id": 5,
+          "text": "第三章 休假管理\n\n3.1 年假：社会工龄满 1 年不满 5 年的员工年假为 5 天，满 5 年不满 10 年为 10 天，满 10 年及以上为 15 天。年假"
+        }
+      ]
+    },
+    {
+      "qid": "q079",
+      "question": "咱们核心资金和权限模块的单测行覆盖率要达到多少？",
+      "ground_truth_answer": "不低于 85%",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        },
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "第六章 行为规范\n\n6.1 员工应遵守保密义务，不得在个人设备存储公司源代码与客户数据，违规使用外部网盘传输工作文件属于严重违纪。\n\n6.2 办公区域内禁止吸烟"
+        }
+      ]
+    },
+    {
+      "qid": "q080",
+      "question": "销售线索多长时间没跟进就会被自动回收？",
+      "ground_truth_answer": "超7天未更新自动回收至公海",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": null,
+      "doc_hit": false,
+      "passage_hit": false,
+      "best_overlap": 0.0,
+      "retrieved": [
+        {
+          "document_id": 5,
+          "text": "2.3 补打卡：因故忘记打卡的，可在企业微信\"考勤补签\"中申请补签，每月补签机会为 3 次，超出次数按缺卡处理，每次扣款 50 元。"
+        },
+        {
+          "document_id": 5,
+          "text": "2.2 迟到与早退：超过弹性时段上限打卡视为迟到，提前 30 分钟以上下班且未请假视为早退。当月迟到或早退累计 3 次以内不作处理，第 4 次起每次扣减当月全勤"
+        },
+        {
+          "document_id": 5,
+          "text": "5.3 报销时效：费用发生后 30 天内提交报销申请，逾期不予受理。差旅报销需附行程审批单、发票与出差总结。\n\n5.4 发票要求：发票抬头必须为公司全称\"宸甄科"
+        }
+      ]
+    }
+  ]
+}
