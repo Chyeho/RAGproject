@@ -1,0 +1,3040 @@
+{
+  "meta": {
+    "tag": "P2-hybrid-rerank",
+    "mode": "full",
+    "finished_at": "2026-10-23T19:41:44",
+    "num_questions": 80,
+    "k": 5,
+    "preset": "hybrid-rerank",
+    "config_snapshot": {
+      "model_mode": "remote",
+      "chat_model_name": "qwen3.7-max",
+      "embedding_model_name": "text-embedding-v4",
+      "qdrant": {
+        "collection_name": "privrag_dev",
+        "chunk_size": 500,
+        "chunk_overlap": 50,
+        "k": 3,
+        "separators": [
+          "\n\n",
+          "\n",
+          ".",
+          "!",
+          "?",
+          "。",
+          "！",
+          "？",
+          " ",
+          ""
+        ]
+      },
+      "retrieval": {
+        "hybrid": {
+          "enabled": true,
+          "dense_topn": 20,
+          "bm25_topn": 20,
+          "rrf_k": 60,
+          "topn": 20
+        },
+        "rerank": {
+          "enabled": true,
+          "remote_model": "gte-rerank-v2",
+          "local_model": "BAAI/bge-reranker-v2-m3",
+          "top_k": 5
+        },
+        "top_k": 5,
+        "legacy_k": 3
+      }
+    },
+    "dataset_md5": "ff39e8051a07422862206a02d07e0de9"
+  },
+  "missing_source_files": [],
+  "retrieval": {
+    "num_questions": 80,
+    "hit_rate_doc": 1.0,
+    "hit_rate_passage": 1.0,
+    "mrr_doc": 1.0,
+    "mrr_passage": 1.0,
+    "precision_doc": 0.605,
+    "precision_passage": 0.2,
+    "recall_content": 0.997494679105386
+  },
+  "retrieval_by_type": {
+    "fact": {
+      "num_questions": 31,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.6387096774193548,
+      "precision_passage": 0.2,
+      "recall_content": 0.99700153716002
+    },
+    "longtail": {
+      "num_questions": 25,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.584,
+      "precision_passage": 0.2,
+      "recall_content": 0.9978505335294052
+    },
+    "term": {
+      "num_questions": 24,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.5833333333333334,
+      "precision_passage": 0.2,
+      "recall_content": 0.9977609724264638
+    }
+  },
+  "retrieval_by_source_file": {
+    "信息安全管理制度.pdf": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.6125,
+      "precision_passage": 0.2,
+      "recall_content": 1.0
+    },
+    "办公用品领用标准.xlsx": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.525,
+      "precision_passage": 0.2,
+      "recall_content": 0.98747339552693
+    },
+    "员工手册.txt": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.625,
+      "precision_passage": 0.2,
+      "recall_content": 1.0
+    },
+    "研发管理制度.docx": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.725,
+      "precision_passage": 0.2,
+      "recall_content": 1.0
+    },
+    "部门职责说明.md": {
+      "num_questions": 16,
+      "hit_rate_doc": 1.0,
+      "hit_rate_passage": 1.0,
+      "mrr_doc": 1.0,
+      "mrr_passage": 1.0,
+      "precision_doc": 0.5375,
+      "precision_passage": 0.2,
+      "recall_content": 1.0
+    }
+  },
+  "generation": {
+    "faithfulness": {
+      "num_judged": 80,
+      "num_judge_error": 0,
+      "mean": 1.0
+    },
+    "answer_relevancy": {
+      "num_judged": 80,
+      "num_judge_error": 0,
+      "mean": 0.9875
+    }
+  },
+  "details": [
+    {
+      "qid": "q001",
+      "question": "咱们公司的信息资产按敏感程度一共划分成了几个级别？",
+      "ground_truth_answer": "四级",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n# 宸甄科技部门职责说明  \n> 组织架构与职责划分，2025 年版。适用于入职引导、跨部门协作流程查阅。"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        }
+      ],
+      "answer": "公司的信息资产按敏感程度一共划分成了四个级别，分别是公开级、内部级、秘密级和机密级。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q002",
+      "question": "铅笔库存低于多少会触发预警？",
+      "ground_truth_answer": "100",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.989,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        }
+      ],
+      "answer": "铅笔库存低于100会触发预警。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q003",
+      "question": "咱们公司的员工手册是从哪天开始施行的？",
+      "ground_truth_answer": "2025 年 1 月 1 日",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        }
+      ],
+      "answer": "公司的员工手册自2025年1月1日起施行。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q004",
+      "question": "研发管理制度什么时候开始施行？",
+      "ground_truth_answer": "2025 年 2 月 1 日",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        }
+      ],
+      "answer": "研发管理制度自2025年2月1日起施行。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q005",
+      "question": "咱们后端组主要用哪些技术栈做开发？",
+      "ground_truth_answer": "Python/FastAPI 与 Java/Spring",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "后端组的技术栈以 Python/FastAPI 与 Java/Spring 为主，数据存储使用 MySQL、Redis 与 Qdrant 向量库。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q006",
+      "question": "制度里提到的“秘密级”信息资产具体是指什么范围？",
+      "ground_truth_answer": "限指定项目组",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "制度中提到的“秘密级”信息资产具体范围包括：访问权限仅限指定项目组；此外，客户数据、源代码、财务数据默认被认定为秘密级。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q007",
+      "question": "物资编码BG-010对应的是什么东西？",
+      "ground_truth_answer": "笔记本",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.989,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "物资编码BG-010对应的是笔记本（规格：B5 80页）。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q008",
+      "question": "想在线查看最新版员工手册，应该去哪个平台？",
+      "ground_truth_answer": "内网 HR 门户",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        }
+      ],
+      "answer": "内网 HR 门户。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q009",
+      "question": "制度里提到的四大领域具体包括哪些？",
+      "ground_truth_answer": "代码管理、发布流程、质量保障与技术评审",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "制度里提到的四大领域具体包括代码管理、发布流程、质量保障与技术评审。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q010",
+      "question": "Qdrant 在咱们这边是当什么用的？",
+      "ground_truth_answer": "向量库",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "在咱们这边，Qdrant 作为向量库用于数据存储。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q011",
+      "question": "给文档定好密级之后，密级标注必须写在文档的什么位置？",
+      "ground_truth_answer": "文档页眉",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        }
+      ],
+      "answer": "密级标注必须写在文档的页眉。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q012",
+      "question": "B5 80页的笔记本一个月最多能领几本？",
+      "ground_truth_answer": "3本",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.989,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        }
+      ],
+      "answer": "B5 80页的笔记本一个月最多能领3本。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q013",
+      "question": "员工手册的内容由哪个部门负责解释和修订？",
+      "ground_truth_answer": "人力资源部",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n# 宸甄科技部门职责说明  \n> 组织架构与职责划分，2025 年版。适用于入职引导、跨部门协作流程查阅。"
+        }
+      ],
+      "answer": "员工手册的内容由人力资源部负责解释与修订。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q014",
+      "question": "这个研发管理制度适用于哪些人？",
+      "ground_truth_answer": "研发中心全体成员",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "该研发管理制度适用于研发中心全体成员。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q015",
+      "question": "后端组除了业务开发，还顺带维护哪些公共的东西？",
+      "ground_truth_answer": "公司统一的脚手架与公共组件库",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 产品设计部]\n## 产品设计部  \n负责产品规划、需求分析与交互设计。产品设计部维护需求池并按季度输出路线图，所有需求以 PRD 文"
+        }
+      ],
+      "answer": "后端组还维护公司统一的脚手架与公共组件库。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q016",
+      "question": "咱们的系统密码最多能用多少天就得换一次？",
+      "ground_truth_answer": "每 90 天",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        }
+      ],
+      "answer": "系统密码最多能用90天。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q017",
+      "question": "文件夹每个月最多能领多少个？",
+      "ground_truth_answer": "5",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9905,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        }
+      ],
+      "answer": "文件夹每个月最多能领5个。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q018",
+      "question": "咱们公司一天最少得上满几个小时班？",
+      "ground_truth_answer": "每日工作时长不少于 8 小时。",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "根据公司员工手册规定，每日工作时长不少于8小时。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q019",
+      "question": "功能分支的生命周期上限是多少天？",
+      "ground_truth_answer": "单个功能分支生命周期不得超过 14 天",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "14天。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q020",
+      "question": "咱们前端组用的是哪个版本的 Vue？",
+      "ground_truth_answer": "Vue3",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "前端组使用的是 Vue3。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q021",
+      "question": "制度里说的“高危操作”具体包含哪几项？",
+      "ground_truth_answer": "删库、批量更新、密钥变更",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        }
+      ],
+      "answer": "制度里说的“高危操作”具体包含删库、批量更新、密钥变更。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q022",
+      "question": "物资编码BG-021对应的是哪种办公用品？",
+      "ground_truth_answer": "档案盒",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9905,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        }
+      ],
+      "answer": "物资编码BG-021对应的办公用品是档案盒。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q023",
+      "question": "弹性打卡具体是怎么规定的？",
+      "ground_truth_answer": "上班时间可在 9:00 至 9:30 之间自由选择，对应下班时间顺延，每日工作时长不少于 8 小时。",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        }
+      ],
+      "answer": "公司提供弹性打卡，上班时间可在9:00至9:30之间自由选择，对应下班时间顺延，每日工作时长不少于8小时。超过弹性时段上限打卡视为迟到。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q024",
+      "question": "GitFlow 分支模型里，哪些分支属于长期保留的？",
+      "ground_truth_answer": "长期分支仅保留 main 与 develop",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        }
+      ],
+      "answer": "在 GitFlow 分支模型中，长期保留的分支仅包括 main 与 develop。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q025",
+      "question": "ChenUI 具体是指什么？",
+      "ground_truth_answer": "ChenUI 是前端组负责维护的设计系统组件库。",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "ChenUI 是指由宸甄科技研发中心前端组负责维护的设计系统组件库，所有业务页面必须基于其组件构建以保证视觉一致性。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q026",
+      "question": "员工离职后，IT回收权限和注销账号的时间要求是多久？",
+      "ground_truth_answer": "离职生效后 24 小时内",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        }
+      ],
+      "answer": "员工离职后，IT部门须在离职生效后24小时内回收其全部系统权限并注销域账号。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q027",
+      "question": "便签纸的具体规格是什么？",
+      "ground_truth_answer": "76x76mm 100张",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9905,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        }
+      ],
+      "answer": "便签纸的具体规格为76x76mm 100张。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q028",
+      "question": "中午休息是从几点到几点？",
+      "ground_truth_answer": "12:00-13:30",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ],
+      "answer": "中午休息时间是从12:00到13:30。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q029",
+      "question": "功能分支到期还没合并的话会怎么处理？",
+      "ground_truth_answer": "到期未合并的由技术负责人评估后关闭",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        }
+      ],
+      "answer": "功能分支生命周期不得超过14天，到期未合并的由技术负责人评估后关闭。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q030",
+      "question": "业务页面为什么非得基于 ChenUI 组件来搭建？",
+      "ground_truth_answer": "为了保证视觉一致性。",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        }
+      ],
+      "answer": "为了保证视觉一致性。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q031",
+      "question": "机密级数据的备份文件能保留多少天？",
+      "ground_truth_answer": "90天",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        }
+      ],
+      "answer": "机密级数据的备份文件保留90天。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q032",
+      "question": "鼠标一个月最多可以领几个？",
+      "ground_truth_answer": "1",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9906,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        }
+      ],
+      "answer": "鼠标一个月最多可以领1个。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q033",
+      "question": "什么情况下会被算作早退？",
+      "ground_truth_answer": "提前30分钟以上下班且未请假视为早退",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        }
+      ],
+      "answer": "提前30分钟以上下班且未请假会被算作早退。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q034",
+      "question": "一个合并请求最少要几个评审人同意才行？",
+      "ground_truth_answer": "至少获得两名评审人批准，其中一名须为模块 Owner。",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        }
+      ],
+      "answer": "最少需要两名评审人同意，其中一名须为模块 Owner。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q035",
+      "question": "咱们自动化回归覆盖率最低要求是多少？",
+      "ground_truth_answer": "不低于 80%",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        }
+      ],
+      "answer": "自动化回归覆盖率最低要求是不低于80%。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q036",
+      "question": "外发秘密级及以上数据时，必须通过哪个系统进行并全程留痕？",
+      "ground_truth_answer": "公司文档水印系统",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        }
+      ],
+      "answer": "公司文档水印系统。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.0
+    },
+    {
+      "qid": "q037",
+      "question": "物资编码BG-050对应的是什么办公用品？",
+      "ground_truth_answer": "胶带",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9906,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        }
+      ],
+      "answer": "物资编码BG-050对应的办公用品是胶带。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q038",
+      "question": "一个月迟到早退几次会开始扣钱？扣多少？",
+      "ground_truth_answer": "当月迟到或早退累计3次以内不作处理，第4次起每次扣减当月全勤奖100元",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        }
+      ],
+      "answer": "当月迟到或早退累计3次以内不作处理，从第4次起开始扣钱，每次扣减当月全勤奖100元。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q039",
+      "question": "研发流程里常说的 MR 指的是什么？",
+      "ground_truth_answer": "MR 是合并请求（Merge Request）的缩写，所有代码合入 develop 及以上分支必须通过合并请求。",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "在研发流程中，MR 指的是合并请求。所有代码合入 develop 及以上分支必须通过合并请求（MR）进行评审。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q040",
+      "question": "缺陷生命周期归哪个组管？",
+      "ground_truth_answer": "测试组",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 产品设计部]\n## 产品设计部  \n负责产品规划、需求分析与交互设计。产品设计部维护需求池并按季度输出路线图，所有需求以 PRD 文"
+        }
+      ],
+      "answer": "缺陷生命周期归测试组管理。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q041",
+      "question": "普通办公终端允许使用什么样的U盘？",
+      "ground_truth_answer": "公司发放的加密 U 盘",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        }
+      ],
+      "answer": "普通办公终端仅允许使用公司发放的加密U盘。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q042",
+      "question": "剪刀的具体规格是什么？",
+      "ground_truth_answer": "不锈钢 6寸",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9906,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        }
+      ],
+      "answer": "剪刀的具体规格是不锈钢 6寸。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q043",
+      "question": "迟到早退扣的是哪项奖金？",
+      "ground_truth_answer": "全勤奖",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ],
+      "answer": "迟到早退扣的是全勤奖。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q044",
+      "question": "评审人给了意见但提交人迟迟不回复，这个 MR 会怎么处理？",
+      "ground_truth_answer": "MR 在评审人提出意见后 48 小时内未响应的，评审人有权关闭。",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "根据《宸甄科技研发管理制度》，MR 在评审人提出意见后 48 小时内未响应的，评审人有权关闭。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q045",
+      "question": "严重缺陷需要在多长时间内完成复现与分派？",
+      "ground_truth_answer": "24 小时内",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        }
+      ],
+      "answer": "严重缺陷须在24小时内完成复现与分派。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q046",
+      "question": "公司要求统一安装的 EDR 软件全称是什么，具体指什么？",
+      "ground_truth_answer": "Endpoint Detection and Response，终端检测与响应",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        }
+      ],
+      "answer": "公司要求统一安装的 EDR 软件全称是 Endpoint Detection and Response，具体指终端检测与响应。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q047",
+      "question": "鼠标垫库存低于多少会触发预警？",
+      "ground_truth_answer": "50",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9901,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        }
+      ],
+      "answer": "鼠标垫库存低于50会触发预警。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q048",
+      "question": "周末加了班的话，调休是按什么比例折算的？",
+      "ground_truth_answer": "周末加班按 1:1.5 折算调休",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "周末加班按 1:1.5 折算调休。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q049",
+      "question": "咱们版本号管理用的semver是什么的缩写？",
+      "ground_truth_answer": "语义化版本（semver）规范",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        }
+      ],
+      "answer": "semver是“语义化版本”的缩写。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q050",
+      "question": "告警响了之后，DevOps那边要求多长时间内必须响应？",
+      "ground_truth_answer": "工作时间15分钟内响应",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        }
+      ],
+      "answer": "工作时间15分钟内响应。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q051",
+      "question": "电脑系统出了新补丁，规定最多几天内得更新好？",
+      "ground_truth_answer": "操作系统补丁须在发布后 14 天内完成更新。",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        }
+      ],
+      "answer": "操作系统补丁须在发布后14天内完成更新。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q052",
+      "question": "IT-020这个物资编码对应的是什么东西？",
+      "ground_truth_answer": "USB集线器",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9901,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        }
+      ],
+      "answer": "IT-020对应的物资是USB集线器（规格：4口 USB3.0）。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q053",
+      "question": "提加班申请走的是哪个系统？",
+      "ground_truth_answer": "OA 系统",
+      "question_type": "term",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        }
+      ],
+      "answer": "提加班申请走的是 OA 系统。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q054",
+      "question": "对外交付的版本号格式具体是怎样的？",
+      "ground_truth_answer": "主版本号.次版本号.修订号",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        }
+      ],
+      "answer": "对外交付的版本号遵循语义化版本（semver）规范，具体格式为：主版本号.次版本号.修订号。其中，不兼容的接口变更提升主版本号，向下兼容的功能新增提升次版本号，缺陷修复提升修订号。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q055",
+      "question": "DevOps组具体负责哪些系统和体系？",
+      "ground_truth_answer": "CI/CD流水线、容器平台与监控告警体系",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        }
+      ],
+      "answer": "DevOps组具体负责CI/CD流水线、容器平台与监控告警体系（包括统一日志平台与指标监控），并负责staging（预发布验收）环境。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q056",
+      "question": "发我的办公笔记本需要开启什么加密设置吗？",
+      "ground_truth_answer": "笔记本须启用全盘加密。",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 13,
+          "text": "[3 数据安全]\n3 数据安全\n客户数据、源代码、财务数据默认定为秘密级。秘密级及以上数据外发须经数据 Owner\n与安全委员会双重审批，通过公司文档水印系统外"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "办公笔记本须启用全盘加密。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q057",
+      "question": "咱们公司配的显示器支架是什么规格的？",
+      "ground_truth_answer": "单臂承重9kg",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9901,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        }
+      ],
+      "answer": "公司配的显示器支架规格为单臂承重9kg。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q058",
+      "question": "调休一直没用的话，多久会过期清零？",
+      "ground_truth_answer": "调休有效期自产生之日起 6 个月内有效，逾期清零",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "调休自产生之日起 6 个月内有效，逾期未使用将会清零。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q059",
+      "question": "修了个bug发版的话，应该升哪个版本号？",
+      "ground_truth_answer": "修订号",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        }
+      ],
+      "answer": "应该提升修订号。根据语义化版本（semver）规范，缺陷修复提升修订号。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q060",
+      "question": "容灾切换演练多久搞一次？",
+      "ground_truth_answer": "每季度组织一次",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "容灾切换演练每季度组织一次。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q061",
+      "question": "平时在家办公连VPN，如果中途离开没操作，多久会自动断开？",
+      "ground_truth_answer": "30 分钟",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        }
+      ],
+      "answer": "空闲30分钟会自动断开。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q062",
+      "question": "洗手液一个月最多能领几瓶？",
+      "ground_truth_answer": "1",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9861,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        }
+      ],
+      "answer": "洗手液一个月最多能领1瓶。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q063",
+      "question": "社会工龄满5年但不到10年，年假有几天？",
+      "ground_truth_answer": "10天",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        }
+      ],
+      "answer": "社会工龄满5年但不到10年的员工，年假为10天。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q064",
+      "question": "灰度发布第一步放量比例是多少，最少要观察多长时间才能继续？",
+      "ground_truth_answer": "先放量 5%，观察不少于 2 小时",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n宸甄科技研发管理制度\n本制度适用于研发中心全体成员，涵盖代码管理、发布流程、质量保障与技术评审四大领域，自 2025 年 2 月 1 "
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "灰度发布第一步放量比例为5%，最少需要观察2小时。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q065",
+      "question": "产品设计部的路线图多久输出一次？",
+      "ground_truth_answer": "按季度输出路线图。",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 产品设计部]\n## 产品设计部  \n负责产品规划、需求分析与交互设计。产品设计部维护需求池并按季度输出路线图，所有需求以 PRD 文"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        }
+      ],
+      "answer": "产品设计部的路线图按季度输出一次。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q066",
+      "question": "登录VPN时要求的双因素认证，具体是指哪两种认证方式？",
+      "ground_truth_answer": "密码加动态令牌",
+      "question_type": "term",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        }
+      ],
+      "answer": "登录VPN时要求的双因素认证具体是指密码和动态令牌。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q067",
+      "question": "HC-010这个编码对应的是什么物资？",
+      "ground_truth_answer": "洗手液",
+      "question_type": "term",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9861,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.1 分支模型]\n1.1 分支模型\n代码仓库统一托管于公司 GitLab（gitlab.chenzhen.tec"
+        }
+      ],
+      "answer": "HC-010编码对应的物资是洗手液。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q068",
+      "question": "因为工作太忙年假没休完，最多可以延期到什么时候？",
+      "ground_truth_answer": "次年3月31日",
+      "question_type": "longtail",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        }
+      ],
+      "answer": "确因工作原因未休完的年假，最多可顺延至次年3月31日。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q069",
+      "question": "每个梯度观察期需要盯的指标具体是哪几个？",
+      "ground_truth_answer": "错误率、P99 延迟、核心业务成功率",
+      "question_type": "term",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > 后端组]\n### 后端组  \n负责服务端架构设计、接口开发与数据库建模。技术栈以 Python/FastAPI 与 J"
+        }
+      ],
+      "answer": "每个梯度观察期需要盯的指标具体是错误率、P99延迟和核心业务成功率。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q070",
+      "question": "产品设计部给研发提需求用的是什么文档？",
+      "ground_truth_answer": "PRD文档。",
+      "question_type": "term",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 产品设计部]\n## 产品设计部  \n负责产品规划、需求分析与交互设计。产品设计部维护需求池并按季度输出路线图，所有需求以 PRD 文"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n## 研发中心  \n研发中心下设四个组，负责公司全部产品与平台的研发工作。"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理]\n1 代码管理"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 5 环境清单]\n表格字段：环境 | 用途 | 部署窗口 | 负责人 | 访问方式\n环境：dev；用途：日常联调；部署窗口：随时；负责"
+        }
+      ],
+      "answer": "产品设计部给研发提需求使用的是 PRD 文档。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q071",
+      "question": "接待客户时用的访客WiFi密码，更新频率是怎样的？",
+      "ground_truth_answer": "每日更换",
+      "question_type": "longtail",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        }
+      ],
+      "answer": "接待客户时使用的访客WiFi密码每日更换。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q072",
+      "question": "纸巾的库存预警阈值设的是多少？",
+      "ground_truth_answer": "300",
+      "question_type": "longtail",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9861,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ],
+      "answer": "纸巾的库存预警阈值为300。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q073",
+      "question": "刚工作满2年的同事能休多少天年假？",
+      "ground_truth_answer": "5天",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        }
+      ],
+      "answer": "刚工作满2年的同事能休5天年假。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q074",
+      "question": "指标越界触发回滚的话，回滚操作最多允许花多久？",
+      "ground_truth_answer": "10 分钟",
+      "question_type": "longtail",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2.1 版本号规范\n对外交付版本号遵循语义化版本（semver）规范：主版本号.次版本号.修订号。不兼容的接口变更提"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心 > DevOps 组]\n### DevOps 组  \n负责 CI/CD 流水线、容器平台与监控告警体系。所有服务须接入统一"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 15,
+          "text": "宸甄科技员工手册（版本 V3.2）\n第一章 总则\n本手册适用于宸甄科技全体正式员工、试用期员工及劳务外包人员。手册自 2025 年 1 月 1 日起施行，由人力"
+        },
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        }
+      ],
+      "answer": "10分钟。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q075",
+      "question": "满意度调研最少要收集多少份样本？",
+      "ground_truth_answer": "不少于500份。",
+      "question_type": "longtail",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 产品设计部]\n## 产品设计部  \n负责产品规划、需求分析与交互设计。产品设计部维护需求池并按季度输出路线图，所有需求以 PRD 文"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 13,
+          "text": "[5 网络与访问控制]\n5 网络与访问控制\n远程办公须通过公司 VPN 接入，VPN\n登录启用双因素认证（密码加动态令牌）。VPN 会话空闲 30 分钟自动断开"
+        }
+      ],
+      "answer": "满意度调研最少要收集500份样本。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q076",
+      "question": "P1级安全事件的处置进展需要多久同步一次？",
+      "ground_truth_answer": "每2小时",
+      "question_type": "fact",
+      "source_file": "信息安全管理制度.pdf",
+      "document_id": 13,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 13,
+          "text": "[4 办公终端安全]\n4 办公终端安全\n所有办公终端必须安装公司统一部署的 EDR（Endpoint Detection\nand Response，终端检测与响"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度]\n4 技术评审\n涉及新中间件引入、数据模型变更或预估开发量超过 10 人天的方案须经过架构评审。架构评审会固定于每周四下午 15:00 "
+        }
+      ],
+      "answer": "每2小时同步一次。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q077",
+      "question": "提交办公用品领用申请后，主管审批一般要多久？",
+      "ground_truth_answer": "1 个工作日",
+      "question_type": "fact",
+      "source_file": "办公用品领用标准.xlsx",
+      "document_id": 11,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 0.9608,
+      "retrieved": [
+        {
+          "document_id": 11,
+          "text": "【Sheet：领用流程｜第2~7行】\n表头：步骤 | 环节 | 办理方式 | 时限 | 责任方\n第2行 步骤：1；环节：日常领用申请；办理方式：OA-行政服务-"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 行政部]\n## 行政部  \n负责办公场地、资产管理与后勤保障。办公用品领用标准见行政制度附件，会议室预订通过企业微信\"会议室\"应用，"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：特殊物资审批｜第2~5行】\n表头：物资类别 | 单价范围 | 审批层级 | 备注\n第2行 物资类别：普通办公物资；单价范围：单价 ≤ 100 元；"
+        },
+        {
+          "document_id": 11,
+          "text": "【Sheet：办公用品清单｜第2~19行】\n表头：物资编码 | 物资名称 | 规格 | 单位 | 单价(元) | 月度领用上限 | 库存预警阈值\n第2行 物资编"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        }
+      ],
+      "answer": "提交办公用品领用申请后，主管审批一般需要1个工作日。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q078",
+      "question": "请病假的话工资按什么比例发？",
+      "ground_truth_answer": "病假期间工资按基本工资的70%发放。",
+      "question_type": "fact",
+      "source_file": "员工手册.txt",
+      "document_id": 15,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 15,
+          "text": "2.4 加班管理：加班需提前一天在 OA 系统提交申请并经直属上级批准，未经审批的加班不计入调休。工作日加班按 1:1 折算调休，周末加班按 1:1.5 折算调"
+        },
+        {
+          "document_id": 15,
+          "text": "3.5 丧假：直系亲属（父母、配偶、子女）身故的丧假为 5 天，祖父母、外祖父母、配偶父母身故的为 3 天，异地奔丧另给路途假 2 天。\n3.6 调休与年假冲突"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 13,
+          "text": "7 违规处罚\n一般违规（如未及时打补丁、弱密码）通报批评并扣减当月绩效分 5\n分；严重违规（私自外发秘密级数据、共享账号）记大过并扣发当月 30%\n绩效工资；重"
+        },
+        {
+          "document_id": 15,
+          "text": "5.2 差旅住宿标准：一线城市每晚 350 元，二线城市每晚 280 元，其他城市每晚 220 元，超标部分自理。\n5.3 报销时效：费用发生后 30 天内提交"
+        }
+      ],
+      "answer": "病假期间工资按基本工资的70%发放。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q079",
+      "question": "咱们核心资金和权限模块的单测行覆盖率要达到多少？",
+      "ground_truth_answer": "不低于 85%",
+      "question_type": "fact",
+      "source_file": "研发管理制度.docx",
+      "document_id": 14,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 3 代码质量]\n3 代码质量\n单元测试行覆盖率整体不低于 70%，核心资金与权限模块不低于 85%。流水线集成静态代码扫描，严重级别"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 1 代码管理 > 1.2 合并请求（MR）评审]\n1.2 合并请求（MR）评审\n所有代码合入 develop 及以上分支必须通过合并"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 研发中心]\n### 前端组  \n负责 Web 端与移动端界面开发，技术栈为 Vue3 与 uni-app。前端组负责维护设计系统组件"
+        },
+        {
+          "document_id": 13,
+          "text": "[1 总则]\n1 总则\n为保障宸甄科技信息资产安全，规范信息安全管理工作，特制定本制度。本制度适用于公司全\n体员工、实习生及第三方驻场人员。\n公司信息资产按敏感"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        }
+      ],
+      "answer": "核心资金和权限模块的单测行覆盖率不低于85%。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    },
+    {
+      "qid": "q080",
+      "question": "销售线索多长时间没跟进就会被自动回收？",
+      "ground_truth_answer": "超7天未更新自动回收至公海",
+      "question_type": "fact",
+      "source_file": "部门职责说明.md",
+      "document_id": 12,
+      "doc_hit": true,
+      "passage_hit": true,
+      "best_overlap": 1.0,
+      "retrieved": [
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明 > 市场与销售部]\n## 市场与销售部  \n### 国内销售  \n负责国内市场客户开拓与维护，销售线索统一录入 CRM 系统，跟进超 7"
+        },
+        {
+          "document_id": 13,
+          "text": "[2 账号与权限管理]\n2 账号与权限管理\n所有系统账号实行实名制，禁止共享账号。密码长度不得低于 12\n位，须包含大小写字母、数字与特殊字符，每 90 天强制"
+        },
+        {
+          "document_id": 12,
+          "text": "[宸甄科技部门职责说明]\n## 人力资源部  \n### 招聘组  \n负责人才寻访与面试组织。社招流程为简历初筛、一面（专业面）、二面（交叉面）、三面（HR 面）"
+        },
+        {
+          "document_id": 13,
+          "text": "[6 应急响应]\n6 应急响应\n发生数据泄露、勒索病毒、账号盗用等安全事件时，当事人须在发现后 30\n分钟内上报信息安全响应组（SRC），应急电话分机 5110"
+        },
+        {
+          "document_id": 14,
+          "text": "[宸甄科技研发管理制度 > 2 发布流程]\n2 发布流程"
+        }
+      ],
+      "answer": "销售线索跟进超7天未更新就会被自动回收至公海。",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# 窄路由规则（规则优先，不做 LLM/向量分类）
+# 判定：任一 strong 规则命中，或弱规则累计分值 >= threshold → react_complex
+version: 1
+threshold: 2
+
+rules:
+  - id: compare
+    description: 对比/比较/差异类
+    pattern: '对比|比较|差异|区别|分别|各自|哪个更|哪一个更|结合.*和|相比'
+    weight: 2
+    strong: true
+    enabled: true
+
+  - id: multi_entity
+    description: 多实体/多文档/多条款
+    pattern: '(上海|北京|成都|深圳|苏州|杭州|南京|武汉|西安|重庆|广州|天津).*(上海|北京|成都|深圳|苏州|杭州|南京|武汉|西安|重庆|广州|天津)|《[^》]+》.*《[^》]+》|第[一二三四五六七八九十0-9]+条.*第[一二三四五六七八九十0-9]+条'
+    weight: 2
+    strong: true
+    enabled: true
+
+  - id: condition_calc
+    description: 条件组合/计算
+    pattern: '是否满足|能否|根据.*和.*判断|计算|预算|差值|汇总|合计|加总|折算|占比'
+    weight: 1
+    strong: false
+    enabled: true
+
+  - id: tool_chain
+    description: 明确要求多步工具链
+    pattern: '先.*再.*(判断|建议|给建议)|查.*再.*判断|分别查|逐一核对|交叉校验'
+    weight: 2
+    strong: true
+    enabled: true
+
+  - id: conflict
+    description: 制度冲突判断
+    pattern: '冲突|矛盾|不一致|以哪个为准|哪个优先|是否违背'
+    weight: 2
+    strong: true
+    enabled: true

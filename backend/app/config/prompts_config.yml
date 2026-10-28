@@ -4,3 +4,5 @@ faithfulness_judge_prompt_path: prompts/faithfulness_judge.txt
 relevancy_judge_prompt_path: prompts/relevancy_judge.txt
 multi_query_prompt_path: prompts/multi_query.txt
 hyde_prompt_path: prompts/hyde.txt
+react_complex_prompt_path: prompts/react_complex.txt
+correctness_judge_prompt_path: prompts/correctness_judge.txt
