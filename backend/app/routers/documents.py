@@ -5,6 +5,7 @@ import time
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from fastapi.responses import FileResponse
+from langchain_core.documents import Document as LCDocument
 from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -15,6 +16,7 @@ from app.dependencies import get_current_user
 from app.models.document_chunk import DocumentChunk
 from app.models.documents import Document
 from app.models.users import User
+from app.service.rag.retrieval import bm25_retriever, hybrid_enabled
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.config_handler import qdrant_conf
 from app.utils.logger_handler import logger
@@ -66,6 +68,13 @@ async def vectorize_document(document_id: int, file_path: str):
                 doc.vectorize_message = None
                 session.add(doc)
             await session.commit()
+
+        # P2：BM25 内存索引增量添加（仅 hybrid 开启时维护）
+        if hybrid_enabled():
+            bm25_retriever.add([
+                LCDocument(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
+                for text, vector_id in chunks
+            ])
         logger.info(f"[文档]文档(id={document_id})异步向量化完成，共 {len(chunks)} 个分块")
     except Exception as e:
         logger.error(f"[文档]文档(id={document_id})异步向量化失败：{str(e)}", exc_info=True)
@@ -235,6 +244,10 @@ async def delete_document(
         except Exception as e:
             logger.error(f"[文档]删除文档(id={document_id})向量失败：{str(e)}", exc_info=True)
             return err(5000, f"删除向量失败：{str(e)}")
+
+        # P2：BM25 内存索引同步删除（仅 hybrid 开启时维护）
+        if hybrid_enabled():
+            bm25_retriever.remove(vector_ids)
 
     # 2. 删除 DB 行（document_chunk 级联删除）
     file_path = doc.file_path

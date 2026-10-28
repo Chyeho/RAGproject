@@ -1,5 +1,10 @@
-chat_model_name: qwen3.7-max
-embedding_model_name: text-embedding-v4
+# ---------- 远程模式（MODEL_MODE=remote）----------
+remote:
+  embedding_model_name: text-embedding-v4   # DashScope 嵌入模型名
 
+# ---------- 本地模式（MODEL_MODE=local，Ollama）----------
+local:
+  chat_model_name: qwen2.5:7b              # Ollama 聊天模型
+  embedding_model_name: bge-m3            # Ollama 嵌入模型（中文场景推荐）
 
 session_config : {"configurable":{"session_id":"user_001",}}

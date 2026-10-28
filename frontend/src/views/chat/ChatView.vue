@@ -82,6 +82,8 @@
                       <div class="citation-doc">
                         <el-icon :size="13"><DocumentCopy /></el-icon>
                         <span class="citation-name">{{ cit.documentName }}</span>
+                        <span v-if="cit.sectionPath" class="citation-sec">{{ cit.sectionPath }}</span>
+                        <span v-if="cit.pageStart" class="citation-page">P{{ pageLabel(cit) }}</span>
                       </div>
                       <p class="citation-snippet">{{ cit.snippet }}</p>
                     </div>
@@ -280,6 +282,12 @@ function toggleCitations(msgId) {
   } else {
     expandedCitations.add(msgId)
   }
+}
+
+// 页码展示：起止相同显示单页，否则显示区间
+function pageLabel(cit) {
+  if (!cit.pageEnd || cit.pageStart === cit.pageEnd) return cit.pageStart
+  return `${cit.pageStart}-${cit.pageEnd}`
 }
 
 // ---------------- 滚动 ----------------
@@ -526,6 +534,25 @@ function scrollToBottom() {
   font-size: 13px;
   color: var(--text-main);
   font-weight: 600;
+}
+
+.citation-sec {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.citation-page {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--brand-color);
+  background-color: var(--brand-color-light);
+  border-radius: 4px;
+  padding: 1px 6px;
 }
 
 .citation-snippet {

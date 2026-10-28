@@ -1,19 +1,26 @@
-'''向量存储服务（Qdrant 版，替代原 Chroma 实现）'''
+'''向量存储服务（Qdrant 版，P1：格式感知分块 + 确定性 chunk ID）'''
 import os
-from typing import Callable, Optional
+import uuid
+from typing import Optional
 
 from langchain_qdrant import QdrantVectorStore                                     # Qdrant向量库
-from langchain_text_splitters import RecursiveCharacterTextSplitter               # 文本切割器
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient                                            # Qdrant客户端
 from qdrant_client.models import Distance, VectorParams                           # Qdrant建集参数
 
-from app.utils.path_tool import get_abs_path                                      # 获取绝对路径
-from app.utils.file_handler import (get_file_documents, get_file_md5_hex,
-                                    listdir_with_allowed_type)                 # 文件处理工具
-from app.utils.config_handler import qdrant_conf                                 # Qdrant配置项
+from app.utils.config_handler import qdrant_conf, retrieval_conf             # Qdrant/检索配置项
 from app.utils.logger_handler import logger                                      # 日志器
 from app.modelFactory.factory import embed_model                                 # 文本嵌入模型
+from app.service.rag.chunking import chunk_file                                  # 格式感知分块（P1）
+
+# chunk ID 确定性命名空间：同一 document_id + chunk_index 生成的 ID 稳定，
+# 重建向量时按 ID 覆盖（upsert），保证幂等
+CHUNK_ID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "privrag.chunk.v1")
+
+
+def build_chunk_id(document_id: int, chunk_index: int) -> str:
+    '''生成确定性 chunk ID：uuid5(namespace, "{document_id}:{chunk_index}")'''
+    return str(uuid.uuid5(CHUNK_ID_NAMESPACE, f"{document_id}:{chunk_index}"))
 
 
 class VectorStoreService(object):
@@ -42,54 +49,54 @@ class VectorStoreService(object):
             validate_collection_config=False,                                     # 不预校验，collection 不存在时自动创建
         )
 
-        # 文本分割器
-        self.spliter = RecursiveCharacterTextSplitter(
-            chunk_size=qdrant_conf["chunk_size"],        # 分割后每个文本块的大小
-            chunk_overlap=qdrant_conf["chunk_overlap"],  # 相邻文本块之间的重叠字符数
-            separators=qdrant_conf["separators"],        # 分割凭据符号
-            length_function=len,                         # 计算文本长度的函数
-        )
-
-    def get_retriever(self):
-        """返回检索器"""
-        return self.vector_store.as_retriever(search_kwargs={"k": qdrant_conf["k"]})
+    def get_retriever(self, k: int | None = None):
+        """返回稠密检索器（P2 起默认 k 取 retrieval_config.yml 的 legacy_k，全开关关闭时等价旧链路）"""
+        if k is None:
+            k = int(retrieval_conf.get("legacy_k", 3))
+        return self.vector_store.as_retriever(search_kwargs={"k": k})
 
     def upload_file(self, file_path: str, document_id: Optional[int] = None) -> list[tuple[str, str]]:
         """
-        单个文件切分后写入 Qdrant 向量库。
+        单个文件经格式感知分块后写入 Qdrant 向量库。
         Args:
             file_path (str): 待向量化的文件路径
             document_id (int, optional): 关联的 document 表 ID，写入分块 metadata，
-                供问答引用来源反查文档信息
+                供问答引用来源反查文档信息；提供时启用确定性 chunk ID（支持幂等重建）
 
         Returns:
             list[tuple[str, str]]: [(chunk_text, vector_id)]，供写入 document_chunk 表
         """
         try:
-            # 获取文档内容列表
-            documents: list[Document] = get_file_documents(file_path)
+            # 格式感知解析与智能分块（章节路径/页码/行号等结构信息写入 metadata）
+            documents: list[Document] = chunk_file(file_path)
 
-            # 如果文档无内容
+            # 如果分块后无有效内容
             if not documents:
                 raise ValueError(f"[上传向量化]{file_path}内没有有效文本内容")
 
-            # 进行文本分割
-            split_document: list[Document] = self.spliter.split_documents(documents)
+            # 合并元数据：保留 chunker 产出的结构信息，附加索引信息（不覆盖原有键）
+            total = len(documents)
+            for i, doc in enumerate(documents):
+                doc.metadata = {
+                    **doc.metadata,
+                    "chunk_index": i,
+                    "total_chunks": total,
+                }
+                if document_id is not None:
+                    doc.metadata["document_id"] = document_id
 
-            # 如果分割后无有效内容
-            if not split_document:
-                raise ValueError(f"[上传向量化]{file_path}分割后没有有效文本")
-
-            # 关联 document_id 到分块元数据（用于问答引用来源反查）
+            # 确定性 chunk ID：同时作为 Qdrant point id 与 metadata.vector_id
+            ids: Optional[list[str]] = None
             if document_id is not None:
-                for doc in split_document:
-                    doc.metadata = {"document_id": document_id}
+                ids = [build_chunk_id(document_id, i) for i in range(total)]
+                for doc, chunk_id in zip(documents, ids):
+                    doc.metadata["vector_id"] = chunk_id
 
-            # 将内容存入 Qdrant，返回各分块的 point id
-            vector_ids: list[str] = self.vector_store.add_documents(split_document)
+            # 将内容存入 Qdrant（带 ids 时按 point id 覆盖写入），返回各分块的 point id
+            vector_ids: list[str] = self.vector_store.add_documents(documents, ids=ids)
 
             logger.info(f"[上传向量化]{file_path}向量化成功，共 {len(vector_ids)} 个分块")
-            return list(zip([doc.page_content for doc in split_document], vector_ids))
+            return list(zip([doc.page_content for doc in documents], vector_ids))
         except Exception as e:
             logger.error(f"[上传向量化]{file_path}向量化失败，报错信息:{str(e)}", exc_info=True)
             raise
@@ -104,51 +111,3 @@ class VectorStoreService(object):
         except Exception as e:
             logger.error(f"[删除向量]删除向量失败，报错信息:{str(e)}", exc_info=True)
             raise
-
-    def load_document(self, md5_exists: Optional[Callable[[str], bool]] = None):
-        """
-        遍历 data 目录批量加载文档到 Qdrant 向量库。
-        Args:
-            md5_exists (Callable, optional): md5 去重回调 md5_exists(md5_hex)->bool，
-                由调用方从 document 表查询（md5 去重已迁移至数据库），缺省则不去重
-        """
-        # 获取数据文件列表
-        allowed_files_path: list[str] = listdir_with_allowed_type(
-            get_abs_path(qdrant_conf["data_path"]),
-            tuple(qdrant_conf["allow_knowledge_file_type"]),
-        )
-
-        for path in allowed_files_path:
-            # 获取文件的md5值
-            md5_hex = get_file_md5_hex(path)
-
-            # 检查文件是否已经存储（迁移自 md5.txt：现由 document 表 md5_hash 承担）
-            if md5_exists and md5_hex and md5_exists(md5_hex):
-                logger.info(f"[加载知识库]{path}内容已经存在知识库内，跳过")
-                continue
-
-            try:
-                # 获取文档内容列表
-                documents: list[Document] = get_file_documents(path)
-
-                # 如果文档无内容
-                if not documents:
-                    logger.warning(f"[加载知识库]{path}内没有有效文本内容，跳过")
-                    continue
-
-                # 进行文本分割
-                split_document: list[Document] = self.spliter.split_documents(documents)
-
-                # 如果分割后无有效内容
-                if not split_document:
-                    logger.warning(f"[加载知识库]{path}分割后没有有效文本")
-                    continue
-
-                # 将内容存入向量库
-                self.vector_store.add_documents(split_document)
-
-                logger.info(f"[加载知识库]{path}内容加载成功")
-            except Exception as e:
-                # exc_info=True记录详细报错信息
-                logger.error(f"[加载知识库]{path}加载失败，报错信息:{str(e)}", exc_info=True)
-                continue

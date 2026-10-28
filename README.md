@@ -1,29 +1,40 @@
 # 宸甄 PrivRAG 企业私有知识库问答系统
 
-## 1 项目概述
+## 第一章 项目介绍
 
-### 1-1 项目背景
+企业在日常运营中沉淀了大量非结构化内部文档（制度规范、产品手册、培训资料等），传统文件管理与关键词检索方式查阅效率低下；同时通用大模型无法加载企业私有数据，回答易产生幻觉，而直接调用公有大模型接口又存在数据泄密隐患。
 
-​	企业沉淀大量非结构化内部文档，传统文件管理与关键词检索查阅效率低下；通用大模型无法加载私有数据，回答易产生幻觉，公有接口存在数据泄密隐患。为此基于 RAG 技术开发私有化知识库问答系统，依托本地向量库实现私有文档语义检索，赋能大模型精准作答，保障数据安全。
+**宸甄 PrivRAG** 是一套面向企业的私有化知识库问答系统。基于 RAG（检索增强生成）技术，将企业私有文档向量化后存入本地向量数据库，问答时先从私有知识库中语义检索相关片段，再交由大模型生成回答，从而实现：
 
-### 1-2 项目技术栈
+- **私有数据安全**：文档与向量库均部署在企业内网，数据不出域；
+- **回答精准可溯源**：基于检索到的文档片段作答，减少幻觉，并提供引用来源；
+- **双模型模式**：支持远程 API（通义/DeepSeek 等）与本地 Ollama 模型一键切换，兼顾性能与数据合规；
+- **完整业务闭环**：涵盖用户认证、文档管理、知识入库、多轮问答、会话管理、统计分析、系统设置等全功能。
+
+系统采用前后端分离架构，前端基于 Vue 3 + Element Plus，后端基于 FastAPI + LangChain，数据层使用 MySQL（关系型）与 Qdrant（向量库），并提供 Docker 容器化一键部署能力。
+
+## 第二章 技术架构
+
+### 2.1 项目技术栈
 
 - **前端框架**：Vue 3 + Vite + Element Plus + ECharts + Vue Router + Axios
 - **后端框架**：FastAPI（含认证/会话/文档/统计/设置全部业务接口）
 - **关系型数据库**：MySQL 8.4（SQLModel + aiomysql 异步）
 - **向量数据库**：Qdrant v1.16
+- **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
-- **AI问答服务框架**：Langchain
-- **测试框架**：pytest + anyio（202 个单元测试，详见 `tests/README.md`）
+- **AI问答服务框架**：LangChain
+- **测试框架**：pytest + anyio（432 个单元测试，详见 `tests/README.md`）
 
-### 1-3 项目结构
+### 2.2 项目结构
 
 ```plaintext
 RAGproject_demo/
 ├── docker/                              # 部署配置（nginx / 环境变量 / 中间件）
 │   ├── env/
 │   │   ├── .env.dev                     # 开发环境变量
-│   │   └── .env.prod                    # 生产环境变量
+│   │   ├── .env.prod                    # 生产环境变量
+│   │   └── *.example                    # 变量模板（仓库内置，供复制使用）
 │   ├── middleware/
 │   │   ├── my.cnf                       # MySQL 自定义配置
 │   │   └── qdrant_config.yaml           # Qdrant 向量库配置
@@ -38,51 +49,87 @@ RAGproject_demo/
 │   │   │   ├── agent_config.yml         # Agent 配置
 │   │   │   ├── cache_config.yml         # 缓存配置
 │   │   │   ├── prompts_config.yml       # 提示词配置
-│   │   │   ├── qdrant_config.yml        # Qdrant 向量库 + RAG 参数配置
-│   │   │   └── rag_config.yml           # RAG 服务配置
+│   │   │   ├── qdrant_config.yml        # Qdrant 连接与集合配置
+│   │   │   ├── rag_config.yml           # 模型配置（聊天 / 嵌入，remote / local 分组）
+│   │   │   └── retrieval_config.yml     # 检索链路配置（分块 / hybrid / rerank / 查询优化）
 │   │   ├── core/                        # 核心模块
 │   │   │   ├── response.py              # 统一响应 {code, message, data}
 │   │   │   └── security.py              # 密码哈希 / JWT 签发与校验
-│   │   ├── data/                        # 私有知识库原始文件（上传落盘目录）
-│   │   │   └── 员工手册.txt
+│   │   ├── data/                        # 上传文件落盘目录（文件名前缀时间戳）
 │   │   ├── database/                    # 数据库连接层
 │   │   │   └── db.py                    # 环境变量连接 / get_session / init_db 建表
 │   │   ├── dependencies.py              # 全局依赖（get_current_user）
 │   │   ├── logs/                        # 运行日志
-│   │   ├── modelFactory/                # 模型工厂
-│   │   │   └── factory.py               # 聊天模型 / 嵌入模型实例化
+│   │   ├── modelFactory/                # 模型工厂（本地 / 远程双模式）
+│   │   │   ├── factory.py               # 聊天 / 嵌入模型实例化
+│   │   │   └── rerank_factory.py        # 精排模型实例化（远端 / 本地，含降级）
 │   │   ├── models/                      # SQLModel 数据模型（5 张表）
 │   │   │   ├── __init__.py
 │   │   │   ├── chat_conversation.py     # 会话表
 │   │   │   ├── chat_message.py          # 消息表（含 citations）
-│   │   │   ├── document_chunk.py        # 文档分块表
+│   │   │   ├── document_chunk.py        # 文档分块表（含章节 / 页码元数据）
 │   │   │   ├── documents.py             # 文档表（含 md5 去重）
 │   │   │   └── users.py                 # 用户表
-│   │   ├── prompts/                     # 系统提示词模板
-│   │   │   ├── rag_summarize.txt
-│   │   │   └── system_prompt.txt
+│   │   ├── prompts/                     # 提示词模板
+│   │   │   ├── rag_summarize.txt        # RAG 总结提示词
+│   │   │   ├── system_prompt.txt
+│   │   │   ├── multi_query.txt          # 多查询改写（可选链路）
+│   │   │   ├── hyde.txt                 # HyDE 假设文档（可选链路）
+│   │   │   ├── faithfulness_judge.txt   # 评测：忠实度裁判
+│   │   │   └── relevancy_judge.txt      # 评测：相关性裁判
 │   │   ├── routers/                     # FastAPI 路由层
 │   │   │   ├── auth.py                  # 认证（登录/注册/个人信息/改密）
 │   │   │   ├── chat.py                  # 会话 CRUD + 问答 + 引用来源
 │   │   │   ├── documents.py             # 文档上传/列表/预览/下载/删除
-│   │   │   ├── settings.py              # RAG 参数配置读写
+│   │   │   ├── settings.py              # RAG 全参数读写与热更新
 │   │   │   └── statistics.py            # 统计数据查询
 │   │   ├── service/                     # 业务服务层
 │   │   │   ├── agent/                   # Agent 服务
-│   │   │   │   └── react_agent.py
+│   │   │   │   ├── react_agent.py
+│   │   │   │   └── tools/               # Agent 工具与中间件
+│   │   │   ├── eval/                    # RAG 评测框架
+│   │   │   │   ├── runner.py            # 检索评测运行器（链路组合 / preset）
+│   │   │   │   ├── metrics.py           # HitRate / 召回率等指标
+│   │   │   │   ├── llm_judge.py         # LLM 裁判
+│   │   │   │   ├── dataset.py           # 评测集加载
+│   │   │   │   ├── corpus_v2.py         # v2 语料与评测集生成
+│   │   │   │   ├── ingest.py            # 评测语料入库
+│   │   │   │   ├── report.py            # 报告输出与对比
+│   │   │   │   ├── make_samples.py      # 样例文档生成
+│   │   │   │   ├── datasets/            # 评测集（v1 80 题 / v2 260 题）与语料
+│   │   │   │   └── README.md            # 评测框架使用说明
 │   │   │   ├── history/                 # 对话历史管理（按会话隔离）
 │   │   │   │   └── history_store.py
 │   │   │   └── rag/                     # RAG 问答核心
-│   │   │       ├── rag_service.py       # RAG 总结服务（支持多会话历史隔离）
+│   │   │       ├── chunking/            # 格式感知分块（pdf/docx/md/xlsx/txt）
+│   │   │       │   ├── strategy.py      # 分块策略入口（按格式分发）
+│   │   │       │   ├── pdf_chunker.py
+│   │   │       │   ├── docx_chunker.py
+│   │   │       │   ├── markdown_chunker.py
+│   │   │       │   ├── excel_chunker.py
+│   │   │       │   └── text_chunker.py
+│   │   │       ├── retrieval/           # 检索层
+│   │   │       │   ├── bm25_retriever.py    # BM25 稀疏检索
+│   │   │       │   ├── rrf.py               # RRF 融合
+│   │   │       │   └── hybrid_retriever.py  # 混合检索链路工厂
+│   │   │       ├── query/              # 查询优化（可选，默认关闭）
+│   │   │       │   ├── enhancer.py      # 查询增强总入口
+│   │   │       │   ├── multi_query.py   # 多查询改写
+│   │   │       │   └── hyde.py          # HyDE
+│   │   │       ├── rag_service.py       # RAG 总结服务（检索与生成分离）
+│   │   │       ├── registry.py          # RAG 单例注册表（线程安全 + 热更新重建）
+│   │   │       ├── rebuild.py           # 存量文档向量重建脚本
 │   │   │       └── vector_store.py      # Qdrant 向量库服务
 │   │   ├── utils/                       # 工具模块
 │   │   │   ├── config_handler.py        # 配置加载器
+│   │   │   ├── env_loader.py            # docker/env 环境变量白名单加载
 │   │   │   ├── file_handler.py          # 文件 MD5 / 文档读取
 │   │   │   ├── logger_handler.py        # 日志配置
 │   │   │   ├── path_tool.py             # 路径工具（绝对路径计算）
 │   │   │   └── prompt_loader.py         # 提示词模板加载
 │   │   └── main.py                      # FastAPI 应用入口（lifespan 建表 + 路由注册）
 │   ├── chat_history/                    # 用户对话历史持久化（按会话独立文件）
+│   ├── eval_reports/                    # 评测运行输出（JSON / 报告）
 │   ├── pyproject.toml                   # 项目依赖配置
 │   └── uv.lock
 ├── frontend/                            # 前端（Vue 3 + Element Plus + ECharts）
@@ -101,111 +148,140 @@ RAGproject_demo/
 │           ├── statistics/              # 统计数据页（ECharts 图表）
 │           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
 │           └── LoginRegister.vue        # 登录注册页
-├── tests/                               # 单元测试（202 个，运行方式见 tests/README.md）
+├── scripts/                             # 启动脚本
+│   ├── start-backend.ps1                # Windows 后端一键启动脚本
+│   └── start-backend.sh                 # Linux 后端一键启动脚本
+├── tests/                               # 单元测试（432 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
 ├── .gitignore
 ├── docs/                                # 项目开发文档目录
-│   ├── 前后端开发执行文档.md               # 前后端开发计划与实施记录
-│   └── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 技术文档.md                       # 项目阶段、期望与部署设计说明
+│   ├── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 常见报错问题解决方案速查.md         # 高频报错与排查速查
+│   ├── development_docs/                # 各阶段开发执行文档
+│   │   ├── 前后端开发执行文档.md
+│   │   ├── 模型加载双模式改造执行文档.md
+│   │   └── RAG链路升级执行文档.md
+│   └── rag_eval_reports/                # RAG 评测实验报告归档
+│       ├── RAG评测实验总结报告.md
+│       └── RAG评测实验时间线.md
 └── README.md
 ```
 
-## 2 项目阶段
+### 2.3 Docker 架构概览
 
-目前阶段完成情况：
+```
+互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
+                          → Backend API(:8000)  数据处理
+                                   ↓
+                          MySQL(:3306)   关系型数据库
+                          Qdrant(:6333)  向量数据库
+                          Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
+```
 
-1. **RAG 检索服务与 Agent 问答**：已完成基础架构开发（Qdrant 向量库服务、RAG 总结服务、ReAct Agent、按会话隔离的对话历史管理）；
-2. **前端页面**：已完成全部页面开发（登录注册、主框架、Bot 问答、知识库、统计数据、系统设置），采用蓝紫渐变科技风格，已对接后端真实接口；
-3. **后端业务服务**：已完成（认证、会话、文档、统计、设置全部接口），接入 MySQL 8.4 + Qdrant v1.16，复用现有 RAG/Agent 服务；前后端联调通过；
-4. **单元测试**：已为后端新增与更新 202 个单元测试（工具/模型/核心/数据/依赖/服务/路由/Agent 各层），全程 mock 外部依赖（MySQL/Qdrant/DashScope/LLM），不连真实库、无网络调用；运行方式详见 `tests/README.md`；
-5. **后续可迭代**：详见下一章「项目期望」。
+### 2.4 RAG 检索链路架构
 
-## 3 项目期望
+系统经过 P0→P4 五个阶段升级，当前生产链路为「双路召回 → RRF 融合 → 精排截断」，最终只把 **5 个**最相关片段送入大模型生成回答：
 
-基于当前的代码架构，做企业级迭代。当前版本的已完成能力之外，规划以下优化方向（按优先级排列）：
+```
+用户提问
+   │
+   ▼
+[查询优化]  mode=off（multi_query / HyDE 为可选实验开关）
+   │
+   ├──────────────────┐
+   ▼                  ▼
+[稠密召回]          [稀疏召回]
+Qdrant 向量检索      BM25 倒排索引
+dense_topn=20       bm25_topn=20
+   └────────┬─────────┘
+            ▼
+[RRF 融合]  rrf_k=60，两路按排名融合，保留 topn=20
+            ▼
+[精排]      gte-rerank-v2 逐条打分，取 top_k=5（异常自动降级）
+            ▼
+[生成]      5 个片段拼入提示词 → 大模型回答 + 引用溯源
+```
 
-### 3-1 升级 RAG 检索体系
+| 环节 | 关键参数 | 说明 |
+|---|---|---|
+| 格式感知分块 | `chunk_size=500` / `chunk_overlap=50` | pdf/docx/md/xlsx/txt 分别用专用分块器，保留章节路径与页码 |
+| 稠密召回 | `hybrid.dense_topn=20` | Qdrant 语义向量检索 |
+| 稀疏召回 | `hybrid.bm25_topn=20` | BM25 关键词检索，文档入库时增量维护索引 |
+| RRF 融合 | `hybrid.rrf_k=60` / `hybrid.topn=20` | 两路排名融合去重，作为精排候选 |
+| 精排 | `rerank.remote_model=gte-rerank-v2` / `rerank.top_k=5` | 精排不可用时自动降级，链路不中断 |
+| 查询优化 | `query_optimize.mode=off` | multi_query / HyDE 已实现，实测无净收益故默认关闭 |
 
-**a. 扩展支持更多文档格式**
+**四组合链路语义**（可在设置页或 `retrieval_config.yml` 切换）：
 
-目前仅支持 `txt` / `pdf` 两种格式（由 `file_handler.py` 的文件加载器决定）。后续按文档类型逐类接入加载器，并同步放开 `allow_knowledge_file_type` 白名单：
+| 混合检索 | 精排 | 链路行为 | 最终条数 |
+|---|---|---|---|
+| 关 | 关 | 纯稠密检索（等价升级前旧链路） | `legacy_k=3` |
+| 开 | 关 | dense + bm25 → RRF | `hybrid.topn` |
+| 关 | 开 | dense 候选 → 精排 | `rerank.top_k` |
+| 开 | 开（**当前默认**） | dense + bm25 → RRF(20) → 精排 | `rerank.top_k=5` |
 
-- Office 系：`docx` / `doc`（python-docx / 转换工具）
-- 表格与演示：`xlsx` / `pptx`（openpyxl / python-pptx）
-- Web 与标记：`md` / `html`（Markdown 解析 / BeautifulSoup）
-- 图片与扫描件：`png` / `jpg`（OCR 文本提取）
+**评测结论**（retrieval-only，v2 评测集 260 题）：
 
-**b. 增强文档解析能力**
+- v1 集（80 题）：P0 基线因仅 txt 入库、文档级 HitRate 仅 0.2000，逐步升级至 P1 的 0.9250、P2 hybrid+rerank 的 **1.0000**；
+- v2 集（68 份高度近似制度文档、260 题）文档级 HitRate **0.8115**、片段级 HitRate **0.7846**、内容召回率 **0.7881**，全程零幻觉；
+- multi-query、HyDE 等查询优化在该语料下无净收益，故默认关闭，仅作可选实验变体保留。
 
-当前按固定 `chunk_size` / `chunk_overlap` 均匀切分，未感知文档结构。后续升级为结构化解析：
+> 检索参数支持**热更新**：设置页保存后写入 `retrieval_config.yml`、同步内存配置并重建检索单例，无需重启服务；分块参数在下次上传向量化时生效。
 
-- **章节树构建**：解析文档标题层级（H1→Hn），生成章节树，检索时可按章节定位引用来源，回答展示更精准；
-- **智能切分规则**：根据章节/段落语义自定义切分策略——小章节合并进邻近 chunk（避免碎片化）、超长章节按段落边界再分割（避免截断语义）、常规段落保持原样不处理；
-- **元数据增强**：chunk 携带章节号、标题、页码等元数据，供检索过滤与引用展示使用。
+## 第三章 安装运行指南
 
-**c. 检索侧升级（混合检索 + 精排）**
+本章介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
 
-当前为纯稠密向量检索（`topK` 直接返回）。后续升级为两级检索架构：
+### 3.1 环境准备
 
-- **混合检索**：BM25 稀疏检索与稠密向量检索并行召回，按权重融合（如 RRF 融合算法），提升专有名词/缩写/长尾查询的召回率；
-- **精排重排**：召回 TopN 后使用 Cross-Encoder 或大模型打分重排，取精排后的 TopK 作为最终上下文，提升回答相关性与引用准确度；
-- **检索调优**：支持查询改写（Query Rewriting）、上下文压缩（Contextual Compression）等后处理。
-
-### 3-2 RAG 参数实时生效
-
-当前系统设置中的 RAG 参数（chunkSize / topK 等）写入 `qdrant_config.yml`，**重启后端后生效**。后续升级为实时生效：
-
-- 参数热更新：设置保存时同步刷新内存中的运行参数（如线程安全的配置快照）；
-- 可观测：参数变更记录日志，便于追溯配置调整时间线与影响范围。
-
-### 3-3 验证码可随时接入短信服务
-
-当前开发环境验证码固定为 `123456`（`/api/auth/sms-code` 仅写日志，不真实下发）。后续抽象短信发送接口，接入真实服务商（阿里云短信 / 腾讯云 SMS 等），通过配置切换：
-
-- 开发环境：保留固定验证码兜底；
-- 生产环境：走真实短信通道，增加发送频率限制、验证码有效期与防爆破策略。
-
-### 3-4 其他可补充方向
-
-- **权限与数据隔离**：知识库支持按用户/部门授权，文档与会话数据严格按用户隔离（当前会话已按用户隔离，可进一步细化到知识库级别）；
-- **引用来源展示增强**：citations 支持高亮命中片段、跳转到原文位置；合并「回答检索」与「引用检索」为一次检索两处使用，降低重复计算；
-- **系统可观测性**：接入指标采集（请求量/时延/错误率）、链路追踪与日志可视化（Prometheus + Grafana / ELK）；
-- **部署与运维**：补充 CI/CD 流水线（自动测试 + 镜像构建 + 发布）、Kubernetes 编排与水平扩展、数据备份恢复策略；
-- **多模态与语音**：支持图片/表格多模态问答、语音提问与播报等交互形态。
-
----
-
-## 4 快速启动
-
-本节介绍如何在本地快速把项目跑起来。根据使用场景选择以下两种启动方式之一。
-
-### 4-1 环境准备
+#### 3.1.1 依赖版本说明
 
 | 依赖 | 版本要求 | 说明 |
 |---|---|---|
 | Docker Desktop | ≥ 4.x（Windows 需启用 WSL2 后端） | 提供 MySQL / Qdrant / 完整容器化部署的运行环境；镜像源可配置加速 |
 | Python | ≥ 3.10（推荐 3.12+） | 方式二本地运行后端所需；可选 `uv` 作为包管理器（项目已提供 `pyproject.toml` / `uv.lock`） |
-| Node.js | ≥ 18 | 方式二本地运行前端所需（`npm` 随 Node 附带） |
+| Node.js | ≥ 18 | 方式二本地运行前端所需 |
 | Git | 任意 | 拉取/管理项目代码 |
 
 > Windows 提示：执行下述命令前，请确认 **Docker Desktop 已启动**（任务栏图标处于运行状态），否则 `docker compose` 会报连接错误。
 
-### 4-2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
+#### 3.1.2 环境变量文件配置
+
+环境变量统一放在 `docker/env/` 目录，仓库已提供模板文件，复制一份即可：
+
+```bash
+cp docker/env/.env.dev.example docker/env/.env.dev    # 开发环境（快速启动用它）
+cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
+```
+
+复制后只需填写以下 **4 个必填项**即可启动，其余变量均有默认值，无需改动：
+
+| 必填项 | 说明 |
+|--------|------|
+| `OPENAI_CHAT_MODEL` | 业务聊天模型名，随所选供应商填写（如 `deepseek-flash`、`qwen-plus`） |
+| `OPENAI_API_KEY` | 业务聊天模型的 API Key |
+| `OPENAI_BASE_URL` | 业务聊天模型端点（如 `https://api.deepseek.com/v1`） |
+| `DASHSCOPE_API_KEY` | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
+
+> 嵌入、精排、评测等其他远程模型默认走 DashScope，配好 `DASHSCOPE_API_KEY` 即可，无需额外配置。生产环境还需将 `.env.prod` 中 `<strong_production_password>` 等 MySQL 密码占位符替换为强密码（开发模板已内置默认密码）。各变量完整说明见 3.4 节。
+
+### 3.2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
 
 **前置准备**：仅需 Docker Desktop；无需本地安装 Python / Node.js。
 
 ```bash
 # 1. 首次使用：从模板复制环境变量文件并编辑
 cp docker/env/.env.dev.example docker/env/.env.dev
-#    至少需填写：DASHSCOPE_API_KEY（问答与向量化必需）、MYSQL_ROOT_PASSWORD 等
+#    只需填写 3.1.2 所列 4 个必填项（聊天模型三件套 + DASHSCOPE_API_KEY）
 
-# 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx）
+# 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx / ollama）
 docker compose --env-file docker/env/.env.dev up -d --build
 
 # 3. 查看运行状态与日志
-docker compose ps                 # 5 个服务均应为 Up (healthy)
+docker compose ps                 # 5 个服务均应为 Up (healthy)[本地模式为6个服务]
 docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 
 # 4. 访问应用
@@ -213,35 +289,49 @@ docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 #    后端 API：  http://localhost:8000/docs
 #    前端页面：  http://localhost:3000
 
-# 停止 / 重新构建（代码更新后）
-docker compose down
+# 日常停止（仅删除容器，数据卷保留，数据不丢失）
+docker compose --env-file docker/env/.env.dev down
+
+# 再次启动（已构建且代码无修改：不加 --build，直接复用镜像，秒级启动）
+docker compose --env-file docker/env/.env.dev up -d
+
+# 重新构建启动（代码有修改：必须加 --build，否则改动不会生效）
 docker compose --env-file docker/env/.env.dev up -d --build
 ```
 
+> ⚠️ **注意**：每一条 `docker compose` 命令（包括 `down`）都必须带 `--env-file` 参数。本项目环境变量位于 `docker/env/` 而非项目根目录，Compose 不会自动加载；漏掉该参数会导致数据库密码、库名等被置空，后端连不上 MySQL 而启动失败（容器显示 unhealthy）。若启动时终端出现 `WARN: The "XXX" variable is not set` 提示，即说明漏带了该参数。
+
 **说明**：一条命令拉起全部服务，环境一致、无需本地装依赖，适合演示与部署；但**首次启动较慢**——需拉取 MySQL/Qdrant/Nginx 基础镜像并构建前后端镜像（安装 Python / Node 依赖），且代码修改后需重新构建镜像才能生效。
 
-### 4-3 启动方式二：仅基础设施 + 本地启动前后端（推荐开发调试）
+### 3.3 启动方式二：仅基础设施 + 本地启动前后端（推荐开发调试）
 
 **前置准备**：Docker Desktop + Python（可选 uv）+ Node.js。
 
 ```bash
-# 1. 仅启动基础设施（MySQL + Qdrant）
+# 1. 仅启动基础设施（MySQL + Qdrant + Ollama）
+# 1.1 remote 模式
 docker compose --env-file docker/env/.env.dev up -d mysql qdrant
+# 1.2 local 模式
+docker compose --env-file docker/env/.env.dev up -d mysql qdrant ollama
+# 1.3 查看运行状态与日志
 docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
-# 2. 本地启动后端服务（新终端窗口）
-# 2.1 进入后端目录
-cd backend
-# 2.2 读取 docker/env/.env.dev 中的 DASHSCOPE_API_KEY（问答与向量化必需）
+# 2. 本地启动后端服务（新终端窗口，在项目根目录执行）
+# 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
+# （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
+# 注意：脚本路径是相对于项目根目录的；若当前在 backend 目录，改用 ..\scripts\start-backend.ps1
 
-# 2.2.1 Windows PowerShell:
-$env:DASHSCOPE_API_KEY = ((Get-Content ../docker/env/.env.dev | Select-String '^DASHSCOPE_API_KEY=').Line -split '=',2)[1]
+# Windows PowerShell:
+.\scripts\start-backend.ps1
 
-# 2.2.2 Linux / macOS / Git Bash:
-export DASHSCOPE_API_KEY=$(grep '^DASHSCOPE_API_KEY=' ../docker/env/.env.dev | cut -d'=' -f2)
+# Linux / macOS / Git Bash:
+chmod +x scripts/start-backend.sh   # 首次需加执行权限
+./scripts/start-backend.sh
 
-# 2.3 启动后端服务
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 如需指定其他 env 文件（如生产环境）：
+#   .\scripts\start-backend.ps1 docker/env/.env.prod
+#   ./scripts/start-backend.sh docker/env/.env.prod
+
 # 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
 
 # 3. 本地启动前端服务（新终端窗口）
@@ -255,56 +345,109 @@ npm run dev
 docker compose down
 ```
 
-**说明**：仅运行 MySQL/Qdrant 两个容器，资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
+**说明**：仅运行 MySQL/Qdrant 两个容器（local模式为加上ollama的共计三个容器），资源占用少、启动快；前后端在本机运行，支持热重载与 IDE 断点调试，代码修改即时生效，适合开发阶段；代价是需要本机安装 Python / Node.js 依赖。
 
----
+### 3.4 模型配置与环境变量说明
 
-## 5 Docker 容器化部署
+  快速上手只需配置 3.1.2 中的 4 个必填项，本节为完整参考。变量按用途分为两类：**可自主配置的模型项**（模型名 / API Key / base_url，可按需替换供应商）与**保留在原位置的编排项**（Docker 容器编排注入信息、模型加载模式等，一般无需改动）。
 
-### 5-1 架构概览
+#### 3.4.1 模型加载模式说明
 
+通过环境变量 **`MODEL_MODE`** 一键切换，无需改代码：
+
+| 模式 | 聊天模型（LLM） | 嵌入模型（Embed） | 适用场景 |
+|------|----------------|-------------------|----------|
+| `remote`（默认） | `langchain_openai.ChatOpenAI`，兼容任意 OpenAI 协议模型（通义/DeepSeek/月之暗面等） | DashScope `text-embedding-v4` | 有 API Key、低延迟需求 |
+| `local` | `langchain_ollama.ChatOllama`，本地 Ollama | `langchain_ollama.OllamaEmbeddings`，本地 Ollama | 私有化部署、数据不出域 |
+
+##### 切换方法
+
+修改 `.env` 文件中的 `MODEL_MODE` 值即可：
+
+```ini
+# 远程模式（默认）：聊天模型指向任意 OpenAI 协议供应商
+MODEL_MODE=remote
+OPENAI_CHAT_MODEL=deepseek-flash
+OPENAI_API_KEY=your_deepseek_api_key
+OPENAI_BASE_URL=https://api.deepseek.com
+DASHSCOPE_API_KEY=your_dashscope_api_key   # 嵌入/精排/评测模型仍走 DashScope
+
+# 本地模式
+MODEL_MODE=local
+OLLAMA_BASE_URL=http://ollama:11434
 ```
-互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
-                          → Backend API(:8000)  数据处理
-                                   ↓
-                          MySQL(:3306)   关系型数据库
-                          Qdrant(:6333)  向量数据库
+
+##### 本地模式首次使用：Ollama 模型自动拉取
+
+Docker Compose 已内置 `ollama` 服务。切换为 `MODEL_MODE=local` 后，后端启动时会**自动检测** `qwen2.5:7b`（聊天）和 `bge-m3`（嵌入）两个模型是否存在，缺失则自动 `pull`，无需手动执行：
+
+```bash
+# 首次使用本地模式时，后端启动日志会显示：
+# [模型工厂]Ollama 模型缺失: qwen2.5:7b，开始自动拉取（可能耗时较长）...
 ```
 
-### 5-2 两种使用模式
+> **注意**：模型体积较大（qwen2.5:7b 约 4.7GB，bge-m3 约 1.2GB），首次拉取耗时取决于网络，需耐心等待。
 
-本项目支持两种 Docker 使用模式，启动步骤已在上章「快速启动」中给出，此处仅说明两种模式的特点与适用场景：
+如需自定义本地模型，可在 `rag_config.yml` 中修改 `local` 分组，或通过环境变量覆盖：
 
-#### 模式 A：基础设施模式（推荐开发阶段使用）
+```bash
+OLLAMA_CHAT_MODEL=qwen2.5:14b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
 
-- 只启动 MySQL 和 Qdrant 两个基础服务，前后端在本地（Windows）运行；
-- 代码修改即时生效（后端热重载 + 前端 HMR），支持 IDE 断点调试；
-- 资源占用少、启动速度快；需本机安装 Python / Node.js 依赖。
+##### 远程模式兼容的模型端点（业务聊天模型）
 
-#### 模式 B：完整容器化模式（部署/演示阶段使用）
+| 服务商               | `OPENAI_BASE_URL`                                   | 模型名示例       |
+| -------------------- | --------------------------------------------------- | ---------------- |
+| 通义千问（兼容端点） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus`      |
+| DeepSeek             | `https://api.deepseek.com/v1`                       | `deepseek-flash` |
+| 月之暗面             | `https://api.moonshot.cn/v1`                        | `moonshot-v1-8k` |
 
-- 一键启动全部 5 个服务（MySQL、Qdrant、Backend、Frontend、Nginx），环境一致性高；
-- 无需本机安装 Python / Node.js 依赖，适合演示、测试环境与生产部署；
-- 修改代码后需重新构建镜像，构建/拉取耗时较长。
+#### 3.4.2 配置项说明
 
-#### 模式对比
+##### .env 需自主配置的模型项
 
-| 对比项 | 模式 A：基础设施模式 | 模式 B：完整容器化模式 |
-|---|---|---|
-| 启动服务 | MySQL、Qdrant | 全部 5 个服务 |
-| 代码运行位置 | 本地（Windows） | 容器内 |
-| 代码修改生效 | 即时（热重载） | 需重新构建 |
-| 调试支持 | IDE 断点调试 | 日志查看 |
-| 适用阶段 | 开发调试 | 部署/演示/生产 |
-| 资源占用 | 较低 | 较高 |
-| 依赖安装 | 需本地安装 | 无需本地安装 |
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `OPENAI_CHAT_MODEL` | 是 | 业务聊天模型名，随所选供应商填写 |
+| `OPENAI_API_KEY` | 是 | 业务聊天模型的 API Key |
+| `OPENAI_BASE_URL` | 是 | 业务聊天模型端点，见下方兼容端点表 |
+| `DASHSCOPE_API_KEY` | 是 | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
 
-### 5-3 关键设计说明
+> **供应商策略**：只有业务聊天模型（`OPENAI_*` 三件套）可指向任意 OpenAI 协议供应商；**聊天模型除外的其他远程模型（嵌入、精排、评测）默认走 DashScope 供应商**，仅需配好 `DASHSCOPE_API_KEY` 即可，无需其他配置。
 
-| 设计点 | 说明 |
-|---|---|
-| 业务配置 vs 部署配置 | `backend/app/config/` 存放业务级 YAML 配置，`docker/` 存放部署级配置，职责分离 |
-| 独立 Dockerfile | `backend/Dockerfile` 和 `frontend/Dockerfile` 各自管理构建，不混入 docker 目录 |
-| 多阶段构建 | 后端使用 `uv` 官方镜像构建虚拟环境后复制到 slim 运行镜像；前端使用 Node 构建后由 Nginx 托管 |
-| 健康检查 | 所有服务均配置 healthcheck，后端依赖 MySQL/Qdrant 健康状态后才启动 |
-| 环境隔离 | 通过 `--env-file` 切换 `.env.dev` / `.env.prod` 实现开发/生产环境分离 |
+##### 可选覆盖项（默认值即可用，无需配置）
+
+| 变量 | 默认值（均为 DashScope） | 说明 |
+|------|--------------------------|------|
+| `TEXT_EMBEDDING_MODEL` | `rag_config.yml` 的 `remote.embedding_model_name`（text-embedding-v4） | 覆盖嵌入模型名 |
+| `RERANK_MODEL` | `retrieval_config.yml` 的 `rerank.remote_model`（gte-rerank-v2） | 覆盖精排模型名 |
+| `EVAL_CHAT_MODEL` | `qwen-plus` | 覆盖评测模型名（裁判/评测集生成）。固定走 DashScope，与业务聊天模型解耦，保证与历史评测报告口径可比 |
+| `DASHSCOPE_BASE_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 覆盖 DashScope OpenAI 协议端点（仅评测模型使用） |
+
+> **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。
+
+##### 保留在原位置的编排项（不要在 .env 之外自定义）
+
+以下变量由 Docker Compose / 启动脚本按部署形态注入，属于编排信息，**不属于模型自定义项**：
+
+- `MODEL_MODE`：模型加载模式（remote/local），见上表
+- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + 宿主机映射端口
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：同上，编排内为 `qdrant`
+- `OLLAMA_BASE_URL` / `OLLAMA_PORT`：编排内为 `http://ollama:11434`；本地直连为 `http://localhost:21434`
+- `ENV` / `DEBUG` / `LOG_LEVEL`：后端服务运行参数
+
+#### 3.4.3 本地直跑时 .env 如何生效
+
+- **Docker 部署**：Compose 自动把 env 文件注入容器环境。
+- **本地启动后端**：`scripts/start-backend.ps1` / `start-backend.sh` 解析 `.env.dev` 注入（并自动做本地连接覆盖）。
+- **`uv run` 直跑脚本/评测**：后端启动时会自动按白名单从 `docker/env/.env.dev` 加载**模型相关变量**（仅注入缺失键，已注入的真实环境变量优先；可用 `PRIVRAG_ENV_FILE` 指定其他 env 文件）。白名单只含模型项，`MYSQL_HOST=mysql` 等编排值不会被误注入本地进程。
+
+## 第四章 团队信息
+
+- 学校：东莞理工学院
+- 指导老师：无
+- 团队名：207
+- 队员信息：
+  1. 队长：程迪宏
+  2. 队员：李仕远

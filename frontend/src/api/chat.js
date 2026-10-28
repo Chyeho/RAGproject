@@ -35,6 +35,11 @@ export async function clearMessages(conversationId) {
  * @returns {{aiMessage: object}}
  */
 export async function sendMessage({ conversationId, content }) {
-  const aiMessage = await request.post('/chat/messages', { conversationId, content })
+  // AI 问答耗时远高于普通接口（本地模式生成较慢），单独放宽超时到 5 分钟
+  const aiMessage = await request.post(
+    '/chat/messages',
+    { conversationId, content },
+    { timeout: 300000 }
+  )
   return { aiMessage }
 }

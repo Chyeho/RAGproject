@@ -5,18 +5,6 @@ import hashlib
 from app.utils.logger_handler import logger
 from app.utils.path_tool import get_abs_path
 
-# langchain
-from langchain_core.documents import Document
-from langchain_community.document_loaders import PyPDFLoader,TextLoader
-
-
-def pdf_loader(file_path:str,password = None) -> list[Document]:
-    '''加载pdf文件'''
-    return PyPDFLoader(file_path,password).load()
-
-def txt_loader(file_path:str) -> list[Document]:
-    '''加载txt文件'''
-    return TextLoader(file_path,encoding = "utf-8").load()
 
 def get_file_md5_hex(file_path:str):
     '''获取文件的md5的十六进制字符串'''
@@ -42,24 +30,6 @@ def get_file_md5_hex(file_path:str):
     except Exception as e:
         logger.error(f"[md5计算]文件{file_path}计算md5失败，错误信息：{str(e)}")
         return None
-
-def get_file_documents(read_path:str):
-    """
-    返回包含传入文件内容的文档对象列表。
-    Args:
-        read_path (str): 文件路径
-
-    Returns:
-        _type_: 返回对应的文件加载器
-    """
-    if read_path.endswith("txt"):
-        return txt_loader(read_path)
-    
-    if read_path.endswith("pdf"):
-        return pdf_loader(read_path)
-    
-    return []
-
 
 def listdir_with_allowed_type(path:str,allowed_type:tuple[str]):
     '''获取文件夹内的文件列表（附带允许的文件后缀）'''

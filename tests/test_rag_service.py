@@ -9,17 +9,28 @@ from langchain_core.messages import HumanMessage, AIMessage
 class TestRagSummarizeServiceInit:
     """测试 RAG 服务初始化"""
 
+    @patch("app.service.rag.rag_service.build_retriever")
     @patch("app.service.rag.rag_service.VectorStoreService")
-    def test_init_creates_vector_store(self, mock_vs):
+    def test_init_creates_vector_store(self, mock_vs, mock_build):
+        """P2：缺省经 build_retriever 组装检索链路（全关等价旧链路）"""
         mock_vs_instance = MagicMock()
         mock_retriever = MagicMock()
-        mock_vs_instance.get_retriever.return_value = mock_retriever
+        mock_build.return_value = mock_retriever
         mock_vs.return_value = mock_vs_instance
 
         from app.service.rag.rag_service import RagSummarizeService
         service = RagSummarizeService()
         assert service.vertor_service is mock_vs_instance
+        mock_build.assert_called_once_with(mock_vs_instance)
         assert service.retriever is mock_retriever
+
+    @patch("app.service.rag.rag_service.VectorStoreService")
+    def test_init_with_injected_retriever(self, mock_vs):
+        """P2：外部注入 retriever 时直接使用（评测 preset / 单测用）"""
+        from app.service.rag.rag_service import RagSummarizeService
+        injected = MagicMock()
+        service = RagSummarizeService(retriever=injected)
+        assert service.retriever is injected
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     def test_init_loads_rag_prompt(self, mock_vs):
@@ -56,8 +67,8 @@ class TestRagSummarize:
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     @patch("app.service.rag.rag_service.get_chat_history")
-    def test_rag_summarize_returns_string(self, mock_get_history, mock_vs):
-        """验证 rag_summarize 返回字符串"""
+    def test_rag_summarize_returns_answer_and_docs(self, mock_get_history, mock_vs):
+        """P4：rag_summarize 返回 (answer, retrieved_docs)，引用与回答同源"""
         mock_vs.return_value = MagicMock()
 
         # mock 历史消息服务
@@ -72,9 +83,10 @@ class TestRagSummarize:
         service.chain = MagicMock()
         service.chain.invoke.return_value = "这是根据参考资料生成的总结回答"
 
-        result = service.rag_summarize("公司的考勤制度是什么")
-        assert isinstance(result, str)
-        assert len(result) > 0
+        answer, docs = service.rag_summarize("公司的考勤制度是什么")
+        assert isinstance(answer, str)
+        assert len(answer) > 0
+        assert isinstance(docs, list)  # 命中文档列表（供 citations 同源拼装）
 
     @patch("app.service.rag.rag_service.VectorStoreService")
     @patch("app.service.rag.rag_service.get_chat_history")

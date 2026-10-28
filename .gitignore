@@ -46,10 +46,10 @@ dist/
 # 运行时数据（包含用户数据或可重建数据，不应提交）
 # ============================================================
 backend/chroma_db/
-backend/app/chroma_db/       # 旧版本遗留，后续可删
+backend/app/chroma_db/       # 旧版本 Chroma 遗留数据，已迁移至 Qdrant
 backend/chat_history/
 backend/app/logs/
-backend/app/md5.txt
+backend/app/data/
 
 # ============================================================
 # IDE & 编辑器
@@ -67,6 +67,14 @@ backend/app/md5.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ============================================================
+# RAG评测体系
+# ============================================================
+backend/eval_reports/
+backend/app/service/eval/datasets/corpus_v2/
+backend/app/service/eval/datasets/samples/
+backend/app/service/eval/datasets/*.json
 
 # ============================================================
 # 敏感文件
