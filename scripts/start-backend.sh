@@ -56,6 +56,11 @@ if [ -n "$MYSQL_HOST_PORT" ]; then
     export MYSQL_PORT="$MYSQL_HOST_PORT"
 fi
 
+# Qdrant 容器内监听 6333，映射到宿主机的端口是 QDRANT_HOST_PORT
+if [ -n "$QDRANT_HOST_PORT" ]; then
+    export QDRANT_PORT="$QDRANT_HOST_PORT"
+fi
+
 # Ollama 容器内监听 11434，映射到宿主机的端口是 OLLAMA_PORT
 if [ -n "$OLLAMA_PORT" ]; then
     export OLLAMA_BASE_URL="http://localhost:$OLLAMA_PORT"
@@ -70,7 +75,7 @@ fi
 
 # 进入 backend 目录并启动
 cd "$BACKEND_DIR"
-echo -e "\033[32m[启动] uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000\033[0m"
+echo -e "\033[32m[启动] uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 18000\033[0m"
 echo "============================================================"
 
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 18000

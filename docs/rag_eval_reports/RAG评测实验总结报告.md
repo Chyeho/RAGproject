@@ -283,7 +283,7 @@
 1. 新增 `hybrid_runner.py`，同一批题、同一检索链路、同一裁判模型（qwen-plus），唯一变量是编排路径：A 组强制 `rag_summarize`，B 组走 `HybridOrchestrator`（`ENABLE_HYBRID_ROUTER=true`）。
 2. 简单集取 `eval_dataset_v2.json` 前 10 题；复杂集取同语料人工补充题 `eval_complex_authored_v2.json` 前 10 题（c001~c010）。v2 原 260 题未修改。
 3. 每题独立 session 并在执行前清空历史；答案正确率由新增的三档裁判（0 / 0.5 / 1）给出；任务完成率 = 复杂题答案非空且正确率 ≥ 0.5。
-4. MySQL/Qdrant 均使用 Docker 容器（MySQL 宿主机映射端口 **6666**），文档映射可用，命中率为真实口径。
+4. MySQL/Qdrant 均使用 Docker 容器（MySQL 宿主机映射端口 **16666**），文档映射可用，命中率为真实口径。
 
 | 报告 | 时间 | 说明 |
 |---|---|---|
@@ -322,7 +322,7 @@
 | 精排全量降级 `'NoneType' object has no attribute 'results'` | langchain_community DashScopeRerank 无条件覆盖 model 为已下线的 gte-rerank(v1) | `rerank_factory.py` 构造后回写 `compressor.model`（2026-10-23） |
 | 改写/嵌入调用 401（key ****a392 invalid） | User 作用域/进程残留失效 API key，env_loader 仅注入缺失键导致失效 key 优先 | 从 `docker/env/.env.dev` 显式注入有效值；根因清理：`[Environment]::SetEnvironmentVariable('DASHSCOPE_API_KEY', $null, 'User')`（2026-10-26） |
 | 嵌入偶发 403（空 message） | DashScope 偶发限流 | 冒烟验证后重跑即过；单次失败会中断评测进程，建议失败后整组重跑 |
-| A/B 评测报 `Can't connect to MySQL server on '127.0.0.1'` | MySQL 由 Docker 拉起，宿主机映射端口为 **6666**（非默认 3306），评测 CLI 未读到 `MYSQL_HOST_PORT` | 运行时显式设置 `MYSQL_HOST=127.0.0.1`、`MYSQL_PORT=6666`，并注入 `.env.dev` 中的 `MYSQL_USER/PASSWORD/DATABASE`（2026-10-28） |
+| A/B 评测报 `Can't connect to MySQL server on '127.0.0.1'` | MySQL 由 Docker 拉起，宿主机映射端口为 **16666**，评测 CLI 未读到 `MYSQL_HOST_PORT` | 运行时显式设置 `MYSQL_HOST=127.0.0.1`、`MYSQL_PORT=16666`，并注入 `.env.dev` 中的 `MYSQL_USER/PASSWORD/DATABASE`（2026-10-28） |
 | ingest 汇总误报「向量化失败：None」 | MySQL REPEATABLE READ 旧快照 | 状态核对改用新 session（2026-10-24） |
 
 > 完整排障记录（含基础设施类）见 `backend/app/service/eval/README.md` 第 7 章。

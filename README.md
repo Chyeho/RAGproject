@@ -173,13 +173,15 @@ RAGproject_demo/
 ### 2.3 Docker 架构概览
 
 ```
-互联网用户 → Nginx(:80) → Frontend Vue(:3000)  静态页面
-                          → Backend API(:8000)  数据处理
+互联网用户 → Nginx(:18080) → Frontend Vue(:13000)  静态页面
+                          → Backend API(:18000)  数据处理
                                    ↓
-                          MySQL(:3306)   关系型数据库
-                          Qdrant(:6333)  向量数据库
-                          Ollama(:11434) 本地模型服务（MODEL_MODE=local 时使用）
+                          MySQL(:16666→3306)   关系型数据库
+                          Qdrant(:16333→6333)  向量数据库
+                          Ollama(:21434→11434) 本地模型服务（MODEL_MODE=local 时使用）
 ```
+
+> 用高位端口是为了预防端口占用问题，详见文档 [`docs/常见报错问题解决方案速查.md`](docs/常见报错问题解决方案速查.md)。容器内部端口保持不变，仅宿主机映射/本地启动端口改为高位；完整清单见 3.4.4 节。
 
 ### 2.4 RAG 检索链路架构
 
@@ -318,9 +320,9 @@ docker compose ps                 # 5 个服务均应为 Up (healthy)[本地模�
 docker compose logs -f backend    # 查看后端日志（Ctrl+C 退出）
 
 # 4. 访问应用
-#    Nginx 入口：http://localhost
-#    后端 API：  http://localhost:8000/docs
-#    前端页面：  http://localhost:3000
+#    Nginx 入口：http://localhost:18080
+#    后端 API：  http://localhost:18000/docs
+#    前端页面：  http://localhost:13000
 
 # 日常停止（仅删除容器，数据卷保留，数据不丢失）
 docker compose --env-file docker/env/.env.dev down
@@ -351,7 +353,7 @@ docker compose ps    # 预期：mysql 和 qdrant 状态为 Up (healthy)
 
 # 2. 本地启动后端服务（新终端窗口，在项目根目录执行）
 # 直接运行一键启动脚本，脚本会自动读取 docker/env/.env.dev 并做本地连接覆盖
-# （MySQL/Qdrant 主机名改为 127.0.0.1，MySQL 端口改用宿主机映射端口 MYSQL_HOST_PORT）
+# （MySQL/Qdrant 主机名改为 127.0.0.1，端口改用宿主机映射端口 MYSQL_HOST_PORT / QDRANT_HOST_PORT）
 # 注意：脚本路径是相对于项目根目录的；若当前在 backend 目录，改用 ..\scripts\start-backend.ps1
 
 # Windows PowerShell:
@@ -365,13 +367,13 @@ chmod +x scripts/start-backend.sh   # 首次需加执行权限
 #   .\scripts\start-backend.ps1 docker/env/.env.prod
 #   ./scripts/start-backend.sh docker/env/.env.prod
 
-# 启动时自动建表（幂等）；访问 http://localhost:8000/docs 查看全部接口
+# 启动时自动建表（幂等）；访问 http://localhost:18000/docs 查看全部接口
 
 # 3. 本地启动前端服务（新终端窗口）
 cd frontend
 npm install  # 首次运行
 npm run dev
-# 访问 http://localhost:3000 查看前端页面（已对接后端真实接口）
+# 访问 http://localhost:13000 查看前端页面（已对接后端真实接口）
 # 测试账号：注册后登录（注册验证码固定为 123456）
 
 # 4. 停止基础设施
@@ -465,8 +467,9 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 以下变量由 Docker Compose / 启动脚本按部署形态注入，属于编排信息，**不属于模型自定义项**：
 
 - `MODEL_MODE`：模型加载模式（remote/local），见上表
-- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + 宿主机映射端口
-- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：同上，编排内为 `qdrant`
+- `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_*`：容器编排内为服务名 `mysql`；本地直跑由 `scripts/start-backend.ps1` 自动覆盖为 `127.0.0.1` + `MYSQL_HOST_PORT`
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION`：编排内为 `qdrant:6333`；本地直跑由脚本覆盖为 `127.0.0.1` + `QDRANT_HOST_PORT`
+- `MYSQL_HOST_PORT` / `QDRANT_HOST_PORT` / `QDRANT_GRPC_HOST_PORT` / `OLLAMA_PORT`：仅宿主机映射端口，见 3.4.4
 - `OLLAMA_BASE_URL` / `OLLAMA_PORT`：编排内为 `http://ollama:11434`；本地直连为 `http://localhost:21434`
 - `ENV` / `DEBUG` / `LOG_LEVEL`：后端服务运行参数
 
@@ -479,6 +482,19 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 - **Docker 部署**：Compose 自动把 env 文件注入容器环境。
 - **本地启动后端**：`scripts/start-backend.ps1` / `start-backend.sh` 解析 `.env.dev` 注入（并自动做本地连接覆盖）。
 - **`uv run` 直跑脚本/评测**：后端启动时会自动按白名单从 `docker/env/.env.dev` 加载**模型相关变量**（仅注入缺失键，已注入的真实环境变量优先；可用 `PRIVRAG_ENV_FILE` 指定其他 env 文件）。白名单只含模型项，`MYSQL_HOST=mysql` 等编排值不会被误注入本地进程。
+
+#### 3.4.4 端口清单（高位端口）
+
+| 服务 | 宿主机 / 本地端口 | 容器内端口 | 配置位置 |
+|---|---|---|---|
+| Nginx 入口 | `18080`（HTTP）/ `18443`（HTTPS） | `80` / `443` | `docker-compose.yml` |
+| Frontend（Vite / 容器） | `13000` | `80` | `frontend/vite.config.js`、`docker-compose.yml` |
+| Backend API | `18000` | `18000` | `backend/Dockerfile`、`scripts/start-backend.*` |
+| MySQL | `16666` | `3306` | `docker/env/.env.dev` → `MYSQL_HOST_PORT` |
+| Qdrant HTTP / gRPC | `16333` / `16334` | `6333` / `6334` | `.env.dev` → `QDRANT_HOST_PORT` / `QDRANT_GRPC_HOST_PORT` |
+| Ollama | `21434` | `11434` | `.env.dev` → `OLLAMA_PORT` |
+
+> 用高位端口是为了预防端口占用问题，详见 [`docs/常见报错问题解决方案速查.md`](docs/常见报错问题解决方案速查.md)。本地直跑脚本会自动把 `MYSQL_PORT` / `QDRANT_PORT` 覆盖为上述宿主机端口，无需手工设置。
 
 ## 第四章 团队信息
 

@@ -8,4 +8,5 @@ allow_knowledge_file_type:
 collection_name: privrag_dev
 data_path: data
 host: 127.0.0.1
-port: 6333
+# 宿主机映射端口（Docker 内由 QDRANT_PORT=6333 环境变量覆盖）
+port: 16333

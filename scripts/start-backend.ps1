@@ -66,6 +66,11 @@ if (-not [string]::IsNullOrEmpty($env:MYSQL_HOST_PORT)) {
     $env:MYSQL_PORT = $env:MYSQL_HOST_PORT
 }
 
+# Qdrant 容器内监听 6333，映射到宿主机的端口是 QDRANT_HOST_PORT
+if (-not [string]::IsNullOrEmpty($env:QDRANT_HOST_PORT)) {
+    $env:QDRANT_PORT = $env:QDRANT_HOST_PORT
+}
+
 # Ollama 容器内监听 11434，映射到宿主机的端口是 OLLAMA_PORT
 if (-not [string]::IsNullOrEmpty($env:OLLAMA_PORT)) {
     $env:OLLAMA_BASE_URL = "http://localhost:$($env:OLLAMA_PORT)"
@@ -80,7 +85,7 @@ if ($env:MODEL_MODE -eq "local") {
 
 # 进入 backend 目录并启动
 Set-Location $BackendDir
-Write-Host "[启动] uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000" -ForegroundColor Green
+Write-Host "[启动] uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 18000" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Gray
 
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 18000

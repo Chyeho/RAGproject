@@ -51,7 +51,7 @@ backend/eval_reports/              # 报告输出（不在本包内）
 
    ```powershell
    cd backend
-   $env:MYSQL_PORT='6666'      # docker 映射端口；不设则默认 3306 拒连
+   $env:MYSQL_PORT='16666'      # docker 映射端口；不设则默认 3306 拒连
    ```
 
    模型环境变量无需手工设置：后端启动时自动按白名单从 `docker/env/.env.dev` 加载
@@ -98,7 +98,7 @@ uv run python -m app.service.eval.report compare P0-baseline P1 P2 P3
 ```powershell
 # ── 第 0 步：环境准备（MYSQL_PORT 每次新开终端都要重设，$env: 仅当前会话有效）──
 cd backend
-$env:MYSQL_PORT='6666'
+$env:MYSQL_PORT='16666'
 # 模型变量（DASHSCOPE_API_KEY 等）启动时自动从 docker/env/.env.dev 白名单加载，无需手工设置
 # 前置：MySQL/Qdrant 容器已启动（docker compose --env-file docker/env/.env.dev up -d）
 # 注意：中文控制台输出乱码时命令前加 -X utf8，如 uv run python -X utf8 -m ...
@@ -154,7 +154,7 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 
 | 现象 | 原因 | 处置 |
 |---|---|---|
-| `ConnectionRefusedError 127.0.0.1:3306` | db.py 默认 3306，docker 映射 6666 | `$env:MYSQL_PORT='6666'` |
+| `ConnectionRefusedError 127.0.0.1:3306` | db.py 默认 3306，docker 映射 16666 | `$env:MYSQL_PORT='16666'` |
 | `Table 'privrag_dev.document' doesn't exist` | 全新空库未建表 | 启动一次 uvicorn 触发 lifespan `init_db()` |
 | 模型调用全部超时，日志 `模型名 @ None` | 历史原因：缺 `OPENAI_BASE_URL` 回落 api.openai.com | 已修复：模型变量自动从 `docker/env/.env.dev` 白名单加载（业务聊天走 `OPENAI_BASE_URL`，评测裁判走 DashScope 兼容端点）；仍超时则检查对应 env 文件配置 |
 | uvicorn 绑定 8000 报 winerror 10013 | Windows Hyper-V 端口保留 | 管理员执行 `net stop winnat` → 起服务 → `net start winnat` |
@@ -226,10 +226,10 @@ uv run python -X utf8 -m app.service.eval.hybrid_runner --tag AB-B --group B
 
 ### 8.5 运行前置与降级
 
-1. **MySQL + Qdrant 已启动**：本项目 MySQL 由 `docker compose` 拉起，宿主机映射端口 **6666**（非 3306），评测命令需显式指认：
+1. **MySQL + Qdrant 已启动**：本项目 MySQL 由 `docker compose` 拉起，宿主机映射端口 **16666**，评测命令需显式指认：
 
    ```powershell
-   $env:MYSQL_HOST='127.0.0.1'; $env:MYSQL_PORT='6666'
+   $env:MYSQL_HOST='127.0.0.1'; $env:MYSQL_PORT='16666'
    # MYSQL_USER / MYSQL_PASSWORD / MYSQL_DATABASE 取自 docker/env/.env.dev
    ```
 
@@ -262,7 +262,7 @@ backend/eval_reports/
 
 ### 8.7 实测结果（2026-10-28，10 简单 + 10 复杂）
 
-报告：`backend/eval_reports/20261028_165307_AB-10x10.json / .csv / _AB-compare.md`（MySQL 走 Docker 映射端口 6666，文档映射可用，命中率为真实口径）。
+报告：`backend/eval_reports/20261028_165307_AB-10x10.json / .csv / _AB-compare.md`（MySQL 走 Docker 映射端口 16666，文档映射可用，命中率为真实口径）。
 
 | 指标 | A-简单 | B-简单 | A-复杂 | B-复杂 |
 |---|---|---|---|---|
