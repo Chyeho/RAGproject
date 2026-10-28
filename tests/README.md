@@ -53,6 +53,7 @@ tests/
 ├── test_react_agent.py          # Agent 层 · ReAct Agent 主体
 │
 ├── test_rule_router.py          # 混合架构层 · 窄规则路由 + 混合配置加载（P5）
+├── test_business_intent.py      # 混合架构层 · 非业务问题识别（问候/自我介绍/使用咨询直达）
 ├── test_trace.py                # 混合架构层 · trace 记录与 JSONL 落盘（P5）
 ├── test_react_parser.py         # 混合架构层 · ReAct JSON 决策解析（P5）
 ├── test_rag_search_tool.py      # 混合架构层 · rag_search 工具契约与参数钳制（P5）
@@ -79,7 +80,7 @@ tests/
 | **服务层** | `test_history_store` ~ `test_citations`（11 个，152 用例） | 文件读写、Qdrant 向量库（P1：uuid5 确定性 ID/metadata 合并）、RAG 链与历史隔离；格式感知分块（P1：22 用例全离线）；检索链路（P2：BM25/RRF/hybrid/精排工厂，P3：查询优化器）；P4：注册表单例重建 + 引用同源拼装 |
 | **路由层** | `test_auth_router.py`、`test_settings_router.py`（27 用例） | FastAPI TestClient + dependency_overrides（不连真实 DB）；P4 settings 全参数读写与热更新重建 |
 | **Agent 层** | `test_agent_tools` ~ `test_react_agent`（3 个，16 用例） | Agent 初始化、工具注册、流式输出 |
-| **混合架构层** | `test_rule_router` ~ `test_hybrid_orchestrator`（7 个，60 用例，P5 新增） | 规则路由（强/弱规则 + 阈值）、trace 落盘、ReAct JSON 解析、两个工具契约、极简 ReAct 循环（含工具用尽后的收尾总结）、混合编排与降级 |
+| **混合架构层** | `test_rule_router` ~ `test_hybrid_orchestrator`（8 个，65 用例，P5 新增） | 规则路由（强/弱规则 + 阈值）、非业务问题直达识别、trace 落盘、ReAct JSON 解析、两个工具契约、极简 ReAct 循环（含工具用尽后的收尾总结）、混合编排与降级 |
 | **评测层** | `test_eval_metrics` ~ `test_hybrid_eval`（6 个，95 用例，P0 新增 / EV2 补语料生成 / P5 补 A/B） | 检索指标纯函数、LLM 裁判、评测集构建（样例自包含生成）、v2 语料生成器、评测编排与报告、复杂集筛选/补充与 A/B 对照（全 mock） |
 
 > 异步测试（`test_db`、`test_dependencies` 中带 `@pytest.mark.anyio` 的用例）由 anyio 的 pytest 插件执行，backend 统一使用 asyncio（见 conftest.py 的 `anyio_backend` fixture）。
@@ -132,8 +133,8 @@ pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v
 # Agent 层
 pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v
 
-# 混合架构层（P5：路由 / trace / ReAct / 工具 / 编排）
-pytest ..\tests\test_rule_router.py ..\tests\test_trace.py ..\tests\test_react_parser.py ..\tests\test_rag_search_tool.py ..\tests\test_compare_calc_tool.py ..\tests\test_simple_react.py ..\tests\test_hybrid_orchestrator.py -v
+# 混合架构层（P5：路由 / 非业务直达 / trace / ReAct / 工具 / 编排）
+pytest ..\tests\test_rule_router.py ..\tests\test_business_intent.py ..\tests\test_trace.py ..\tests\test_react_parser.py ..\tests\test_rag_search_tool.py ..\tests\test_compare_calc_tool.py ..\tests\test_simple_react.py ..\tests\test_hybrid_orchestrator.py -v
 
 # 评测层
 pytest ..\tests\test_eval_metrics.py ..\tests\test_eval_llm_judge.py ..\tests\test_eval_dataset.py ..\tests\test_corpus_v2.py ..\tests\test_eval_runner.py ..\tests\test_hybrid_eval.py -v
@@ -203,16 +204,16 @@ pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 
 ### 标准环境：已启动 Qdrant 容器
 
-最近一次验证：**2026-10-28**（全量 `pytest ..\tests\ -q`，61.89s）
+最近一次验证：**2026-10-28**（全量 `pytest ..\tests\ -q`，58.97s）
 
 ```
 platform: win32
 python:   3.13.0（backend/.venv）
 pytest:   9.1.1
-tests:    500 passed, 0 failed
+tests:    505 passed, 0 failed
 ```
 
-输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。相比改造前的 432 个用例，P5 新增 68 个（混合架构层 60 个 + 评测层 8 个）。
+输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。相比改造前的 432 个用例，P5 新增 73 个（混合架构层 65 个 + 评测层 8 个）。
 
 ### 未启动 Qdrant 容器时
 
@@ -228,4 +229,4 @@ docker compose --env-file docker/env/.env.dev up -d qdrant
 docker compose --env-file docker/env/.env.dev ps    # 确认 privrag-qdrant 状态为 Up
 ```
 
-> 全部 500 个用例均通过 mock 隔离外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama / Qdrant），实测 Qdrant 停止时仍全绿（其中评测层 95 个、混合架构层 60 个、P1 分块 22 个、P2/P3 检索链路 69 个、P4 热更新与引用 10 个，见上表「混合架构层」「评测层」「服务层」）。
+> 全部 505 个用例均通过 mock 隔离外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama / Qdrant），实测 Qdrant 停止时仍全绿（其中评测层 95 个、混合架构层 65 个、P1 分块 22 个、P2/P3 检索链路 69 个、P4 热更新与引用 10 个，见上表「混合架构层」「评测层」「服务层」）。

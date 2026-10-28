@@ -167,7 +167,7 @@ uv run python -X utf8 -m app.service.eval.report compare P0-baseline P1 P2-hybri
 
 ## 8. RAG+ReAct 混合架构 A/B 评测（P5）
 
-> 定位：验证「窄规则路由 + RAG 直调为主 + ReAct 复杂通道」相对改造前纯直调是否**不劣化简单题、改善复杂题**。设计依据见根目录《RAG+ReAct混合架构改造执行文档.md》第 5 章。
+> 定位：验证「窄规则路由 + RAG 直调为主 + ReAct 复杂通道」相对改造前纯直调是否**不劣化简单题、改善复杂题**。设计依据见 `docs/development_docs/3_RAG+ReAct混合架构改造执行文档.md` 第 5 章。
 
 ### 8.1 分组与执行口径
 

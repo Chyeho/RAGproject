@@ -34,10 +34,15 @@ class FakeReact:
 class FakeRagService:
     def __init__(self):
         self.calls = []
+        self.summarize_calls = []
 
     def rag_summarize(self, query, session_id=None):
         self.calls.append((query, session_id))
         return "直调答案", [Document(page_content="直调文档", metadata={"vector_id": "d1"})]
+
+    def summarize(self, query, docs, session_id=None, write_history=False):
+        self.summarize_calls.append((query, docs, session_id, write_history))
+        return "非业务直达答案"
 
 
 def _recorder(tmp_path):
@@ -83,6 +88,38 @@ class TestDirectRoute:
         assert result.trace["route"] == DIRECT
         assert result.trace["answer_source"] == "rag_direct"
         assert result.trace["matched_rules"] == ["test"]
+
+
+class TestNonBusinessDirect:
+    def test_greeting_skips_retrieval_and_router(self, tmp_path, monkeypatch):
+        monkeypatch.setitem(hybrid_conf, "ENABLE_HYBRID_ROUTER", True)
+        router = FakeRouter(COMPLEX)
+        react = FakeReact(ReActResult(answer="不应被调用"))
+        orchestrator, rag = _build(tmp_path, router=router, react=react)
+
+        query = "你好，你能介绍一下你吗？我该如何使用你"
+        result = orchestrator.answer(query, session_id="s1")
+
+        assert result.answer == "非业务直达答案"
+        assert result.documents == []
+        assert router.calls == 0
+        assert react.calls == 0
+        assert rag.calls == []
+        assert rag.summarize_calls == [(query, [], "s1", True)]
+        assert result.trace["route"] == "non_business"
+        assert result.trace["answer_source"] == "direct_llm"
+        assert result.trace["tool_calls"] == 0
+
+    def test_switch_off_keeps_legacy_direct(self, tmp_path, monkeypatch):
+        monkeypatch.setitem(hybrid_conf, "ENABLE_HYBRID_ROUTER", False)
+        orchestrator, rag = _build(tmp_path)
+
+        result = orchestrator.answer("你好", session_id="s1")
+
+        assert result.answer == "直调答案"
+        assert len(rag.calls) == 1
+        assert rag.summarize_calls == []
+        assert result.trace["answer_source"] == "rag_direct"
 
 
 class TestComplexRoute:

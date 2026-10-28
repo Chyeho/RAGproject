@@ -9,9 +9,12 @@ from app.service.agent.simple_react import SimpleReAct
 from app.service.history.history_store import get_chat_history
 from app.service.observability.trace import TraceRecorder, get_trace_recorder
 from app.service.rag import registry
+from app.service.routing.business_intent import is_non_business
 from app.service.routing.rule_router import DIRECT, RuleRouter, get_rule_router
 from app.utils.config_handler import hybrid_conf, rag_conf
 from app.utils.logger_handler import logger
+
+NON_BUSINESS = "non_business"
 
 
 @dataclass
@@ -67,6 +70,12 @@ class HybridOrchestrator:
     def _direct(self, query: str, session_id: str | None):
         return self._rag_getter().rag_summarize(query, session_id)
 
+    def _direct_chat(self, query: str, session_id: str | None) -> str:
+        '''非业务直达：不检索、不路由，直接用聊天模型回答（仍复用 RAG 提示词与历史）'''
+        return self._rag_getter().summarize(
+            query, [], session_id=_resolve_session_id(session_id), write_history=True
+        )
+
     def answer(self, query: str, session_id: str | None = None) -> OrchestrationResult:
         '''主入口：开关关闭时纯直调；开启时按规则路由，ReAct 失败降级直调'''
         trace = self.recorder.start(query)
@@ -77,6 +86,13 @@ class HybridOrchestrator:
             trace.route_reason = "ENABLE_HYBRID_ROUTER=false，全部走 RAG 直调"
             answer, docs = self._direct(query, session_id)
             return OrchestrationResult(answer, docs, self.recorder.finish(trace, "rag_direct"))
+
+        # 非业务问题直达：问候/自我介绍/使用咨询等，跳过检索与规则路由
+        if is_non_business(query):
+            trace.route = NON_BUSINESS
+            trace.route_reason = "非业务问题直达：跳过检索与规则路由"
+            answer = self._direct_chat(query, session_id)
+            return OrchestrationResult(answer, [], self.recorder.finish(trace, "direct_llm"))
 
         decision = self._get_router().route(query)
         trace.set_route(decision)
