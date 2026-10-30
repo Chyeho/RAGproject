@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（535 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（537 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -156,7 +156,7 @@ RAGproject_demo/
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（535 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（537 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes

@@ -35,7 +35,7 @@
 
         <div v-if="conversations.length === 0" class="conversation-empty">
           <p>暂无会话</p>
-          <p class="empty-tip">点击「新建会话」开始提问</p>
+          <p class="empty-tip">直接输入问题发送即可自动新建会话</p>
         </div>
       </div>
     </aside>
@@ -244,23 +244,27 @@ async function removeConversation(id) {
 async function handleSend() {
   const content = draft.value.trim()
   if (!content || sending.value) return
-  if (!activeId.value) {
-    ElMessage.warning('请先新建会话')
-    return
-  }
 
-  // 立即追加用户气泡（乐观更新）
-  messages.value.push({
-    id: `local-${Date.now()}`,
-    role: 'user',
-    content,
-    citations: [],
-    createdAt: nowDateTime(),
-  })
-  draft.value = ''
   sending.value = true
-
   try {
+    // 无任何会话时：先自动新建会话，再直接发送（无需手动点「新建会话」）
+    if (!activeId.value) {
+      const conv = await createConversation()
+      conversations.value.unshift(conv)
+      activeId.value = conv.id
+      messages.value = []
+    }
+
+    // 立即追加用户气泡（乐观更新）
+    messages.value.push({
+      id: `local-${Date.now()}`,
+      role: 'user',
+      content,
+      citations: [],
+      createdAt: nowDateTime(),
+    })
+    draft.value = ''
+
     const { aiMessage } = await sendMessage({ conversationId: activeId.value, content })
     messages.value.push(aiMessage)
     // 会话标题可能由首条消息生成，刷新列表
