@@ -308,7 +308,7 @@ cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
 | `OPENAI_BASE_URL` | 业务聊天模型端点（如 `https://api.deepseek.com/v1`） |
 | `DASHSCOPE_API_KEY` | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
 | `ADMIN1_USERNAME` | 内置管理员登录账号（首次启动时自动创建，建议改掉默认值） |
-| `ADMIN1_PASSWORD` | 内置管理员初始密码（≥12 位，首次启动时写入；账号已存在则不会覆盖） |
+| `ADMIN1_PASSWORD` | 内置管理员**初始密码**（≥12 位，仅首次建号时写入数据库；账号已存在则不会覆盖，后续以设置页修改为准） |
 
 > 嵌入、精排、评测等其他远程模型默认走 DashScope，配好 `DASHSCOPE_API_KEY` 即可，无需额外配置。生产环境还需将 `.env.prod` 中 `<strong_production_password>` 等 MySQL 密码占位符替换为强密码（开发模板已内置默认密码）。各变量完整说明见 3.4 节。
 
@@ -479,12 +479,12 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `SECRET_KEY` | 开发模板内置 | JWT 签名密钥；**生产环境必须替换为随机长字符串**，更换后已签发 token 全部失效 |
-| `ADMIN1_USERNAME` / `ADMIN1_PASSWORD` | `admin` / 开发模板内置 | 内置管理员账号；服务启动时若不存在则创建，已存在不覆盖密码 |
+| `ADMIN1_USERNAME` / `ADMIN1_PASSWORD` | `admin` / 开发模板内置 | 内置管理员账号；服务启动时若不存在则创建，已存在不覆盖密码（env 只是初始种子，后续以设置页改密为准） |
 | `ADMIN2_*` / `ADMIN3_*` | 空 | 可选的第 2、3 个内置管理员，未配置则跳过 |
 | `LOGIN_MAX_FAILURES` | `5` | 连续登录失败多少次后锁定账号 |
 | `LOGIN_LOCK_MINUTES` | `15` | 账号锁定时长（分钟） |
 
-> 管理员密码仅在首次创建时写入数据库（bcrypt 哈希），因此**启动日志不会打印密码**；忘记密码可在宿主机执行 `python -m app.cli.reset_password --username <账号>` 重置，或直接修改 env 后手工删除该账号记录再重启（不推荐）。
+> 管理员密码仅在首次创建时写入数据库（bcrypt 哈希），因此**启动日志不会打印密码**；登录后可在「设置 → 修改密码」自助改密，此后数据库是唯一凭据，**修改 env 中的 `ADMIN*_PASSWORD` 不会改变已有账号的密码**。忘记密码可在宿主机执行 `python -m app.cli.reset_password --username <账号>` 重置，或直接修改 env 后手工删除该账号记录再重启（不推荐）。
 
 ##### 保留在原位置的编排项（不要在 .env 之外自定义）
 

@@ -63,7 +63,11 @@ async def seed_admins(session: AsyncSession) -> None:
         existing = (await session.exec(select(User).where(User.username == username))).first()
         if existing:
             if existing.role == "admin":
-                logger.info(f"[账号]管理员 {username} 已存在，跳过初始化")
+                logger.info(
+                    f"[账号]管理员 {username} 已存在，跳过初始化"
+                    f"（不覆盖现有密码，env 中的 ADMIN{slot}_PASSWORD 仅首次建号生效；"
+                    f"如需改密请执行 python -m app.cli.reset_password --username {username}）"
+                )
             else:
                 logger.error(f"[账号]配置的管理员账号 {username} 已存在且不是管理员，请人工处理（不会自动提权）")
             continue
