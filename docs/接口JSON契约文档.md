@@ -1,7 +1,8 @@
 # 宸甄 PrivRAG 接口 JSON 契约文档
 
-> 版本：v2.0 ｜ 更新日期：2026-10-26
+> 版本：v2.1 ｜ 更新日期：2026-10-30
 > 作用：**前端与后端真实接口之间的对接依据**。前端 `src/api/` 与后端 `app/routers/` 严格按本契约的字段、类型、嵌套结构实现；两侧任何一方改动字段，必须同步更新本文档。
+> v2.1 变更（账号管理重构）：删除注册/验证码/昵称头像接口；登录改为账号+密码并返回角色、等级与权限；新增账号管理模块（`/api/admin/users`）；文档写操作与 RAG 参数写操作按权限收紧。
 > v2.0 变更：RAG 检索链路升级（P0→P4）完成后的接口同步——`citations` 增加章节路径/页码、`/api/settings/rag-config` 扩展为全参数读写与热更新、移除未实现的流式问答章节。
 > 配套文档：[前后端开发执行文档.md](./development_docs/前后端开发执行文档.md)
 
@@ -13,7 +14,9 @@
 
 - 基础路径：`/api`（前端 Vite 已配置 `/api` 代理到后端）
 - 数据格式：请求与响应均为 `application/json`（上传接口除外，使用 `multipart/form-data`）
-- 登录态：除登录/注册/验证码外，请求头需携带 `Authorization: Bearer <token>`；未携带或 token 失效 → **HTTP 401**，响应体 `code=3001`，前端统一清除本地登录态并跳转登录页
+- 登录态：除 `POST /api/auth/login` 外，请求头需携带 `Authorization: Bearer <token>`；未携带、token 失效、账号被禁用或已删除 → **HTTP 401**，响应体 `code=3001`，前端统一清除本地登录态并跳转登录页
+- 权限：账号分 `admin`（管理员）与 `user`（普通账号，等级 L1/L2/L3）；无权限访问 → **HTTP 403**，响应体 `code=3002`，前端展示提示、不清除登录态
+- 账号来源：**不提供自助注册**，普通账号由管理员在「账号管理」中创建；内置管理员由服务启动时按环境变量初始化
 - 时间格式：`YYYY-MM-DD HH:mm:ss`（如 `2026-08-13 09:30:00`）
 - 文件大小：数值类型，单位 **字节**（前端展示时自行格式化）
 
@@ -33,13 +36,16 @@
 |---|---|---|
 | 0 | 成功 | 取 `data` |
 | 1001 | 参数校验失败 | 展示 `message` |
-| 2001 | 账号或密码错误 | 展示 `message` |
-| 2002 | 验证码错误 | 展示 `message` |
-| 2003 | 手机号已注册 | 展示 `message` |
-| 3001 | 未登录 / token 失效（HTTP 401） | 清除登录态并跳转登录页 |
+| 2001 | 账号或密码错误（含账号不存在/被禁用/已删除，不区分） | 展示 `message` |
+| 2005 | 登录失败次数过多，账号临时锁定 | 展示 `message` |
+| 3001 | 未登录 / token 失效 / 账号被禁用（HTTP 401） | 清除登录态并跳转登录页 |
+| 3002 | 无权限执行该操作（HTTP 403） | 展示 `message`，保留登录态 |
 | 4001 | 文档不存在 | 展示 `message` |
 | 4002 | 文件类型不支持 | 展示 `message` |
 | 4003 | 文件超过大小限制 | 展示 `message` |
+| 4004 | 账号不存在 | 展示 `message` |
+| 4005 | 不允许操作该账号（操作自己 / 内置管理员） | 展示 `message` |
+| 4006 | 账号创建失败 | 展示 `message` |
 | 5001 | 会话不存在 | 展示 `message` |
 | 5000 | 服务器内部错误 | 通用错误提示 |
 
@@ -58,38 +64,80 @@
 | 模块 | 方法 | 路径 | 鉴权 | 说明 |
 |---|---|---|---|---|
 | 健康检查 | GET | `/api/health` | 否 | 返回 `{status: "ok"}` |
-| 认证 | POST | `/api/auth/login` | 否 | 手机号+密码登录，签发 JWT |
-| 认证 | POST | `/api/auth/register` | 否 | 注册（开发环境验证码固定 `123456`） |
-| 认证 | POST | `/api/auth/sms-code` | 否 | 发送验证码（开发环境仅写日志） |
+| 认证 | POST | `/api/auth/login` | 否 | 账号+密码登录，签发 JWT |
 | 认证 | POST | `/api/auth/logout` | 否 | JWT 无状态，前端清除本地 token |
-| 认证 | GET | `/api/auth/me` | 是 | 当前用户信息 |
-| 认证 | PUT | `/api/auth/profile` | 是 | 修改昵称/头像 |
-| 认证 | PUT | `/api/auth/password` | 是 | 修改密码 |
+| 认证 | GET | `/api/auth/me` | 是 | 当前用户信息 + 权限字典 |
+| 认证 | POST | `/api/auth/change-password` | 是 | 修改自己的密码 |
 | 会话 | GET | `/api/chat/conversations` | 是 | 当前用户会话列表 |
 | 会话 | POST | `/api/chat/conversations` | 是 | 新建会话 |
 | 会话 | DELETE | `/api/chat/conversations/{id}` | 是 | 删除会话（级联消息） |
 | 会话 | GET | `/api/chat/conversations/{id}/messages` | 是 | 消息列表 |
 | 会话 | DELETE | `/api/chat/conversations/{id}/messages` | 是 | 清空消息 |
 | 会话 | POST | `/api/chat/messages` | 是 | 发送消息，RAG 生成回答 + 引用 |
-| 文档 | POST | `/api/documents/upload` | 是 | 多文件上传（异步向量化） |
+| 文档 | POST | `/api/documents/upload` | 是（`knowledge:write`） | 多文件上传（异步向量化） |
 | 文档 | GET | `/api/documents` | 是 | 分页 + 搜索 + 排序 |
 | 文档 | GET | `/api/documents/{id}/preview` | 是 | 纯文本预览（截断 10000 字符） |
 | 文档 | GET | `/api/documents/{id}/download` | 是 | 文件流下载 |
-| 文档 | DELETE | `/api/documents/{id}` | 是 | 删除（向量/DB/物理文件三方同步） |
+| 文档 | DELETE | `/api/documents/{id}` | 是（`knowledge:write`） | 删除（向量/DB/物理文件三方同步） |
 | 统计 | GET | `/api/statistics/overview` | 是 | 总览统计 |
 | 统计 | GET | `/api/statistics/file-type-distribution` | 是 | 文件类型占比 |
 | 统计 | GET | `/api/statistics/daily-trend` | 是 | 近 N 天入库趋势 |
 | 统计 | GET | `/api/statistics/vectorization-status` | 是 | 向量化成功/失败数 |
 | 设置 | GET | `/api/settings/rag-config` | 是 | 获取全部 RAG 参数 |
-| 设置 | PUT | `/api/settings/rag-config` | 是 | 保存并热更新（不重启生效） |
+| 设置 | PUT | `/api/settings/rag-config` | 是（`settings:rag`） | 保存并热更新（不重启生效） |
+| 账号 | GET | `/api/admin/users` | 是（`account:manage`） | 账号分页列表 |
+| 账号 | POST | `/api/admin/users` | 是（`account:manage`） | 新建普通账号，返回初始密码一次 |
+| 账号 | PATCH | `/api/admin/users/{id}` | 是（`account:manage`） | 修改等级 / 启用禁用 |
+| 账号 | POST | `/api/admin/users/{id}/reset-password` | 是（`account:manage`） | 重置密码，返回临时密码一次 |
+| 账号 | DELETE | `/api/admin/users/{id}` | 是（`account:manage`） | 软删除账号 |
 
 > 当前版本不提供流式（SSE）问答接口，前端问答统一走 `POST /api/chat/messages`。
+> 已删除接口：`POST /api/auth/register`、`POST /api/auth/sms-code`、`PUT /api/auth/profile`、`PUT /api/auth/password`（改密改走 `POST /api/auth/change-password`）。
 
 ---
 
 ## 1. 认证模块（/api/auth）
 
-### 1.1 登录
+### 1.1 用户对象模型
+
+```json
+{
+  "id": 2,
+  "username": "czzsk000002",
+  "role": "user",
+  "level": 1,
+  "status": "active",
+  "mustChangePassword": true,
+  "createdAt": "2026-10-30 10:00:00",
+  "lastLoginAt": "2026-10-30 11:20:00"
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | int | 用户 ID（账号名中的数字即取自该值） |
+| username | string | 登录账号；管理员为环境变量配置值，普通账号为 `czzsk` + 6 位补零 ID |
+| role | string | `admin`（管理员） \| `user`（普通账号） |
+| level | int \| null | 普通账号权限等级 `1`/`2`/`3`；管理员为 `null` |
+| status | string | `active`（正常） \| `disabled`（已禁用） |
+| mustChangePassword | bool | 是否处于「必须修改密码」状态（新建账号/重置密码后为 `true`） |
+| createdAt | string | 创建时间 |
+| lastLoginAt | string | 最后登录时间，从未登录为空字符串 |
+
+权限字典 `permissions`（登录与 `/api/auth/me` 返回时附带，键为布尔值）：
+
+| 权限键 | 含义 | 管理员 | L1 | L2 | L3 |
+|---|---|---|---|---|---|
+| `chat` | Bot 问答 | ✓ | ✓ | ✓ | ✓ |
+| `statistics` | 查看统计数据 | ✓ | ✓ | ✓ | ✓ |
+| `knowledgeRead` | 查看/下载知识库文档 | ✓ | ✓ | ✓ | ✓ |
+| `knowledgeWrite` | 上传/删除文档 | ✓ | ✗ | ✓ | ✓ |
+| `ragConfig` | 修改 RAG 参数 | ✓ | ✗ | ✗ | ✓ |
+| `accountManage` | 账号管理 | ✓ | ✗ | ✗ | ✗ |
+
+> 后端以 `app/core/permissions.py` 为唯一判定源，所有接口鉴权由 `Depends(require_permission(...))` 集中完成，不依赖前端隐藏按钮。
+
+### 1.2 登录
 
 `POST /api/auth/login`
 
@@ -97,11 +145,14 @@
 
 ```json
 {
-  "phone": "13800138000",
-  "password": "123456",
+  "username": "czzsk000002",
+  "password": "Ab3dE5gH7jK9",
   "remember": true
 }
 ```
+
+- `remember=true`：token 有效期 7 天；`false`：1 天
+- 兼容字段：`phone` 可作为 `username` 的别名传入（历史调用方），新代码请使用 `username`
 
 响应 `data`：
 
@@ -110,100 +161,62 @@
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
     "id": 1,
-    "phone": "13800138000",
-    "nickname": "宸甄管理员",
-    "avatar": "",
-    "createdAt": "2026-06-01 10:00:00"
+    "username": "admin",
+    "role": "admin",
+    "level": null,
+    "status": "active",
+    "mustChangePassword": false,
+    "createdAt": "2026-10-30 09:00:00",
+    "lastLoginAt": "2026-10-30 11:20:00",
+    "permissions": {
+      "chat": true,
+      "statistics": true,
+      "knowledgeRead": true,
+      "knowledgeWrite": true,
+      "ragConfig": true,
+      "accountManage": true
+    }
   }
 }
 ```
 
-### 1.2 注册
+错误：
 
-`POST /api/auth/register`
+| 场景 | code | 说明 |
+|---|---|---|
+| 账号或密码为空 | 1001 | 提示补全 |
+| 账号不存在 / 密码错误 / 账号被禁用 / 已删除 | 2001 | 统一提示「账号或密码错误」，不泄露账号是否存在 |
+| 连续失败达到上限（默认 5 次） | 2005 | 锁定默认 15 分钟，可通过 `LOGIN_MAX_FAILURES` / `LOGIN_LOCK_MINUTES` 调整 |
 
-请求：
-
-```json
-{
-  "phone": "13800138000",
-  "smsCode": "123456",
-  "password": "123456",
-  "confirmPassword": "123456"
-}
-```
-
-响应 `data`：`null`（`message="注册成功"`）
-
-校验规则：验证码须为开发环境固定值 `123456`（否则 `2002`）；两次密码一致且长度 ≥ 6（否则 `1001`）；手机号已存在返回 `2003`。注册后默认昵称为手机号。
-
-### 1.3 发送短信验证码
-
-`POST /api/auth/sms-code`
-
-请求：
-
-```json
-{
-  "phone": "13800138000",
-  "scene": "register"
-}
-```
-
-`scene` 取值：`register` | `login`（非法值返回 `1001`）。响应 `data`：`null`（开发环境验证码固定 `123456`，仅记录日志、不真实下发）
-
-### 1.4 退出登录
+### 1.3 退出登录
 
 `POST /api/auth/logout`
 
-请求体：空。响应 `data`：`null`（JWT 无状态，后端不维护会话，前端清除本地 token 即完成退出）
+请求体：空。响应 `data`：`null`（JWT 无状态，前端清除本地 token 即完成退出）
 
-### 1.5 获取当前用户信息
+### 1.4 获取当前用户信息
 
 `GET /api/auth/me`
 
-响应 `data`（与 1.1 中 `user` 结构一致）：
+响应 `data`：用户对象 + `permissions`（结构同 1.2 的 `user`）
 
-```json
-{
-  "id": 1,
-  "phone": "13800138000",
-  "nickname": "宸甄管理员",
-  "avatar": "",
-  "createdAt": "2026-06-01 10:00:00"
-}
-```
+### 1.5 修改密码
 
-### 1.6 修改个人信息
-
-`PUT /api/auth/profile`
+`POST /api/auth/change-password`
 
 请求：
 
 ```json
 {
-  "nickname": "宸甄管理员",
-  "avatar": "data:image/png;base64,..."
+  "oldPassword": "Ab3dE5gH7jK9",
+  "newPassword": "NewPass2026",
+  "confirmPassword": "NewPass2026"
 }
 ```
 
-响应 `data`（更新后的用户对象，与 1.1 中 `user` 结构一致）
+响应 `data`：`null`（`message="密码修改成功"`）
 
-### 1.7 修改密码
-
-`PUT /api/auth/password`
-
-请求：
-
-```json
-{
-  "oldPassword": "123456",
-  "newPassword": "654321",
-  "confirmPassword": "654321"
-}
-```
-
-响应 `data`：`null`
+校验：两次新密码一致（否则 `1001`）；新密码 8–64 位且同时包含字母和数字（否则 `1001`）；原密码错误返回 `2001`。修改成功后 `mustChangePassword` 置为 `false`。
 
 ---
 
@@ -420,6 +433,8 @@
 
 `POST /api/documents/upload`
 
+> 权限：需 `knowledge:write`（管理员、L2、L3），L1 调用返回 `403 / 3002`。
+
 请求：`multipart/form-data`，字段 `files`（可多文件）。支持格式 `pdf、docx、doc、txt、md、xlsx`；单个文件最大 100MB，批量总大小不超过 125MB。
 
 响应 `data`：本次新增的文档对象列表
@@ -507,6 +522,8 @@
 ### 3.6 删除文档
 
 `DELETE /api/documents/{id}`
+
+> 权限：需 `knowledge:write`（管理员、L2、L3），L1 调用返回 `403 / 3002`。
 
 响应 `data`：`null`
 
@@ -659,6 +676,8 @@
 
 `PUT /api/settings/rag-config`
 
+> 权限：需 `settings:rag`（管理员、L3），其余角色调用返回 `403 / 3002`。
+
 请求：平铺字段与分组字段可**任意组合**，仅提交需要修改的字段（未提交的字段保持原值）：
 
 ```json
@@ -684,11 +703,145 @@
 
 ---
 
-## 6. 数据库表 ↔ 接口字段映射（后端实现参考）
+## 6. 账号管理模块（/api/admin）
+
+> 全部接口需 `account:manage` 权限（仅管理员），非管理员返回 `403 / 3002`。
+> 内置管理员账号（由环境变量 `ADMIN1_*` ~ `ADMIN3_*` 初始化）不允许被修改等级、禁用、重置密码或删除；管理员也不能操作自己的账号。
+
+### 6.1 账号列表
+
+`GET /api/admin/users?page=1&size=10&keyword=czzsk&level=2&status=active`
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| page | int | 否 | 页码，默认 1 |
+| size | int | 否 | 每页条数，默认 10（1~100） |
+| keyword | string | 否 | 账号名模糊搜索 |
+| level | int | 否 | 等级筛选 `1`/`2`/`3` |
+| status | string | 否 | `active` \| `disabled` |
+
+响应 `data`：
+
+```json
+{
+  "list": [
+    {
+      "id": 1,
+      "username": "admin",
+      "role": "admin",
+      "level": null,
+      "status": "active",
+      "mustChangePassword": false,
+      "createdAt": "2026-10-30 09:00:00",
+      "lastLoginAt": "2026-10-30 11:20:00",
+      "createdBy": null,
+      "createdByName": ""
+    },
+    {
+      "id": 2,
+      "username": "czzsk000002",
+      "role": "user",
+      "level": 1,
+      "status": "active",
+      "mustChangePassword": true,
+      "createdAt": "2026-10-30 10:00:00",
+      "lastLoginAt": "",
+      "createdBy": 1,
+      "createdByName": "admin"
+    }
+  ],
+  "total": 2,
+  "page": 1,
+  "size": 10
+}
+```
+
+- 已软删除账号不出现在列表中（历史数据保留）
+- 按 `id` 升序返回
+
+### 6.2 新建账号
+
+`POST /api/admin/users`
+
+请求体：空。后端自动生成随机初始密码，并在同一事务内用自增 ID 生成账号名（`czzsk` + 6 位补零）。
+
+响应 `data`：
+
+```json
+{
+  "id": 3,
+  "username": "czzsk000003",
+  "initialPassword": "Xk7mQ2pR9tV4"
+}
+```
+
+- `initialPassword` **仅本次返回**，不落库、不写日志，关闭弹窗后无法再次查看
+- 新账号固定 `role=user`、`level=1`、`mustChangePassword=true`
+- ID 超过 6 位（>`999999`）时返回 `4006`
+
+### 6.3 修改等级 / 状态
+
+`PATCH /api/admin/users/{id}`
+
+请求（`level` 与 `status` 至少一项）：
+
+```json
+{
+  "level": 2,
+  "status": "active"
+}
+```
+
+响应 `data`：修改后的账号对象（同 6.1 列表项）
+
+- 等级：`1` \| `2` \| `3`，立即生效（无需重新登录）
+- 状态：`active` \| `disabled`，禁用后该账号已签发的 token 立即失效（下次请求返回 `401 / 3001`）
+
+### 6.4 重置密码
+
+`POST /api/admin/users/{id}/reset-password`
+
+响应 `data`：
+
+```json
+{
+  "username": "czzsk000002",
+  "tempPassword": "Ab3dE5gH7jK9",
+  "mustChangePassword": true
+}
+```
+
+- 临时密码仅返回一次，仅存哈希
+- 重置后清空失败次数与锁定状态，并置 `mustChangePassword=true`
+
+### 6.5 删除账号（软删除）
+
+`DELETE /api/admin/users/{id}`
+
+响应 `data`：`null`（`message="账号已删除（禁用），历史数据保留"`）
+
+- 不物理删除：置 `status=disabled` 并记录 `deleted_at`
+- 该账号创建的文档、会话、消息全部保留
+
+### 6.6 错误码
+
+| 场景 | code |
+|---|---|
+| 目标账号不存在或已删除 | 4004 |
+| 操作自己的账号 / 目标是内置管理员 | 4005 |
+| 账号名生成失败（ID 超上限） | 4006 |
+| 非管理员调用 | 3002（HTTP 403） |
+
+---
+
+## 7. 数据库表 ↔ 接口字段映射（后端实现参考）
 
 | 契约字段 | 后端数据来源 |
 |---|---|
-| user.id / phone / nickname / avatar / createdAt | `user` 表；`nickname` 取用户昵称字段（注册默认手机号） |
+| user.id / username / role / level / status / mustChangePassword | `user` 表同名字段（`must_change_password`） |
+| user.createdAt / lastLoginAt | `user.created_at` / `user.last_login` |
+| user.permissions | `app/core/permissions.py` 按 `role` / `level` 计算，不落库 |
+| user 软删除 | `user.deleted_at` 非空即视为已删除，查询与登录均排除 |
 | document.name / type / size / uploadedAt | `document` 表 file_name / file_type / file_size / created_at |
 | document.vectorizeStatus / vectorizeMessage | `document` 表 vectorize_status / vectorize_message（`processing` → `success` / `failed`） |
 | document 去重 | `document.md5` 与本次上传内容摘要比对，命中则跳过 |
@@ -703,7 +856,7 @@
 
 ---
 
-## 7. 变更管理
+## 8. 变更管理
 
 任何字段的新增、删除、改名、类型调整，都必须：
 

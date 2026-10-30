@@ -19,7 +19,8 @@ def _make_test_app():
 
 def _override_current_user():
     async def _dep():
-        return User(id=1, phone="13800138000", password_hash="hash", full_name="测试用户")
+        # RAG 参数写接口需 settings:rag 权限，测试用管理员身份
+        return User(id=1, username="admin", password_hash="hash", role="admin", level=None)
 
     return _dep
 

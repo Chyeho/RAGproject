@@ -3,7 +3,7 @@ import os
 
 import yaml
 from app.utils.env_loader import load_model_env
-from app.utils.path_tool import get_abs_path
+from app.utils.path_tool import get_abs_path, get_config_path
 
 HYBRID_DEFAULTS = {
     "ENABLE_HYBRID_ROUTER": False,   # 代码兜底：配置缺失时安全回退纯 RAG 直调
@@ -45,8 +45,12 @@ def load_cache_config(config_path:str = get_abs_path("config/cache_config.yml"),
     with open(config_path,"r",encoding=encoding) as f:
         return yaml.load(f,Loader=yaml.FullLoader)
 
-def load_retrieval_config(config_path:str = get_abs_path("config/retrieval_config.yml"),encoding:str = "utf-8"):
-    '''加载检索链路配置信息文件（P2 起 chunk/检索参数收敛于此）'''
+def load_retrieval_config(config_path:str | None = None,encoding:str = "utf-8"):
+    '''加载检索链路配置信息文件（P2 起 chunk/检索参数收敛于此）
+
+    config_path 为空时走 get_config_path：容器部署下优先读运行时可写副本。
+    '''
+    config_path = config_path or get_config_path("retrieval_config.yml")
     with open(config_path,"r",encoding=encoding) as f:
         return yaml.load(f,Loader=yaml.FullLoader)
 

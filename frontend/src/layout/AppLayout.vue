@@ -12,14 +12,12 @@
             <div class="user-avatar">
               <el-icon :size="18"><UserFilled /></el-icon>
             </div>
-            <span class="user-name">{{ userInfo?.nickname || '用户' }}</span>
+            <span class="user-name">{{ userInfo?.username || '用户' }}</span>
+            <span v-if="roleLabel" class="user-role">{{ roleLabel }}</span>
             <el-icon class="user-caret" :size="12"><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><User /></el-icon>个人信息
-              </el-dropdown-item>
               <el-dropdown-item command="password">
                 <el-icon><Key /></el-icon>修改密码
               </el-dropdown-item>
@@ -33,7 +31,7 @@
     </header>
 
     <div class="layout-body">
-      <!-- ================= 左侧侧边菜单栏 ================= -->
+      <!-- ================= 左侧侧边菜单栏（按权限渲染） ================= -->
       <aside class="layout-sidebar">
         <el-menu
           :default-active="activeMenu"
@@ -43,21 +41,9 @@
           active-text-color="#FFFFFF"
           class="sidebar-menu"
         >
-          <el-menu-item index="/chat">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>Bot问答</span>
-          </el-menu-item>
-          <el-menu-item index="/knowledge">
-            <el-icon><FolderOpened /></el-icon>
-            <span>知识库</span>
-          </el-menu-item>
-          <el-menu-item index="/statistics">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>统计数据</span>
-          </el-menu-item>
-          <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
-            <span>系统设置</span>
+          <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.label }}</span>
           </el-menu-item>
         </el-menu>
       </aside>
@@ -71,34 +57,74 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   UserFilled,
   ArrowDown,
-  User,
   Key,
   SwitchButton,
+  ChatDotRound,
+  FolderOpened,
+  DataAnalysis,
+  Setting,
+  Management,
 } from '@element-plus/icons-vue'
 import horizontalLogo from '../assets/images/宸甄 PrivRAG 企业私有知识库问答系统logo.png'
-import { getUser, clearLoginState } from '../utils/auth'
-import { logout } from '../api/auth'
+import { getUser, setUser, clearLoginState, hasPermission } from '../utils/auth'
+import { logout, getMe } from '../api/auth'
 
 const route = useRoute()
 const router = useRouter()
 
-// 当前用户（mock 登录态）
+// 当前用户（登录时写入，进入布局后向后端刷新一次以同步权限）
 const userInfo = ref(getUser())
 
 // 侧边菜单当前激活项（跟随路由）
 const activeMenu = computed(() => route.path)
 
+// 菜单项：账号管理仅管理员可见
+const menuItems = computed(() => {
+  const items = [
+    { path: '/chat', label: 'Bot问答', icon: ChatDotRound },
+    { path: '/knowledge', label: '知识库', icon: FolderOpened },
+    { path: '/statistics', label: '统计数据', icon: DataAnalysis },
+    { path: '/settings', label: '系统设置', icon: Setting },
+  ]
+  if (hasPermission('accountManage')) {
+    items.push({ path: '/admin/users', label: '账号管理', icon: Management })
+  }
+  return items
+})
+
+// 顶栏角色标识
+const roleLabel = computed(() => {
+  const user = userInfo.value
+  if (!user) return ''
+  return user.role === 'admin' ? '管理员' : `L${user.level || 1}`
+})
+
+onMounted(async () => {
+  try {
+    const me = await getMe()
+    userInfo.value = me
+    setUser(me)
+    if (me.mustChangePassword) {
+      ElMessageBox.confirm('当前使用的是初始/临时密码，建议立即修改。', '安全提示', {
+        confirmButtonText: '去修改',
+        cancelButtonText: '稍后',
+        type: 'warning',
+      }).then(() => router.push('/settings')).catch(() => {})
+    }
+  } catch (e) {
+    // 登录态失效由请求拦截器统一处理
+  }
+})
+
 // 顶栏用户下拉
 async function handleCommand(command) {
-  if (command === 'profile') {
-    router.push('/settings')
-  } else if (command === 'password') {
+  if (command === 'password') {
     router.push('/settings')
   } else if (command === 'logout') {
     try {
@@ -184,6 +210,15 @@ async function handleCommand(command) {
 .user-name {
   color: #ffffff;
   font-size: 14px;
+}
+
+.user-role {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .user-caret {

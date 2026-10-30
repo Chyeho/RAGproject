@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""安全工具（bcrypt 密码哈希 + JWT）单元测试"""
+"""安全工具（bcrypt 密码哈希 + 随机密码/强度校验 + JWT）单元测试"""
 import jwt
 import pytest
 
@@ -8,6 +8,8 @@ from app.core.security import (
     ALGORITHM,
     hash_password,
     verify_password,
+    generate_password,
+    validate_password_strength,
     create_access_token,
     decode_token,
 )
@@ -41,6 +43,43 @@ class TestHashPassword:
     def test_verify_malformed_hash_returns_false(self):
         """畸形哈希不抛异常，返回 False"""
         assert verify_password("123456", "not-a-bcrypt-hash") is False
+
+
+class TestGeneratePassword:
+    """测试初始/临时密码生成（账号模块新增）"""
+
+    def test_length_and_charset(self):
+        """默认 16 位，且不含易混淆字符 0/O/1/l/I，同时包含大小写与数字"""
+        pwd = generate_password()
+        assert len(pwd) == 16
+        assert not set(pwd) & set("0O1lI")
+        assert any(c.isupper() for c in pwd)
+        assert any(c.islower() for c in pwd)
+        assert any(c.isdigit() for c in pwd)
+
+    def test_random_each_call(self):
+        """每次生成结果不同（管理员初始密码不可预测）"""
+        assert generate_password(12) != generate_password(12)
+
+
+class TestValidatePasswordStrength:
+    """测试用户自设密码强度校验"""
+
+    def test_valid_password_returns_none(self):
+        """8-64 位且含大小写字母与数字 → 通过"""
+        assert validate_password_strength("Czzsk2026") is None
+
+    def test_too_short(self):
+        """少于 8 位 → 提示长度"""
+        assert validate_password_strength("Ab12345") == "密码长度需为 8-64 位"
+
+    def test_without_uppercase(self):
+        """缺少大写字母 → 提示"""
+        assert validate_password_strength("czzsk2026") == "密码需包含大写字母"
+
+    def test_without_digit(self):
+        """缺少数字 → 提示"""
+        assert validate_password_strength("CzzskAdmin") == "密码需包含数字"
 
 
 class TestCreateAccessToken:
