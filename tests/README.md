@@ -26,12 +26,13 @@ tests/
 ├── test_env_loader.py           # 工具层 · 模型环境变量白名单加载器（parse/load/默认文件）
 │
 ├── test_factory.py              # 模型层 · 模型工厂双模式（remote/local）+ 嵌入模型封装
-├── test_models.py               # 模型层 · SQLModel 五张表定义（字段/外键/默认值）
+├── test_models.py               # 模型层 · SQLModel 六张表定义（用户/文档/分块/会话/消息/审计）
 │
-├── test_security.py             # 核心层 · bcrypt 密码哈希 + JWT 签发/解析
+├── test_security.py             # 核心层 · bcrypt 密码哈希 + JWT 签发/解析 + 随机密码生成/强度校验
 ├── test_response.py             # 核心层 · 统一响应 {code, message, data}
+├── test_permissions.py          # 核心层 · 权限矩阵（admin / L1 / L2 / L3 → 权限集合 + API 键映射）
 ├── test_db.py                   # 数据层 · 连接串 / get_session / init_db 建表
-├── test_dependencies.py         # 依赖层 · get_current_user 认证鉴权
+├── test_dependencies.py         # 依赖层 · get_current_user 认证 + require_permission 鉴权
 │
 ├── test_history_store.py        # 服务层 · 对话历史存储
 ├── test_vector_store.py         # 服务层 · Qdrant 向量库（P1 改造：确定性 chunk ID + metadata 合并 + chunking 接入）
@@ -45,8 +46,9 @@ tests/
 ├── test_registry.py             # 服务层 · RAG 服务注册表单例（P4：线程安全懒加载 + 配置变更重建）
 ├── test_citations.py            # 服务层 · 引用同源拼装（P4：build_citations_from_docs，回答与引用同一次检索）
 │
-├── test_auth_router.py          # 路由层 · /api/auth 认证接口（TestClient + mock 会话）
+├── test_auth_router.py          # 路由层 · /api/auth 认证接口（登录/退出/me/改密，TestClient + mock 会话）
 ├── test_settings_router.py      # 路由层 · /api/settings RAG 参数读写（P4：全参数读写 + 热更新重建 + 审计日志）
+├── test_admin_users.py          # 路由层 · /api/admin 账号管理（鉴权拦截/4004/4005/建号规则）
 │
 ├── test_agent_tools.py          # Agent 层 · 工具注册
 ├── test_middleware.py           # Agent 层 · 中间件（监控、日志）
@@ -73,12 +75,12 @@ tests/
 
 | 层级 | 测试文件 | 说明 |
 |------|---------|------|
-| **工具层** | `test_path_tool` ~ `test_env_loader`（6 个，54 用例） | 纯函数、无外部依赖，最快、最稳定；含模型环境变量白名单加载器 |
-| **模型层** | `test_factory.py`、`test_models.py`（66 用例） | 模型工厂双模式分发（`MODEL_MODE` remote/local）、DashScope 嵌入封装、Ollama 模型自动拉取；SQLModel 表定义 |
-| **核心层** | `test_security.py`、`test_response.py`（19 用例） | 密码哈希/JWT、统一响应包裹（纯函数） |
-| **数据/依赖层** | `test_db.py`、`test_dependencies.py`（11 用例） | 连接串与建表、JWT 认证依赖（mock 会话） |
-| **服务层** | `test_history_store` ~ `test_citations`（11 个，152 用例） | 文件读写、Qdrant 向量库（P1：uuid5 确定性 ID/metadata 合并）、RAG 链与历史隔离；格式感知分块（P1：22 用例全离线）；检索链路（P2：BM25/RRF/hybrid/精排工厂，P3：查询优化器）；P4：注册表单例重建 + 引用同源拼装 |
-| **路由层** | `test_auth_router.py`、`test_settings_router.py`（27 用例） | FastAPI TestClient + dependency_overrides（不连真实 DB）；P4 settings 全参数读写与热更新重建 |
+| **工具层** | `test_path_tool` ~ `test_env_loader`（6 个，67 用例） | 纯函数、无外部依赖，最快、最稳定；含模型环境变量白名单加载器、运行时可写配置路径解析 |
+| **模型层** | `test_factory.py`、`test_models.py`（73 用例） | 模型工厂双模式分发（`MODEL_MODE` remote/local）、DashScope 嵌入封装、Ollama 模型自动拉取；SQLModel 六张表定义（含账号模块新增字段与 `audit_log`） |
+| **核心层** | `test_security.py`、`test_response.py`、`test_permissions.py`（31 用例） | 密码哈希/JWT/随机密码与强度校验、统一响应包裹、admin / L1 / L2 / L3 权限矩阵与 API 权限键映射（纯函数） |
+| **数据/依赖层** | `test_db.py`、`test_dependencies.py`（16 用例） | 连接串与建表、JWT 认证依赖（禁用/软删/无凭证统一 401）与 `require_permission` 拦截（mock 会话） |
+| **服务层** | `test_history_store` ~ `test_citations`（11 个，142 用例） | 文件读写、Qdrant 向量库（P1：uuid5 确定性 ID/metadata 合并）、RAG 链与历史隔离；格式感知分块（P1：22 用例全离线）；检索链路（P2：BM25/RRF/hybrid/精排工厂，P3：查询优化器）；P4：服务注册表单例重建 + 引用同源拼装 |
+| **路由层** | `test_auth_router.py`、`test_settings_router.py`、`test_admin_users.py`（30 用例） | FastAPI TestClient + dependency_overrides（不连真实 DB）；认证/改密契约、P4 settings 全参数读写与热更新重建、账号管理鉴权与建号规则 |
 | **Agent 层** | `test_agent_tools` ~ `test_react_agent`（3 个，16 用例） | Agent 初始化、工具注册、流式输出 |
 | **混合架构层** | `test_rule_router` ~ `test_hybrid_orchestrator`（8 个，65 用例，P5 新增） | 规则路由（强/弱规则 + 阈值）、非业务问题直达识别、trace 落盘、ReAct JSON 解析、两个工具契约、极简 ReAct 循环（含工具用尽后的收尾总结）、混合编排与降级 |
 | **评测层** | `test_eval_metrics` ~ `test_hybrid_eval`（6 个，95 用例，P0 新增 / EV2 补语料生成 / P5 补 A/B） | 检索指标纯函数、LLM 裁判、评测集构建（样例自包含生成）、v2 语料生成器、评测编排与报告、复杂集筛选/补充与 A/B 对照（全 mock） |
@@ -122,13 +124,13 @@ pytest ..\tests\test_path_tool.py ..\tests\test_config_handler.py ..\tests\test_
 pytest ..\tests\test_factory.py ..\tests\test_models.py -v
 
 # 核心/数据/依赖层
-pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_db.py ..\tests\test_dependencies.py -v
+pytest ..\tests\test_security.py ..\tests\test_response.py ..\tests\test_permissions.py ..\tests\test_db.py ..\tests\test_dependencies.py -v
 
 # 服务层
 pytest ..\tests\test_history_store.py ..\tests\test_vector_store.py ..\tests\test_rag_service.py ..\tests\test_chunking.py ..\tests\test_bm25_retriever.py ..\tests\test_rrf.py ..\tests\test_hybrid.py ..\tests\test_rerank.py ..\tests\test_query_enhancer.py ..\tests\test_registry.py ..\tests\test_citations.py -v
 
 # 路由层
-pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py -v
+pytest ..\tests\test_auth_router.py ..\tests\test_settings_router.py ..\tests\test_admin_users.py -v
 
 # Agent 层
 pytest ..\tests\test_agent_tools.py ..\tests\test_middleware.py ..\tests\test_react_agent.py -v
@@ -204,22 +206,22 @@ pytest ..\tests\ -q -W "ignore::DeprecationWarning"
 
 ### 标准环境：已启动 Qdrant 容器
 
-最近一次验证：**2026-10-28**（全量 `pytest ..\tests\ -q`，58.97s）
+最近一次验证：**2026-10-30**（全量 `pytest ..\tests\ -q`，35.22s）
 
 ```
 platform: win32
 python:   3.13.0（backend/.venv）
 pytest:   9.1.1
-tests:    505 passed, 0 failed
+tests:    535 passed, 0 failed
 ```
 
-输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。相比改造前的 432 个用例，P5 新增 73 个（混合架构层 65 个 + 评测层 8 个）。
+输出中的 `1 warning` 为 `protobuf` 库内部告警（见上文「已知警告说明」），不影响测试结果。用例演进：改造前 432 个 → P5 新增 73 个（混合架构层 65 个 + 评测层 8 个）→ 账号管理重构新增 14 个（权限矩阵 6 个、账号管理接口与服务 8 个）并改写认证/依赖用例 → 本轮补 16 个（`audit_log` 与用户表新增字段 7 个、随机密码生成与强度校验 6 个、运行时可写配置路径 3 个），当前共 535 个。
 
 ### 未启动 Qdrant 容器时
 
 **实测同样全绿**（2026-10-26，停掉 `privrag-qdrant` 后跑 `pytest ..\tests\ -q`，26.68s）。P5 新增用例均为纯 mock，同样不依赖 Qdrant / MySQL / 外部模型。
 
-P2 检索链路与 P4 注册表单例的单测均已 mock Qdrant 访问，此前文档记录的 10 个 Agent 层真实依赖用例（`test_agent_tools` 4 个、`test_react_agent` 6 个）现已全部隔离，无需 Qdrant 服务即可通过。
+P2 检索链路与 P4 服务注册表单例的单测均已 mock Qdrant 访问，此前文档记录的 10 个 Agent 层真实依赖用例（`test_agent_tools` 4 个、`test_react_agent` 6 个）现已全部隔离，无需 Qdrant 服务即可通过。
 
 如需按标准环境复现（可选）：
 
@@ -229,4 +231,4 @@ docker compose --env-file docker/env/.env.dev up -d qdrant
 docker compose --env-file docker/env/.env.dev ps    # 确认 privrag-qdrant 状态为 Up
 ```
 
-> 全部 505 个用例均通过 mock 隔离外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama / Qdrant），实测 Qdrant 停止时仍全绿（其中评测层 95 个、混合架构层 65 个、P1 分块 22 个、P2/P3 检索链路 69 个、P4 热更新与引用 10 个，见上表「混合架构层」「评测层」「服务层」）。
+> 全部 535 个用例均通过 mock 隔离外部依赖（MySQL / DashScope / ChatOpenAI / ChatOllama / Ollama / Qdrant），实测 Qdrant 停止时仍全绿（其中评测层 95 个、混合架构层 65 个、P1 分块 22 个、P2/P3 检索链路 69 个、P4 热更新与引用 10 个，见上表「混合架构层」「评测层」「服务层」）。

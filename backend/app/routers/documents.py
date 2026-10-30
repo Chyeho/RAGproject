@@ -10,9 +10,10 @@ from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.permissions import KNOWLEDGE_WRITE
 from app.core.response import err, ok
 from app.database.db import async_session, get_session
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_permission
 from app.models.document_chunk import DocumentChunk
 from app.models.documents import Document
 from app.models.users import User
@@ -91,7 +92,7 @@ async def vectorize_document(document_id: int, file_path: str):
 async def upload_documents(
     background_tasks: BackgroundTasks,
     files: list[UploadFile] = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(KNOWLEDGE_WRITE)),
     session: AsyncSession = Depends(get_session),
 ):
     """上传文档（多文件）：校验 → md5 去重 → 落盘 → 写 Document 行 → 后台异步向量化"""
@@ -227,7 +228,7 @@ async def download_document(
 @router.delete("/{document_id}")
 async def delete_document(
     document_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(KNOWLEDGE_WRITE)),
     session: AsyncSession = Depends(get_session),
 ):
     """删除文档：Qdrant 向量 → DB 行（级联 chunk）→ 物理文件，三方同步"""

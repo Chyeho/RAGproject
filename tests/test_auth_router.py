@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
-"""认证路由（/api/auth）单元测试：TestClient + mock 数据库会话"""
+"""认证路由（/api/auth）单元测试：TestClient + mock 数据库会话
+
+覆盖账号管理重构后的行为：账号+密码登录、禁用/锁定、当前用户权限、改密。
+注册/验证码/个人信息接口已下线，不再测试。
+"""
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.security import hash_password, create_access_token
+from app.core.security import decode_token, hash_password, verify_password
 from app.database.db import get_session
 from app.dependencies import get_current_user
 from app.models.users import User
@@ -40,81 +45,25 @@ def _mock_session(first_result=None):
     result = MagicMock()
     result.first.return_value = first_result
     session.exec.return_value = result
-    # session.add 是同步方法（AsyncMock 默认返回协程，会触发未 await 警告）
     session.add = MagicMock()
     return session
 
 
-def _user(phone="13800138000", password="123456", user_id=1):
+def _user(username="czzsk000002", password="oldPass123", user_id=2, **kwargs):
     return User(
         id=user_id,
-        phone=phone,
+        username=username,
         password_hash=hash_password(password),
-        full_name=phone,
-        avatar="",
+        role=kwargs.pop("role", "user"),
+        level=kwargs.pop("level", 1),
+        status=kwargs.pop("status", "active"),
+        **kwargs,
     )
 
 
 @pytest.fixture
 def client():
     return TestClient(_make_test_app())
-
-
-class TestRegister:
-    """注册接口"""
-
-    def test_register_success(self, client):
-        session = _mock_session(first_result=None)
-        client.app.dependency_overrides[get_session] = _override_get_session(session)
-
-        resp = client.post("/api/auth/register", json={
-            "phone": "13900001111",
-            "smsCode": "123456",
-            "password": "123456",
-            "confirmPassword": "123456",
-        })
-        assert resp.status_code == 200
-        assert resp.json()["code"] == 0
-        session.commit.assert_awaited_once()
-
-    def test_register_wrong_sms_code(self, client):
-        resp = client.post("/api/auth/register", json={
-            "phone": "13900001111",
-            "smsCode": "000000",
-            "password": "123456",
-            "confirmPassword": "123456",
-        })
-        assert resp.json()["code"] == 2002
-
-    def test_register_password_mismatch(self, client):
-        resp = client.post("/api/auth/register", json={
-            "phone": "13900001111",
-            "smsCode": "123456",
-            "password": "123456",
-            "confirmPassword": "654321",
-        })
-        assert resp.json()["code"] == 1001
-
-    def test_register_password_too_short(self, client):
-        resp = client.post("/api/auth/register", json={
-            "phone": "13900001111",
-            "smsCode": "123456",
-            "password": "123",
-            "confirmPassword": "123",
-        })
-        assert resp.json()["code"] == 1001
-
-    def test_register_phone_exists(self, client):
-        session = _mock_session(first_result=_user())
-        client.app.dependency_overrides[get_session] = _override_get_session(session)
-
-        resp = client.post("/api/auth/register", json={
-            "phone": "13800138000",
-            "smsCode": "123456",
-            "password": "123456",
-            "confirmPassword": "123456",
-        })
-        assert resp.json()["code"] == 2003
 
 
 class TestLogin:
@@ -126,24 +75,35 @@ class TestLogin:
         client.app.dependency_overrides[get_session] = _override_get_session(session)
 
         resp = client.post("/api/auth/login", json={
-            "phone": "13800138000",
-            "password": "123456",
+            "username": "czzsk000002",
+            "password": "oldPass123",
             "remember": True,
         })
         body = resp.json()
         assert body["code"] == 0
-        assert body["data"]["user"]["phone"] == "13800138000"
-        # token 可解析出用户 ID
-        from app.core.security import decode_token
+        assert body["data"]["user"]["username"] == "czzsk000002"
+        assert body["data"]["user"]["permissions"]["knowledgeWrite"] is False
+        assert body["data"]["user"]["permissions"]["accountManage"] is False
         assert decode_token(body["data"]["token"]) == user.id
 
-    def test_login_wrong_password(self, client):
-        user = _user()
+    def test_admin_login_permissions_all_true(self, client):
+        user = _user(username="admin", role="admin", level=None, user_id=1)
         session = _mock_session(first_result=user)
         client.app.dependency_overrides[get_session] = _override_get_session(session)
 
+        body = client.post("/api/auth/login", json={
+            "username": "admin", "password": "oldPass123", "remember": False,
+        }).json()
+        assert body["code"] == 0
+        assert body["data"]["user"]["level"] is None
+        assert all(body["data"]["user"]["permissions"].values())
+
+    def test_login_wrong_password(self, client):
+        session = _mock_session(first_result=_user())
+        client.app.dependency_overrides[get_session] = _override_get_session(session)
+
         resp = client.post("/api/auth/login", json={
-            "phone": "13800138000",
+            "username": "czzsk000002",
             "password": "wrong-pass",
             "remember": True,
         })
@@ -154,22 +114,39 @@ class TestLogin:
         client.app.dependency_overrides[get_session] = _override_get_session(session)
 
         resp = client.post("/api/auth/login", json={
-            "phone": "13900009999",
-            "password": "123456",
+            "username": "czzsk999999",
+            "password": "oldPass123",
             "remember": True,
         })
         assert resp.json()["code"] == 2001
 
+    def test_login_disabled_user_rejected(self, client):
+        session = _mock_session(first_result=_user(status="disabled"))
+        client.app.dependency_overrides[get_session] = _override_get_session(session)
 
-class TestSmsCode:
-    """验证码接口"""
+        resp = client.post("/api/auth/login", json={
+            "username": "czzsk000002",
+            "password": "oldPass123",
+            "remember": True,
+        })
+        assert resp.json()["code"] == 2001
 
-    def test_send_sms_code_success(self, client):
-        resp = client.post("/api/auth/sms-code", json={"phone": "13800138000", "scene": "register"})
-        assert resp.json()["code"] == 0
+    def test_login_locked_user_returns_2005(self, client):
+        user = _user(locked_until=datetime.now() + timedelta(minutes=5))
+        session = _mock_session(first_result=user)
+        client.app.dependency_overrides[get_session] = _override_get_session(session)
 
-    def test_invalid_scene(self, client):
-        resp = client.post("/api/auth/sms-code", json={"phone": "13800138000", "scene": "other"})
+        resp = client.post("/api/auth/login", json={
+            "username": "czzsk000002",
+            "password": "oldPass123",
+            "remember": True,
+        })
+        assert resp.json()["code"] == 2005
+
+    def test_login_empty_account(self, client):
+        resp = client.post("/api/auth/login", json={
+            "username": "", "password": "oldPass123", "remember": True,
+        })
         assert resp.json()["code"] == 1001
 
 
@@ -180,62 +157,69 @@ class TestMe:
         user = _user()
         client.app.dependency_overrides[get_current_user] = _override_current_user(user)
 
-        resp = client.get("/api/auth/me")
-        body = resp.json()
+        body = client.get("/api/auth/me").json()
         assert body["code"] == 0
-        assert body["data"]["phone"] == "13800138000"
+        assert body["data"]["username"] == "czzsk000002"
+        assert body["data"]["permissions"]["chat"] is True
 
     def test_unauthorized_without_token(self, client):
         resp = client.get("/api/auth/me")
         assert resp.status_code == 401
+        assert resp.json()["detail"]["code"] == 3001
 
 
-class TestUpdateProfile:
-    """修改个人信息接口"""
-
-    def test_update_nickname(self, client):
-        user = _user()
-        client.app.dependency_overrides[get_current_user] = _override_current_user(user)
-        session = _mock_session()
-        client.app.dependency_overrides[get_session] = _override_get_session(session)
-
-        resp = client.put("/api/auth/profile", json={"nickname": "宸甄管理员"})
-        body = resp.json()
-        assert body["code"] == 0
-        assert body["data"]["nickname"] == "宸甄管理员"
-
-
-class TestUpdatePassword:
+class TestChangePassword:
     """修改密码接口"""
 
     def test_change_password_success(self, client):
-        user = _user(password="old123")
+        user = _user(password="oldPass123")
+        user.must_change_password = True
         client.app.dependency_overrides[get_current_user] = _override_current_user(user)
         session = _mock_session()
         client.app.dependency_overrides[get_session] = _override_get_session(session)
 
-        resp = client.put("/api/auth/password", json={
-            "oldPassword": "old123",
-            "newPassword": "new123",
-            "confirmPassword": "new123",
+        resp = client.post("/api/auth/change-password", json={
+            "oldPassword": "oldPass123",
+            "newPassword": "newPass456",
+            "confirmPassword": "newPass456",
         })
         assert resp.json()["code"] == 0
-        # 新密码哈希已生效
-        from app.core.security import verify_password
-        assert verify_password("new123", user.password_hash)
+        assert verify_password("newPass456", user.password_hash)
+        assert user.must_change_password is False
 
     def test_wrong_old_password(self, client):
-        user = _user(password="old123")
+        user = _user(password="oldPass123")
         client.app.dependency_overrides[get_current_user] = _override_current_user(user)
-        session = _mock_session()
-        client.app.dependency_overrides[get_session] = _override_get_session(session)
+        client.app.dependency_overrides[get_session] = _override_get_session(_mock_session())
 
-        resp = client.put("/api/auth/password", json={
-            "oldPassword": "wrong",
-            "newPassword": "new123",
-            "confirmPassword": "new123",
+        resp = client.post("/api/auth/change-password", json={
+            "oldPassword": "wrongPass1",
+            "newPassword": "newPass456",
+            "confirmPassword": "newPass456",
         })
         assert resp.json()["code"] == 2001
+
+    def test_password_mismatch(self, client):
+        user = _user(password="oldPass123")
+        client.app.dependency_overrides[get_current_user] = _override_current_user(user)
+
+        resp = client.post("/api/auth/change-password", json={
+            "oldPassword": "oldPass123",
+            "newPassword": "newPass456",
+            "confirmPassword": "newPass789",
+        })
+        assert resp.json()["code"] == 1001
+
+    def test_password_too_weak(self, client):
+        user = _user(password="oldPass123")
+        client.app.dependency_overrides[get_current_user] = _override_current_user(user)
+
+        resp = client.post("/api/auth/change-password", json={
+            "oldPassword": "oldPass123",
+            "newPassword": "short",
+            "confirmPassword": "short",
+        })
+        assert resp.json()["code"] == 1001
 
 
 class TestLogout:

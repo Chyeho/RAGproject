@@ -1,5 +1,11 @@
-'''认证路由：登录/注册/验证码/退出/个人信息/修改密码'''
-from datetime import datetime
+'''认证路由：登录 / 修改密码 / 当前用户信息
+
+- 已删除注册、短信验证码、昵称头像相关接口（账号由管理员在账号管理中创建）
+- 登录失败次数限制与账号锁定：failed_attempts / locked_until
+- 禁用、软删账号与密码错误统一返回 2001，不泄露账号是否存在
+'''
+import os
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -7,40 +13,27 @@ from pydantic import BaseModel, Field
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.permissions import permissions_for
 from app.core.response import err, ok
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, validate_password_strength, verify_password
 from app.database.db import get_session
 from app.dependencies import get_current_user
 from app.models.users import User
+from app.service.account_service import user_to_dict
 from app.utils.logger_handler import logger
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# 开发环境固定验证码
-DEV_SMS_CODE = "123456"
+# 登录安全配置（环境变量可覆盖）
+LOGIN_MAX_FAILURES = int(os.getenv("LOGIN_MAX_FAILURES", "5"))
+LOGIN_LOCK_MINUTES = int(os.getenv("LOGIN_LOCK_MINUTES", "15"))
 
 
 class LoginReq(BaseModel):
-    phone: str = Field(description="手机号")
+    username: Optional[str] = Field(default=None, description="登录账号")
+    phone: Optional[str] = Field(default=None, description="历史字段：手机号（兼容旧调用方）")
     password: str = Field(description="密码")
     remember: bool = True
-
-
-class RegisterReq(BaseModel):
-    phone: str = Field(description="手机号")
-    smsCode: str = Field(description="短信验证码")
-    password: str = Field(description="密码")
-    confirmPassword: str = Field(description="确认密码")
-
-
-class SmsCodeReq(BaseModel):
-    phone: str = Field(description="手机号")
-    scene: str = Field(description="场景：register | login")
-
-
-class ProfileReq(BaseModel):
-    nickname: Optional[str] = Field(default=None, description="昵称")
-    avatar: Optional[str] = Field(default=None, description="头像（URL 或 base64）")
 
 
 class PasswordReq(BaseModel):
@@ -49,69 +42,58 @@ class PasswordReq(BaseModel):
     confirmPassword: str = Field(description="确认新密码")
 
 
-def user_to_dict(user: User) -> dict:
-    """User 模型 → 契约 user 对象"""
+def _auth_payload(user: User, token: str) -> dict:
+    """登录成功返回体：token + 用户对象 + 权限"""
     return {
-        "id": user.id,
-        "phone": user.phone,
-        "nickname": user.full_name or "",
-        "avatar": user.avatar or "",
-        "createdAt": user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "",
+        "token": token,
+        "user": {**user_to_dict(user), "permissions": permissions_for(user)},
     }
 
 
 @router.post("/login")
 async def login(req: LoginReq, session: AsyncSession = Depends(get_session)):
-    """登录：查表验证手机号+密码，签发 JWT"""
-    user = (await session.exec(select(User).where(User.phone == req.phone))).first()
-    if not user or not verify_password(req.password, user.password_hash):
-        logger.warning(f"[认证]手机号{req.phone}登录失败：账号或密码错误")
-        return err(2001, "手机号或密码错误")
+    """登录：账号 + 密码 → JWT；含失败次数限制与账号禁用校验"""
+    account = (req.username or req.phone or "").strip()
+    if not account or not req.password:
+        return err(1001, "请输入账号和密码")
 
-    # 更新最后登录时间
-    user.last_login = datetime.now()
+    user = (await session.exec(select(User).where(User.username == account))).first()
+    if user is None:
+        # 兼容历史账号（迁移前 username 为空，用手机号登录）
+        user = (await session.exec(select(User).where(User.phone == account))).first()
+
+    # 不存在 / 已禁用 / 已软删：统一提示，不泄露账号是否存在
+    if user is None or user.status != "active" or user.deleted_at is not None:
+        logger.warning(f"[认证]账号{account}登录失败")
+        return err(2001, "账号或密码错误")
+
+    now = datetime.now()
+    if user.locked_until and user.locked_until > now:
+        logger.warning(f"[认证]账号{account}登录失败：账号处于锁定期")
+        return err(2005, "登录失败次数过多，请稍后再试")
+
+    if not verify_password(req.password, user.password_hash):
+        user.failed_attempts = (user.failed_attempts or 0) + 1
+        if user.failed_attempts >= LOGIN_MAX_FAILURES:
+            user.locked_until = now + timedelta(minutes=LOGIN_LOCK_MINUTES)
+            user.failed_attempts = 0
+            logger.warning(f"[认证]账号{account}连续登录失败，已锁定 {LOGIN_LOCK_MINUTES} 分钟")
+        session.add(user)
+        await session.commit()
+        logger.warning(f"[认证]账号{account}登录失败：账号或密码错误")
+        return err(2001, "账号或密码错误")
+
+    # 登录成功：清空失败计数与锁定状态，更新最后登录时间
+    user.failed_attempts = 0
+    user.locked_until = None
+    user.last_login = now
     session.add(user)
     await session.commit()
+    await session.refresh(user)
 
     token = create_access_token(user.id, remember=req.remember)
-    logger.info(f"[认证]手机号{req.phone}登录成功")
-    return ok({"token": token, "user": user_to_dict(user)})
-
-
-@router.post("/register")
-async def register(req: RegisterReq, session: AsyncSession = Depends(get_session)):
-    """注册：校验验证码与两次密码，手机号查重，bcrypt 存储密码"""
-    if req.smsCode != DEV_SMS_CODE:
-        logger.warning(f"[认证]手机号{req.phone}注册失败：验证码错误")
-        return err(2002, "验证码错误")
-    if req.password != req.confirmPassword:
-        return err(1001, "两次输入的密码不一致")
-    if len(req.password) < 6:
-        return err(1001, "密码长度不能少于 6 位")
-
-    exist = (await session.exec(select(User).where(User.phone == req.phone))).first()
-    if exist:
-        logger.warning(f"[认证]手机号{req.phone}注册失败：已注册")
-        return err(2003, "手机号已注册")
-
-    user = User(
-        phone=req.phone,
-        password_hash=hash_password(req.password),
-        full_name=req.phone,  # 默认昵称取手机号，可在个人设置中修改
-    )
-    session.add(user)
-    await session.commit()
-    logger.info(f"[认证]手机号{req.phone}注册成功")
-    return ok(None, "注册成功")
-
-
-@router.post("/sms-code")
-async def send_sms_code(req: SmsCodeReq):
-    """发送短信验证码（开发环境固定 123456，仅记录日志）"""
-    if req.scene not in ("register", "login"):
-        return err(1001, "scene 取值非法")
-    logger.info(f"[认证]手机号{req.phone} 场景{req.scene} 发送验证码（开发环境固定 {DEV_SMS_CODE}）")
-    return ok(None, "验证码已发送（开发环境固定 123456）")
+    logger.info(f"[认证]账号{user.username}登录成功")
+    return ok(_auth_payload(user, token))
 
 
 @router.post("/logout")
@@ -122,44 +104,30 @@ async def logout():
 
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):
-    """获取当前登录用户信息"""
-    return ok(user_to_dict(current_user))
+    """获取当前登录用户信息与权限"""
+    return ok({**user_to_dict(current_user), "permissions": permissions_for(current_user)})
 
 
-@router.put("/profile")
-async def update_profile(
-    req: ProfileReq,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    """修改个人信息（昵称/头像）"""
-    if req.nickname is not None:
-        current_user.full_name = req.nickname
-    if req.avatar is not None:
-        current_user.avatar = req.avatar
-    session.add(current_user)
-    await session.commit()
-    await session.refresh(current_user)
-    logger.info(f"[认证]用户{current_user.id}更新个人信息")
-    return ok(user_to_dict(current_user))
-
-
-@router.put("/password")
-async def update_password(
+@router.post("/change-password")
+async def change_password(
     req: PasswordReq,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """修改密码：校验原密码，新密码 bcrypt 重哈希"""
+    """修改自己的密码：校验原密码 + 新密码强度"""
     if req.newPassword != req.confirmPassword:
         return err(1001, "两次输入的新密码不一致")
-    if len(req.newPassword) < 6:
-        return err(1001, "新密码长度不能少于 6 位")
+
+    strength_error = validate_password_strength(req.newPassword)
+    if strength_error:
+        return err(1001, strength_error)
+
     if not verify_password(req.oldPassword, current_user.password_hash):
         logger.warning(f"[认证]用户{current_user.id}修改密码失败：原密码错误")
         return err(2001, "原密码错误")
 
     current_user.password_hash = hash_password(req.newPassword)
+    current_user.must_change_password = False
     session.add(current_user)
     await session.commit()
     logger.info(f"[认证]用户{current_user.id}修改密码成功")

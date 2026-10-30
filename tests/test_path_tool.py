@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """路径工具模块单元测试"""
 import os
-from app.utils.path_tool import get_root_path, get_abs_path
+from app.utils.path_tool import get_root_path, get_abs_path, get_config_path
 
 
 class TestGetRootPath:
@@ -49,3 +49,33 @@ class TestGetAbsPath:
         """验证返回的是绝对路径"""
         result = get_abs_path("data")
         assert os.path.isabs(result)
+
+
+class TestGetConfigPath:
+    """测试 get_config_path()：默认配置只读 + 运行时可写副本"""
+
+    def test_returns_default_when_env_unset(self, monkeypatch):
+        """未设置 RUNTIME_CONFIG_DIR（本地开发）→ 直接读 app/config 默认配置"""
+        monkeypatch.delenv("RUNTIME_CONFIG_DIR", raising=False)
+        result = get_config_path("retrieval_config.yml")
+        assert result == get_abs_path(os.path.join("config", "retrieval_config.yml"))
+        assert os.path.exists(result)
+
+    def test_copies_default_to_runtime_dir(self, monkeypatch, tmp_path):
+        """设置 RUNTIME_CONFIG_DIR（容器部署）→ 首次调用复制默认配置到可写目录"""
+        monkeypatch.setenv("RUNTIME_CONFIG_DIR", str(tmp_path / "runtime"))
+        result = get_config_path("retrieval_config.yml")
+        assert result == str(tmp_path / "runtime" / "retrieval_config.yml")
+        with open(result, encoding="utf-8") as f:
+            assert "top_k" in f.read()
+
+    def test_keeps_existing_runtime_copy(self, monkeypatch, tmp_path):
+        """副本已存在时不被默认配置覆盖（保留设置页保存的参数）"""
+        runtime = tmp_path / "runtime"
+        runtime.mkdir()
+        target = runtime / "retrieval_config.yml"
+        target.write_text("top_k: 99\n", encoding="utf-8")
+        monkeypatch.setenv("RUNTIME_CONFIG_DIR", str(runtime))
+
+        assert get_config_path("retrieval_config.yml") == str(target)
+        assert "99" in target.read_text(encoding="utf-8")

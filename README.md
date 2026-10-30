@@ -24,7 +24,7 @@
 - **本地大模型服务**：Ollama（本地模式下运行聊天与嵌入模型，支持自动拉取）
 - **ORM**：SQLModel + SQLAlchemy（异步）
 - **AI问答服务框架**：LangChain
-- **测试框架**：pytest + anyio（505 个单元测试，详见 `tests/README.md`）
+- **测试框架**：pytest + anyio（535 个单元测试，详见 `tests/README.md`）
 
 ### 2.2 项目结构
 
@@ -53,18 +53,20 @@ RAGproject_demo/
 │   │   │   ├── rag_config.yml           # 模型配置（聊天 / 嵌入，remote / local 分组）
 │   │   │   └── retrieval_config.yml     # 检索链路配置（分块 / hybrid / rerank / 查询优化）
 │   │   ├── core/                        # 核心模块
+│   │   │   ├── permissions.py           # 权限矩阵（角色/等级 → 权限，唯一判定源）
 │   │   │   ├── response.py              # 统一响应 {code, message, data}
-│   │   │   └── security.py              # 密码哈希 / JWT 签发与校验
+│   │   │   └── security.py              # 密码哈希 / JWT 签发与校验 / 随机密码生成
 │   │   ├── data/                        # 上传文件落盘目录（文件名前缀时间戳）
 │   │   ├── database/                    # 数据库连接层
 │   │   │   └── db.py                    # 环境变量连接 / get_session / init_db 建表
-│   │   ├── dependencies.py              # 全局依赖（get_current_user）
+│   │   ├── dependencies.py              # 全局依赖（get_current_user / require_permission）
 │   │   ├── logs/                        # 运行日志
 │   │   ├── modelFactory/                # 模型工厂（本地 / 远程双模式）
 │   │   │   ├── factory.py               # 聊天 / 嵌入模型实例化
 │   │   │   └── rerank_factory.py        # 精排模型实例化（远端 / 本地，含降级）
-│   │   ├── models/                      # SQLModel 数据模型（5 张表）
+│   │   ├── models/                      # SQLModel 数据模型（6 张表）
 │   │   │   ├── __init__.py
+│   │   │   ├── audit_log.py             # 账号管理操作审计表
 │   │   │   ├── chat_conversation.py     # 会话表
 │   │   │   ├── chat_message.py          # 消息表（含 citations）
 │   │   │   ├── document_chunk.py        # 文档分块表（含章节 / 页码元数据）
@@ -78,12 +80,14 @@ RAGproject_demo/
 │   │   │   ├── faithfulness_judge.txt   # 评测：忠实度裁判
 │   │   │   └── relevancy_judge.txt      # 评测：相关性裁判
 │   │   ├── routers/                     # FastAPI 路由层
-│   │   │   ├── auth.py                  # 认证（登录/注册/个人信息/改密）
+│   │   │   ├── admin.py                 # 账号管理（列表/新建/改等级状态/重置密码/软删除，仅管理员）
+│   │   │   ├── auth.py                  # 认证（登录/退出/当前用户/改密）
 │   │   │   ├── chat.py                  # 会话 CRUD + 问答 + 引用来源
 │   │   │   ├── documents.py             # 文档上传/列表/预览/下载/删除
 │   │   │   ├── settings.py              # RAG 全参数读写与热更新
 │   │   │   └── statistics.py            # 统计数据查询
 │   │   ├── service/                     # 业务服务层
+│   │   │   ├── account_service.py       # 账号服务（管理员初始化/建号/重置密码/审计）
 │   │   │   ├── agent/                   # Agent 服务
 │   │   │   │   ├── react_agent.py
 │   │   │   │   └── tools/               # Agent 工具与中间件
@@ -143,15 +147,16 @@ RAGproject_demo/
 │       ├── router/                      # 路由配置 + 登录守卫
 │       ├── utils/                       # 工具模块（登录态 / 格式化）
 │       └── views/                       # 页面视图
+│           ├── admin/                   # 账号管理页（仅管理员）
 │           ├── chat/                    # Bot 问答页（会话管理 + 引用溯源）
 │           ├── knowledge/               # 知识库页（文档表格 + 上传/预览/删除）
 │           ├── statistics/              # 统计数据页（ECharts 图表）
-│           ├── settings/                # 系统设置页（个人信息 + RAG 参数）
-│           └── LoginRegister.vue        # 登录注册页
+│           ├── settings/                # 系统设置页（账号信息 + 修改密码 + RAG 参数）
+│           └── LoginRegister.vue        # 登录页（不提供自助注册）
 ├── scripts/                             # 启动脚本
 │   ├── start-backend.ps1                # Windows 后端一键启动脚本
 │   └── start-backend.sh                 # Linux 后端一键启动脚本
-├── tests/                               # 单元测试（505 个，运行方式见 tests/README.md）
+├── tests/                               # 单元测试（535 个，运行方式见 tests/README.md）
 ├── docker-compose.yml                   # Docker Compose 编排文件
 ├── .dockerignore                        # Docker 构建忽略规则
 ├── .gitattributes
@@ -159,6 +164,7 @@ RAGproject_demo/
 ├── docs/                                # 项目开发文档目录
 │   ├── 技术文档.md                       # 项目阶段、期望与部署设计说明
 │   ├── 接口JSON契约文档.md                # 前后端接口契约（联调依据）
+│   ├── 账号管理说明文档.md                 # 角色/等级权限、管理员初始化、账号运维
 │   ├── 常见报错问题解决方案速查.md         # 高频报错与排查速查
 │   ├── development_docs/                # 各阶段开发执行文档
 │   │   ├── 前后端开发执行文档.md
@@ -293,7 +299,7 @@ cp docker/env/.env.dev.example docker/env/.env.dev    # 开发环境（快速启
 cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
 ```
 
-复制后只需填写以下 **4 个必填项**即可启动，其余变量均有默认值，无需改动：
+复制后只需填写以下 **6 个必填项**即可启动，其余变量均有默认值，无需改动：
 
 | 必填项 | 说明 |
 |--------|------|
@@ -301,8 +307,12 @@ cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
 | `OPENAI_API_KEY` | 业务聊天模型的 API Key |
 | `OPENAI_BASE_URL` | 业务聊天模型端点（如 `https://api.deepseek.com/v1`） |
 | `DASHSCOPE_API_KEY` | DashScope API Key：嵌入 / 精排 / 评测模型共用 |
+| `ADMIN1_USERNAME` | 内置管理员登录账号（首次启动时自动创建，建议改掉默认值） |
+| `ADMIN1_PASSWORD` | 内置管理员**初始密码**（≥12 位，仅首次建号时写入数据库；账号已存在则不会覆盖，后续以设置页修改为准） |
 
 > 嵌入、精排、评测等其他远程模型默认走 DashScope，配好 `DASHSCOPE_API_KEY` 即可，无需额外配置。生产环境还需将 `.env.prod` 中 `<strong_production_password>` 等 MySQL 密码占位符替换为强密码（开发模板已内置默认密码）。各变量完整说明见 3.4 节。
+
+> **账号说明**：系统不提供自助注册。内置管理员由服务启动时按 `ADMIN1_*`~`ADMIN3_*` 自动初始化；普通账号由管理员登录后在「账号管理」页创建（账号名 `czzsk` + 6 位补零 ID，初始密码仅显示一次）。详见 [`docs/账号管理说明文档.md`](docs/账号管理说明文档.md)。
 
 ### 3.2 启动方式一：Docker 一键容器化部署（便捷，但较慢）
 
@@ -311,7 +321,7 @@ cp docker/env/.env.prod.example docker/env/.env.prod  # 生产环境（可选）
 ```bash
 # 1. 首次使用：从模板复制环境变量文件并编辑
 cp docker/env/.env.dev.example docker/env/.env.dev
-#    只需填写 3.1.2 所列 4 个必填项（聊天模型三件套 + DASHSCOPE_API_KEY）
+#    只需填写 3.1.2 所列 6 个必填项（聊天模型三件套 + DASHSCOPE_API_KEY + 管理员账号密码）
 
 # 2. 构建并一键启动全部服务（mysql / qdrant / backend / frontend / nginx / ollama）
 docker compose --env-file docker/env/.env.dev up -d --build
@@ -375,7 +385,8 @@ cd frontend
 npm install  # 首次运行
 npm run dev
 # 访问 http://localhost:13000 查看前端页面（已对接后端真实接口）
-# 测试账号：注册后登录（注册验证码固定为 123456）
+# 测试账号：使用 docker/env/.env.dev 中的 ADMIN1_USERNAME / ADMIN1_PASSWORD 登录；
+# 普通账号由管理员在「账号管理」页创建（无自助注册）
 
 # 4. 停止基础设施
 docker compose down
@@ -385,7 +396,7 @@ docker compose down
 
 ### 3.4 模型配置与环境变量说明
 
-  快速上手只需配置 3.1.2 中的 4 个必填项，本节为完整参考。变量按用途分为两类：**可自主配置的模型项**（模型名 / API Key / base_url，可按需替换供应商）与**保留在原位置的编排项**（Docker 容器编排注入信息、模型加载模式等，一般无需改动）。
+  快速上手只需配置 3.1.2 中的 6 个必填项，本节为完整参考。变量按用途分为两类：**可自主配置的模型项**（模型名 / API Key / base_url，可按需替换供应商）与**保留在原位置的编排项**（Docker 容器编排注入信息、模型加载模式等，一般无需改动）。
 
 #### 3.4.1 模型加载模式说明
 
@@ -462,6 +473,18 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 | `DASHSCOPE_BASE_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 覆盖 DashScope OpenAI 协议端点（仅评测模型使用） |
 
 > **注意**：切换嵌入模型后向量维度会变化，需删除旧 Qdrant collection 并重新入库文档。系统会在 collection 不存在时按新维度自动创建。
+
+##### 账号与登录安全变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `SECRET_KEY` | 开发模板内置 | JWT 签名密钥；**生产环境必须替换为随机长字符串**，更换后已签发 token 全部失效 |
+| `ADMIN1_USERNAME` / `ADMIN1_PASSWORD` | `admin` / 开发模板内置 | 内置管理员账号；服务启动时若不存在则创建，已存在不覆盖密码（env 只是初始种子，后续以设置页改密为准） |
+| `ADMIN2_*` / `ADMIN3_*` | 空 | 可选的第 2、3 个内置管理员，未配置则跳过 |
+| `LOGIN_MAX_FAILURES` | `5` | 连续登录失败多少次后锁定账号 |
+| `LOGIN_LOCK_MINUTES` | `15` | 账号锁定时长（分钟） |
+
+> 管理员密码仅在首次创建时写入数据库（bcrypt 哈希），因此**启动日志不会打印密码**；登录后可在「设置 → 修改密码」自助改密，此后数据库是唯一凭据，**修改 env 中的 `ADMIN*_PASSWORD` 不会改变已有账号的密码**。忘记密码可在宿主机执行 `python -m app.cli.reset_password --username <账号>` 重置，或直接修改 env 后手工删除该账号记录再重启（不推荐）。
 
 ##### 保留在原位置的编排项（不要在 .env 之外自定义）
 

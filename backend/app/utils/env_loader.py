@@ -27,9 +27,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 # 默认 env 文件（本地直跑兜底用）
 DEFAULT_ENV_FILE = _PROJECT_ROOT / "docker" / "env" / ".env.dev"
 
-# 模型相关白名单：仅这些键允许从 env 文件注入进程环境。
+# 模型与账号相关白名单：仅这些键允许从 env 文件注入进程环境。
 # 聊天模型三件套可指向任意 OpenAI 协议供应商（DeepSeek/通义/月之暗面等）；
 # 嵌入/精排/评测模型默认走 DashScope，可用对应变量覆盖模型名。
+# ADMINn_* 用于启动时创建内置管理员；LOGIN_* 为登录安全配置。
 MODEL_ENV_WHITELIST = frozenset({
     "DASHSCOPE_API_KEY",      # DashScope API Key（嵌入/精排/评测模型共用）
     "DASHSCOPE_BASE_URL",     # DashScope OpenAI 协议兼容端点（评测聊天模型用）
@@ -39,6 +40,15 @@ MODEL_ENV_WHITELIST = frozenset({
     "TEXT_EMBEDDING_MODEL",   # 嵌入模型名覆盖（默认取 rag_config.yml）
     "RERANK_MODEL",           # 精排模型名覆盖（默认取 retrieval_config.yml）
     "EVAL_CHAT_MODEL",        # 评测裁判/评测集生成模型名覆盖（默认 qwen-plus）
+    "SECRET_KEY",             # JWT 签名密钥（生产必须自定义）
+    "ADMIN1_USERNAME",        # 内置管理员 1 账号
+    "ADMIN1_PASSWORD",        # 内置管理员 1 初始密码
+    "ADMIN2_USERNAME",        # 可选：内置管理员 2 账号
+    "ADMIN2_PASSWORD",        # 可选：内置管理员 2 初始密码
+    "ADMIN3_USERNAME",        # 可选：内置管理员 3 账号
+    "ADMIN3_PASSWORD",        # 可选：内置管理员 3 初始密码
+    "LOGIN_MAX_FAILURES",     # 连续登录失败次数上限（默认 5）
+    "LOGIN_LOCK_MINUTES",     # 触发上限后的锁定时长（默认 15 分钟）
 })
 
 

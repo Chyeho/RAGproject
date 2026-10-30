@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""SQLModel 数据模型（5 张表）定义单元测试"""
+"""SQLModel 数据模型（6 张表）定义单元测试"""
 from datetime import datetime
 
 import pytest
 from sqlmodel import SQLModel
 
-from app.models import User, Document, DocumentChunk, ChatConversation, ChatMessage
+from app.models import User, Document, DocumentChunk, ChatConversation, ChatMessage, AuditLog
 
 
 class TestTableNames:
@@ -13,6 +13,9 @@ class TestTableNames:
 
     def test_user_table_name(self):
         assert User.__tablename__ == "user"
+
+    def test_audit_log_table_name(self):
+        assert AuditLog.__tablename__ == "audit_log"
 
     def test_document_table_name(self):
         assert Document.__tablename__ == "document"
@@ -42,6 +45,32 @@ class TestUserModel:
         assert user.id is None
         assert isinstance(user.created_at, datetime)
         assert user.full_name is None  # 可空
+
+    def test_username_unique_index(self):
+        """登录账号 username 唯一且建索引（账号模块改造新增）"""
+        assert User.__table__.c.username.unique is True
+        assert User.__table__.c.username.index is True
+
+    def test_phone_optional(self):
+        """手机号改为可空：新账号不再填写"""
+        user = User(username="czzsk000002", password_hash="hash")
+        assert user.phone is None
+
+    def test_role_and_level_defaults(self):
+        """默认普通用户：role=user、level=1、status=active、无需改密"""
+        user = User(username="czzsk000002", password_hash="hash")
+        assert user.role == "user"
+        assert user.level == 1
+        assert user.status == "active"
+        assert user.must_change_password is False
+
+    def test_soft_delete_and_lock_defaults(self):
+        """软删与登录锁定字段默认未触发"""
+        user = User(username="czzsk000002", password_hash="hash")
+        assert user.deleted_at is None
+        assert user.created_by is None
+        assert user.failed_attempts == 0
+        assert user.locked_until is None
 
     def test_relationship_documents(self):
         """与文档表存在 uploader 关系"""
@@ -121,10 +150,25 @@ class TestChatMessageModel:
         assert hasattr(ChatMessage, "conversation")
 
 
+class TestAuditLogModel:
+    """管理员操作审计表（账号模块改造新增）"""
+
+    def test_defaults(self):
+        """created_at 默认当前时间，target/detail 可空"""
+        log = AuditLog(actor_id=3, action="create_user")
+        assert isinstance(log.created_at, datetime)
+        assert log.target_id is None
+        assert log.detail is None
+
+    def test_action_indexed(self):
+        """action 建索引（按操作类型检索）"""
+        assert AuditLog.__table__.c.action.index is True
+
+
 class TestMetadataRegistration:
     """全部模型注册到 SQLModel.metadata（建表依据）"""
 
     def test_all_tables_registered(self):
         table_names = set(SQLModel.metadata.tables.keys())
-        for name in ("user", "document", "document_chunk", "chat_conversation", "chat_message"):
+        for name in ("user", "document", "document_chunk", "chat_conversation", "chat_message", "audit_log"):
             assert name in table_names
