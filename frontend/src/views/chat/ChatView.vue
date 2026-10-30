@@ -160,14 +160,26 @@ import {
 import { nowDateTime } from '../../utils/format'
 
 // ---------------- 数据 ----------------
+// 输入草稿暂存：切换页面（组件卸载）或刷新后仍能恢复，避免手误点走导致内容丢失
+const DRAFT_KEY = 'privrag_chat_draft'
+
 const conversations = ref([])
 const activeId = ref(null)
 const messages = ref([])
-const draft = ref('')
+const draft = ref(sessionStorage.getItem(DRAFT_KEY) || '')
 const sending = ref(false)
 const expandedCitations = reactive(new Set())
 
 const messagesRef = ref(null)
+
+// 草稿实时写入 sessionStorage（发送/清空/新建会话时自动移除）
+watch(draft, (val) => {
+  if (val) {
+    sessionStorage.setItem(DRAFT_KEY, val)
+  } else {
+    sessionStorage.removeItem(DRAFT_KEY)
+  }
+})
 
 // ---------------- 生命周期 ----------------
 onMounted(async () => {

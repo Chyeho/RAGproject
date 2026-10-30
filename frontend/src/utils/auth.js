@@ -61,9 +61,10 @@ export function setLoginState(token, user, remember) {
   }
 }
 
-/** 退出登录：清除全部登录状态 */
+/** 退出登录：清除全部登录状态（含聊天输入草稿，避免同浏览器下一账号看到上一账号内容） */
 export function clearLoginState() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem(REMEMBER_KEY)
+  sessionStorage.removeItem('privrag_chat_draft')
 }
