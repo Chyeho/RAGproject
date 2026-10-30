@@ -14,6 +14,7 @@ from app.models.chat_conversation import ChatConversation
 from app.models.chat_message import ChatMessage
 from app.models.documents import Document
 from app.models.users import User
+from app.service.history.history_store import delete_chat_history
 from app.service.orchestration import get_orchestrator
 from app.utils.config_handler import hybrid_conf
 from app.utils.logger_handler import logger
@@ -59,6 +60,11 @@ async def get_owned_conversation(conversation_id: int, user: User, session: Asyn
     return conv
 
 
+def rag_session_id(user_id: int, conversation_id: int) -> str:
+    """RAG 历史文件 / 编排会话标识（发送、删除、清空三处必须一致）"""
+    return f"user_{user_id}_conv_{conversation_id}"
+
+
 @router.get("/conversations")
 async def get_conversations(
     current_user: User = Depends(get_current_user),
@@ -97,12 +103,14 @@ async def delete_conversation(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """删除会话（级联删除消息）"""
+    """删除会话（级联删除消息 + 清理历史文件）"""
     conv = await get_owned_conversation(conversation_id, current_user, session)
     if conv is None:
         return err(5001, "会话不存在")
     await session.delete(conv)
     await session.commit()
+    # 同步删除该会话的 RAG 历史文件，避免残留（文件不存在时静默跳过）
+    delete_chat_history(rag_session_id(current_user.id, conversation_id))
     logger.info(f"[会话]用户{current_user.id}删除会话(id={conversation_id})")
     return ok(None, "删除成功")
 
@@ -131,7 +139,7 @@ async def clear_messages(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """清空会话消息"""
+    """清空会话消息（同时清空 RAG 历史，避免回答仍记忆旧上下文）"""
     conv = await get_owned_conversation(conversation_id, current_user, session)
     if conv is None:
         return err(5001, "会话不存在")
@@ -141,6 +149,7 @@ async def clear_messages(
     for m in rows:
         await session.delete(m)
     await session.commit()
+    delete_chat_history(rag_session_id(current_user.id, conversation_id))
     logger.info(f"[会话]用户{current_user.id}清空会话(id={conversation_id})消息")
     return ok(None, "清空成功")
 
@@ -216,9 +225,9 @@ async def send_message(
     # 3. 调用混合编排（每个会话独立历史：session_id = user_{uid}_conv_{cid}，同步调用放线程池）
     #    开关关闭时行为与改造前一致：RAG 直调返回 (answer, retrieved_docs)
     try:
-        rag_session_id = f"user_{current_user.id}_conv_{conv.id}"
+        rag_session = rag_session_id(current_user.id, conv.id)
         result = await asyncio.to_thread(
-            get_orchestrator().answer, req.content, rag_session_id
+            get_orchestrator().answer, req.content, rag_session
         )
         answer, retrieved_docs = result.answer, result.documents
     except Exception as e:

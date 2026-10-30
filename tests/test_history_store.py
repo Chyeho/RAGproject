@@ -7,6 +7,7 @@ import tempfile
 import pytest
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
+from app.service.history import history_store
 from app.service.history.history_store import ChatMessageHistory, get_chat_history
 
 
@@ -131,3 +132,21 @@ class TestGetChatHistory:
     def test_session_id_correct(self):
         history = get_chat_history("user_999")
         assert history.session_id == "user_999"
+
+
+class TestDeleteChatHistory:
+    """测试 delete_chat_history：删除/清空会话时清理历史文件"""
+
+    def test_removes_existing_file(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(history_store, "_storage_dir", lambda: str(tmp_path))
+        path = tmp_path / "user_1_conv_2"
+        path.write_text("[]", encoding="utf-8")
+
+        assert history_store.delete_chat_history("user_1_conv_2") is True
+        assert not path.exists()
+
+    def test_missing_file_returns_false(self, tmp_path, monkeypatch):
+        """文件不存在时静默返回 False，且不会创建空文件"""
+        monkeypatch.setattr(history_store, "_storage_dir", lambda: str(tmp_path))
+        assert history_store.delete_chat_history("not_exist") is False
+        assert not (tmp_path / "not_exist").exists()

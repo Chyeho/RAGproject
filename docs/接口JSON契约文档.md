@@ -306,6 +306,8 @@
 
 响应 `data`：`null`
 
+行为：删除会话记录 + 级联删除该会话的全部消息 + 删除对应的 RAG 历史文件（`chat_history/user_{uid}_conv_{cid}`），不留残留。会话不存在或不属于当前用户返回 `5001`。
+
 ### 2.6 获取会话消息列表
 
 `GET /api/chat/conversations/{id}/messages`
@@ -368,6 +370,8 @@
 `DELETE /api/chat/conversations/{id}/messages`
 
 响应 `data`：`null`
+
+行为：删除该会话全部消息记录，并清空对应的 RAG 历史文件，避免后续回答仍记忆已清空的上下文。
 
 ### 2.9 调试 trace 查询（可选）
 
