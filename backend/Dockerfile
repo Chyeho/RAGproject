@@ -45,7 +45,7 @@ COPY --from=builder --chown=app:app /app /app
 
 # 预创建持久化目录并授权：命名卷首次初始化时会把镜像内挂载点的属主复制进卷，
 # 若不预创建，Docker 会以 root:root 创建挂载点，导致非 root 用户无写权限
-RUN mkdir -p /app/chat_history && chown -R app:app /app/chat_history
+RUN mkdir -p /app/chat_history /app/runtime_config && chown -R app:app /app/chat_history /app/runtime_config
 
 USER app
 

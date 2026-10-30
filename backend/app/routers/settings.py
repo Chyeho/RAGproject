@@ -5,6 +5,7 @@
   检索参数变更时线程安全重建 RAG 链单例（不重启即时生效），并记录 before/after 审计日志
 '''
 import asyncio
+import os
 from typing import Literal, Optional
 
 import yaml
@@ -19,11 +20,12 @@ from app.service.rag import registry
 from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents
 from app.utils.config_handler import retrieval_conf
 from app.utils.logger_handler import logger
-from app.utils.path_tool import get_abs_path
+from app.utils.path_tool import get_config_path
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-CONFIG_PATH = get_abs_path("config/retrieval_config.yml")
+# 容器部署下指向运行时可写副本（RUNTIME_CONFIG_DIR），本地开发回退到 app/config
+CONFIG_PATH = get_config_path("retrieval_config.yml")
 
 
 def conf_to_dict() -> dict:
@@ -207,9 +209,15 @@ async def update_rag_config(
     after = _flat_conf(config)
     changed = {k: (before.get(k), after[k]) for k in after if before.get(k) != after[k]}
 
-    # ---- 写盘 + 内存同步 ----
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+    # ---- 写盘 + 内存同步（临时文件 + 原子替换，避免写一半损坏 YAML） ----
+    tmp_path = f"{CONFIG_PATH}.tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+        os.replace(tmp_path, CONFIG_PATH)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
     retrieval_conf.update(config)
 
     # ---- 审计日志（before/after diff + 用户） ----

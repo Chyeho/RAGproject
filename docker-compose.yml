@@ -115,11 +115,15 @@ services:
       ADMIN3_PASSWORD: ${ADMIN3_PASSWORD:-}
       LOGIN_MAX_FAILURES: ${LOGIN_MAX_FAILURES:-5}
       LOGIN_LOCK_MINUTES: ${LOGIN_LOCK_MINUTES:-15}
+      # ---------- 运行时配置：只读默认配置的副本目录（设置页写这里） ----------
+      RUNTIME_CONFIG_DIR: /app/runtime_config
     ports:
       - "18000:18000"
     volumes:
-      # 业务配置目录（只读挂载）
+      # 业务配置目录（只读挂载，作为出厂默认值）
       - ./backend/app/config:/app/app/config:ro
+      # 运行时配置副本（可写，设置页保存的 RAG 参数落这里，容器重建不丢）
+      - rag_config:/app/runtime_config
       # 知识库数据
       - ./backend/app/data:/app/app/data
       # 持久化目录
@@ -186,6 +190,8 @@ volumes:
     name: privrag_ollama_data
   chat_history:
     name: privrag_chat_history
+  rag_config:
+    name: privrag_rag_config
 
 # ======================== 网络 ========================
 networks:
