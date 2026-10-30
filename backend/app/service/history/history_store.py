@@ -7,6 +7,12 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
 
 
+def _storage_dir() -> str:
+    """历史文件存放目录（backend/chat_history）"""
+    backend_dir = os.path.dirname(get_root_path())
+    return os.path.join(backend_dir, "chat_history")
+
+
 def get_chat_history(session_id):
     """
     获取历史消息服务类
@@ -15,8 +21,27 @@ def get_chat_history(session_id):
     Returns:
         BaseChatMessageHistory: 历史消息服务类
     """
-    backend_dir = os.path.dirname(get_root_path())
-    return ChatMessageHistory(session_id, os.path.join(backend_dir, "chat_history"))
+    return ChatMessageHistory(session_id, _storage_dir())
+
+
+def delete_chat_history(session_id) -> bool:
+    """删除某个会话的历史文件（删除/清空会话时调用，避免历史残留）
+
+    Args:
+        session_id (str): 会话ID
+    Returns:
+        bool: 文件存在且删除成功返回 True，不存在或失败返回 False
+    """
+    path = os.path.join(_storage_dir(), str(session_id))
+    try:
+        os.remove(path)
+        logger.info(f"[ChatMessageHistory]已删除会话历史：{session_id}")
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logger.warning(f"[ChatMessageHistory]删除会话历史失败({session_id})：{str(e)}")
+        return False
 
 
 class ChatMessageHistory(BaseChatMessageHistory):
