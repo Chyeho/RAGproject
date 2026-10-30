@@ -8,130 +8,56 @@
       </div>
     </div>
 
-    <!-- 右侧：登录/注册卡片区 -->
+    <!-- 右侧：登录卡片区（账号由管理员创建，不提供自助注册） -->
     <div class="login-right">
       <div class="login-card">
-        <el-tabs v-model="activeTab" stretch>
-          <!-- 登录 Tab -->
-          <el-tab-pane label="登录" name="login">
-            <el-form
-              ref="loginFormRef"
-              :model="loginForm"
-              :rules="loginRules"
-              size="large"
-              @keyup.enter="handleLogin"
+        <div class="card-title">账号登录</div>
+
+        <el-form
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="loginRules"
+          size="large"
+          @keyup.enter="handleLogin"
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model="loginForm.username"
+              placeholder="请输入账号"
+              clearable
+              maxlength="32"
             >
-              <el-form-item prop="phone">
-                <el-input
-                  v-model="loginForm.phone"
-                  placeholder="请输入手机号"
-                  clearable
-                  maxlength="11"
-                >
-                  <template #prefix><el-icon><Iphone /></el-icon></template>
-                </el-input>
-              </el-form-item>
+              <template #prefix><el-icon><User /></el-icon></template>
+            </el-input>
+          </el-form-item>
 
-              <el-form-item prop="password">
-                <el-input
-                  v-model="loginForm.password"
-                  type="password"
-                  placeholder="请输入密码"
-                  show-password
-                >
-                  <template #prefix><el-icon><Lock /></el-icon></template>
-                </el-input>
-              </el-form-item>
-
-              <div class="login-options">
-                <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-              </div>
-
-              <el-button
-                class="submit-btn"
-                type="primary"
-                size="large"
-                :loading="loginLoading"
-                @click="handleLogin"
-              >
-                登 录
-              </el-button>
-            </el-form>
-          </el-tab-pane>
-
-          <!-- 注册 Tab -->
-          <el-tab-pane label="注册" name="register">
-            <el-form
-              ref="registerFormRef"
-              :model="registerForm"
-              :rules="registerRules"
-              size="large"
-              @keyup.enter="handleRegister"
+          <el-form-item prop="password">
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
             >
-              <el-form-item prop="phone">
-                <el-input
-                  v-model="registerForm.phone"
-                  placeholder="请输入手机号"
-                  clearable
-                  maxlength="11"
-                >
-                  <template #prefix><el-icon><Iphone /></el-icon></template>
-                </el-input>
-              </el-form-item>
+              <template #prefix><el-icon><Lock /></el-icon></template>
+            </el-input>
+          </el-form-item>
 
-              <el-form-item prop="smsCode">
-                <div class="sms-row">
-                  <el-input
-                    v-model="registerForm.smsCode"
-                    placeholder="请输入短信验证码"
-                    maxlength="6"
-                  >
-                    <template #prefix><el-icon><Message /></el-icon></template>
-                  </el-input>
-                  <el-button
-                    class="sms-btn"
-                    :disabled="countdown > 0"
-                    @click="handleGetCode"
-                  >
-                    {{ countdown > 0 ? `${countdown}s 后重发` : '获取验证码' }}
-                  </el-button>
-                </div>
-              </el-form-item>
+          <div class="login-options">
+            <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
+          </div>
 
-              <el-form-item prop="password">
-                <el-input
-                  v-model="registerForm.password"
-                  type="password"
-                  placeholder="请设置密码（6-20位）"
-                  show-password
-                >
-                  <template #prefix><el-icon><Lock /></el-icon></template>
-                </el-input>
-              </el-form-item>
+          <el-button
+            class="submit-btn"
+            type="primary"
+            size="large"
+            :loading="loginLoading"
+            @click="handleLogin"
+          >
+            登 录
+          </el-button>
+        </el-form>
 
-              <el-form-item prop="confirmPassword">
-                <el-input
-                  v-model="registerForm.confirmPassword"
-                  type="password"
-                  placeholder="请再次确认密码"
-                  show-password
-                >
-                  <template #prefix><el-icon><Lock /></el-icon></template>
-                </el-input>
-              </el-form-item>
-
-              <el-button
-                class="submit-btn"
-                type="primary"
-                size="large"
-                :loading="registerLoading"
-                @click="handleRegister"
-              >
-                注 册
-              </el-button>
-            </el-form>
-          </el-tab-pane>
-        </el-tabs>
+        <p class="login-tip">账号由系统管理员统一创建，如需开通请联系管理员</p>
       </div>
     </div>
 
@@ -141,40 +67,29 @@
 </template>
 
 <script setup>
-import { ref, reactive, onBeforeUnmount } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Iphone, Lock, Message } from '@element-plus/icons-vue'
+import { User, Lock } from '@element-plus/icons-vue'
 import horizontalLogo from '../assets/images/宸甄 PrivRAG 企业私有知识库问答系统logo.png'
-import { login, register, sendSmsCode, DEV_SMS_CODE } from '../api/auth'
+import { login } from '../api/auth'
 import { setLoginState } from '../utils/auth'
 
 const router = useRouter()
 const route = useRoute()
 
-const activeTab = ref('login')
-
-// ---------------- 登录 ----------------
 const loginFormRef = ref(null)
 const loginLoading = ref(false)
 const loginForm = reactive({
-  phone: '',
+  username: '',
   password: '',
   remember: true,
 })
 
-const validatePhone = (rule, value, callback) => {
-  if (!value) return callback(new Error('请输入手机号'))
-  if (!/^1\d{10}$/.test(value)) return callback(new Error('请输入正确的11位手机号'))
-  callback()
-}
-
 const loginRules = {
-  phone: [{ required: true, validator: validatePhone, trigger: 'blur' }],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度为6-20位', trigger: 'blur' },
-  ],
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  // 登录只校验非空：历史账号存在较短密码，强度校验仅在新增/修改密码时执行
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
 async function handleLogin() {
@@ -185,6 +100,11 @@ async function handleLogin() {
     const { token, user } = await login({ ...loginForm })
     setLoginState(token, user, loginForm.remember)
     ElMessage.success('登录成功')
+    if (user?.mustChangePassword) {
+      ElMessage.warning('当前为初始密码，请先修改密码')
+      router.push('/settings')
+      return
+    }
     const redirect = route.query.redirect || '/chat'
     router.push(redirect)
   } catch (e) {
@@ -193,77 +113,6 @@ async function handleLogin() {
     loginLoading.value = false
   }
 }
-
-// ---------------- 注册 ----------------
-const registerFormRef = ref(null)
-const registerLoading = ref(false)
-const countdown = ref(0)
-let countdownTimer = null
-
-const registerForm = reactive({
-  phone: '',
-  smsCode: '',
-  password: '',
-  confirmPassword: '',
-})
-
-const validateConfirm = (rule, value, callback) => {
-  if (!value) return callback(new Error('请再次确认密码'))
-  if (value !== registerForm.password) return callback(new Error('两次输入的密码不一致'))
-  callback()
-}
-
-const registerRules = {
-  phone: [{ required: true, validator: validatePhone, trigger: 'blur' }],
-  smsCode: [
-    { required: true, message: '请输入短信验证码', trigger: 'blur' },
-    { len: 6, message: '验证码为6位数字', trigger: 'blur' },
-  ],
-  password: [
-    { required: true, message: '请设置密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度为6-20位', trigger: 'blur' },
-  ],
-  confirmPassword: [{ required: true, validator: validateConfirm, trigger: 'blur' }],
-}
-
-function handleGetCode() {
-  if (!registerForm.phone) {
-    ElMessage.warning('请先输入手机号')
-    return
-  }
-  if (!/^1\d{10}$/.test(registerForm.phone)) {
-    ElMessage.warning('请输入正确的11位手机号')
-    return
-  }
-  sendSmsCode({ phone: registerForm.phone, scene: 'register' })
-  ElMessage.success(`验证码已发送（开发环境固定为 ${DEV_SMS_CODE}）`)
-  countdown.value = 60
-  countdownTimer = setInterval(() => {
-    countdown.value -= 1
-    if (countdown.value <= 0) clearInterval(countdownTimer)
-  }, 1000)
-}
-
-async function handleRegister() {
-  const valid = await registerFormRef.value.validate().catch(() => false)
-  if (!valid) return
-  registerLoading.value = true
-  try {
-    await register({ ...registerForm })
-    ElMessage.success('注册成功，请登录')
-    activeTab.value = 'login'
-    loginForm.phone = registerForm.phone
-    registerFormRef.value.resetFields()
-  } catch (e) {
-    ElMessage.error(e.message || '注册失败')
-  } finally {
-    registerLoading.value = false
-  }
-}
-
-onBeforeUnmount(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
-})
 </script>
 
 <style scoped>
@@ -344,40 +193,21 @@ onBeforeUnmount(() => {
   padding: 40px;
 }
 
-/* 白色卡片框住登录注册主要区域 */
+/* 白色卡片框住登录主要区域 */
 .login-card {
   width: 420px;
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: var(--shadow-dialog);
-  padding: 28px 36px 24px;
+  padding: 32px 36px 26px;
 }
 
-.login-card :deep(.el-tabs__header) {
-  margin-bottom: 0;
-}
-
-.login-card :deep(.el-tabs__nav-wrap::after) {
-  height: 1px;
-  background-color: #e5e6eb;
-}
-
-.login-card :deep(.el-tabs__item) {
-  font-size: 16px;
-  color: #86909c;
-}
-
-.login-card :deep(.el-tabs__item.is-active) {
-  color: var(--brand-color);
+.card-title {
+  font-size: 18px;
   font-weight: 600;
-}
-
-.login-card :deep(.el-tabs__active-bar) {
-  background: var(--brand-gradient);
-}
-
-.login-card :deep(.el-tabs__content) {
-  padding-top: 28px;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 26px;
 }
 
 .login-options {
@@ -398,14 +228,12 @@ onBeforeUnmount(() => {
   letter-spacing: 4px;
 }
 
-.sms-row {
-  display: flex;
-  width: 100%;
-  gap: 12px;
-}
-
-.sms-btn {
-  flex-shrink: 0;
+.login-tip {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.6;
 }
 
 /* ------- 底部版权 ------- */

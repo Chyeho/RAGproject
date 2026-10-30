@@ -62,7 +62,8 @@ class TestInitDb:
         with patch("app.database.db.async_engine", mock_engine):
             await db.init_db()
 
-        conn.run_sync.assert_called_once_with(mock_sqlmodel.metadata.create_all)
+        # 第一次 run_sync 建表；随后会再查一次 user 表缺失列（账号模块迁移提示）
+        conn.run_sync.assert_any_call(mock_sqlmodel.metadata.create_all)
 
     @pytest.mark.anyio
     async def test_raises_on_failure(self):

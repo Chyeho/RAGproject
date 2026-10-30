@@ -11,8 +11,9 @@ import yaml
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from app.core.permissions import SETTINGS_RAG
 from app.core.response import err, ok
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_permission
 from app.models.users import User
 from app.service.rag import registry
 from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents
@@ -139,7 +140,7 @@ async def get_rag_config(current_user: User = Depends(get_current_user)):
 @router.put("/rag-config")
 async def update_rag_config(
     req: RagConfigReq,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(SETTINGS_RAG)),
 ):
     """保存 RAG 参数：写盘 + 内存同步 + 检索参数变更时热更新重建链路（无需重启）"""
     has_any = any([

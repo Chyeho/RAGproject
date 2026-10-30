@@ -1,8 +1,8 @@
 /**
- * 完整路由配置 + 登录守卫
+ * 完整路由配置 + 登录/权限守卫
  */
 import { createRouter, createWebHistory } from 'vue-router'
-import { isLoggedIn } from '../utils/auth'
+import { hasPermission, isLoggedIn } from '../utils/auth'
 
 const routes = [
   {
@@ -40,6 +40,12 @@ const routes = [
         component: () => import('../views/settings/SettingsView.vue'),
         meta: { title: '系统设置' },
       },
+      {
+        path: 'admin/users',
+        name: 'AccountManage',
+        component: () => import('../views/admin/AccountManageView.vue'),
+        meta: { title: '账号管理', requiresPermission: 'accountManage' },
+      },
     ],
   },
   // 未匹配路由统一回主框架
@@ -51,12 +57,15 @@ const router = createRouter({
   routes,
 })
 
-// 路由守卫：未登录访问主页路由 -> 重定向登录页；已登录访问登录页 -> 跳转主框架
+// 路由守卫：未登录访问主页路由 -> 重定向登录页；已登录访问登录页 -> 跳转主框架；
+// 带权限要求的路由 -> 无权限时回退 Bot 问答
 router.beforeEach((to, from, next) => {
   const logged = isLoggedIn()
   if (to.path !== '/login' && !logged) {
     next({ path: '/login', query: { redirect: to.fullPath } })
   } else if (to.path === '/login' && logged) {
+    next('/chat')
+  } else if (to.meta?.requiresPermission && !hasPermission(to.meta.requiresPermission)) {
     next('/chat')
   } else {
     next()

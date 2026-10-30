@@ -6,8 +6,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.database.db import init_db
-from app.routers import auth, chat, debug, documents, settings, statistics
+from app.database.db import async_session, init_db
+from app.routers import admin, auth, chat, debug, documents, settings, statistics
+from app.service.account_service import seed_admins
 from app.service.rag.retrieval import bm25_retriever, fetch_chunk_documents, hybrid_enabled
 from app.utils.config_handler import hybrid_conf
 from app.utils.logger_handler import logger
@@ -15,9 +16,12 @@ from app.utils.logger_handler import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用启动：初始化数据库表结构；hybrid 开启时全量构建 BM25 内存索引"""
+    """应用启动：初始化数据库表结构 → 创建内置管理员 → hybrid 开启时构建 BM25 索引"""
     logger.info("[启动]后端服务开始启动...")
     await init_db()
+    # 内置管理员初始化：账号已存在则跳过，密码不覆盖、不打印
+    async with async_session() as session:
+        await seed_admins(session)
     # P2：BM25 启动全量构建（以 DB 为准）；失败不阻断启动，空索引降级（稠密路仍可用）
     if hybrid_enabled():
         try:
@@ -69,6 +73,7 @@ async def health():
 
 # 注册路由
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(statistics.router)

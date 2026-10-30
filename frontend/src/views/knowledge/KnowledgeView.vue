@@ -3,7 +3,12 @@
     <!-- ================= 顶部工具栏 ================= -->
     <div class="knowledge-toolbar">
       <div class="toolbar-left">
-        <el-button type="primary" :icon="Upload" @click="uploadVisible = true">
+        <el-button
+          v-if="canWrite"
+          type="primary"
+          :icon="Upload"
+          @click="uploadVisible = true"
+        >
           上传文档
         </el-button>
       </div>
@@ -64,7 +69,15 @@
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="handlePreview(row)">查看预览</el-button>
           <el-button type="primary" link size="small" @click="handleDownload(row)">下载</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button
+            v-if="canWrite"
+            type="danger"
+            link
+            size="small"
+            @click="handleDelete(row)"
+          >
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -142,6 +155,10 @@ import {
   deleteDocument,
 } from '../../api/documents'
 import { formatFileSize, getFileType } from '../../utils/format'
+import { hasPermission } from '../../utils/auth'
+
+// 知识库写入权限（L1 只读，L2/L3 管理员可上传/删除）
+const canWrite = hasPermission('knowledgeWrite')
 
 // ---------------- 查询参数 ----------------
 const query = reactive({

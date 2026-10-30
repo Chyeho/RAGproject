@@ -1,74 +1,50 @@
 <template>
   <div class="page-container settings-page">
-    <!-- ================= 卡片一：个人信息设置 ================= -->
+    <!-- ================= 卡片一：账号信息（只读） ================= -->
     <div class="soft-card settings-card">
-      <div class="card-title">个人信息设置</div>
+      <div class="card-title">账号信息</div>
+
+      <el-descriptions :column="2" border class="account-desc">
+        <el-descriptions-item label="账号">{{ account.username || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="角色">{{ roleText }}</el-descriptions-item>
+        <el-descriptions-item label="权限等级">{{ levelText }}</el-descriptions-item>
+        <el-descriptions-item label="账号状态">{{ statusText }}</el-descriptions-item>
+        <el-descriptions-item label="最后登录">{{ account.lastLoginAt || '暂无记录' }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+
+    <!-- ================= 卡片二：修改密码 ================= -->
+    <div class="soft-card settings-card">
+      <div class="card-title">修改密码</div>
 
       <el-form
-        ref="profileFormRef"
-        :model="profileForm"
-        :rules="profileRules"
+        ref="pwdFormRef"
+        :model="pwdForm"
+        :rules="pwdRules"
         label-width="110px"
         class="settings-form"
       >
-        <!-- 头像上传占位 -->
-        <el-form-item label="头像">
-          <el-upload
-            class="avatar-uploader"
-            :auto-upload="false"
-            :show-file-list="false"
-            accept="image/png,image/jpeg"
-            :on-change="handleAvatarChange"
-          >
-            <div class="avatar-box">
-              <img
-                v-if="profileForm.avatar"
-                :src="profileForm.avatar"
-                class="avatar-img"
-                alt="头像"
-              />
-              <el-icon v-else :size="26" class="avatar-placeholder">
-                <Plus />
-              </el-icon>
-            </div>
-            <div class="avatar-tip">点击上传头像</div>
-          </el-upload>
-        </el-form-item>
-
-        <!-- 昵称 -->
-        <el-form-item label="昵称" prop="nickname">
+        <el-form-item label="原密码" prop="oldPassword">
           <el-input
-            v-model="profileForm.nickname"
-            placeholder="请输入昵称"
-            maxlength="20"
-            clearable
-            class="field-input"
-          />
-        </el-form-item>
-
-        <!-- 分组：修改密码 -->
-        <div class="group-divider">修改密码</div>
-        <el-form-item label="旧密码" prop="oldPassword">
-          <el-input
-            v-model="profileForm.oldPassword"
+            v-model="pwdForm.oldPassword"
             type="password"
-            placeholder="请输入旧密码"
+            placeholder="请输入原密码"
             show-password
             class="field-input"
           />
         </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
           <el-input
-            v-model="profileForm.newPassword"
+            v-model="pwdForm.newPassword"
             type="password"
-            placeholder="请输入新密码（6-20位）"
+            placeholder="8-64位，需包含字母和数字"
             show-password
             class="field-input"
           />
         </el-form-item>
         <el-form-item label="确认新密码" prop="confirmPassword">
           <el-input
-            v-model="profileForm.confirmPassword"
+            v-model="pwdForm.confirmPassword"
             type="password"
             placeholder="请再次输入新密码"
             show-password
@@ -80,17 +56,17 @@
           <el-button
             type="primary"
             class="save-btn"
-            :loading="profileSaving"
-            @click="handleSaveProfile"
+            :loading="pwdSaving"
+            @click="handleChangePassword"
           >
-            保存修改
+            确认修改
           </el-button>
         </el-form-item>
       </el-form>
     </div>
 
-    <!-- ================= 卡片二：知识库RAG参数配置 ================= -->
-    <div class="soft-card settings-card">
+    <!-- ================= 卡片三：知识库RAG参数配置（仅管理员可见） ================= -->
+    <div v-if="canRagConfig" class="soft-card settings-card">
       <div class="card-title">知识库 RAG 参数配置</div>
 
       <el-form
@@ -257,97 +233,76 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import { updateProfile, updatePassword } from '../../api/auth'
+import { changePassword } from '../../api/auth'
 import { getRagConfig, saveRagConfig } from '../../api/settings'
-import { getUser, setUser } from '../../utils/auth'
+import { getUser, hasPermission, clearLoginState } from '../../utils/auth'
 
-// ---------------- 个人信息 ----------------
-const profileFormRef = ref(null)
-const profileSaving = ref(false)
+const router = useRouter()
 
-const profileForm = reactive({
-  avatar: '',
-  nickname: '',
+// ---------------- 账号信息（只读） ----------------
+const account = ref(getUser() || {})
+
+const roleText = computed(() => (account.value.role === 'admin' ? '管理员' : '普通用户'))
+const levelText = computed(() => {
+  if (account.value.role === 'admin') return '—'
+  return account.value.level ? `L${account.value.level}` : '—'
+})
+const statusText = computed(() => (account.value.status === 'disabled' ? '已禁用' : '正常'))
+
+// ---------------- 修改密码 ----------------
+const pwdFormRef = ref(null)
+const pwdSaving = ref(false)
+
+const pwdForm = reactive({
   oldPassword: '',
   newPassword: '',
   confirmPassword: '',
 })
 
-const validateNickname = (rule, value, callback) => {
-  if (!value) return callback(new Error('请输入昵称'))
-  if (value.length > 20) return callback(new Error('昵称长度不超过20个字符'))
-  callback()
-}
-
 const validateNewPwd = (rule, value, callback) => {
-  if (value && value.length < 6) return callback(new Error('新密码长度至少6位'))
+  if (!value) return callback(new Error('请输入新密码'))
+  if (value.length < 8 || value.length > 64) return callback(new Error('密码长度为8-64位'))
+  if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) {
+    return callback(new Error('密码需同时包含字母和数字'))
+  }
   callback()
 }
 
 const validateConfirmPwd = (rule, value, callback) => {
-  if (value !== profileForm.newPassword) return callback(new Error('两次输入的新密码不一致'))
+  if (!value) return callback(new Error('请再次输入新密码'))
+  if (value !== pwdForm.newPassword) return callback(new Error('两次输入的新密码不一致'))
   callback()
 }
 
-const profileRules = {
-  nickname: [{ validator: validateNickname, trigger: 'blur' }],
-  newPassword: [{ validator: validateNewPwd, trigger: 'blur' }],
-  confirmPassword: [{ validator: validateConfirmPwd, trigger: 'blur' }],
+const pwdRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [{ required: true, validator: validateNewPwd, trigger: 'blur' }],
+  confirmPassword: [{ required: true, validator: validateConfirmPwd, trigger: 'blur' }],
 }
 
-function handleAvatarChange(uploadFile) {
-  // 本地预览（mock，不做真实上传）
-  if (uploadFile.raw) {
-    profileForm.avatar = URL.createObjectURL(uploadFile.raw)
-  }
-}
-
-async function handleSaveProfile() {
-  const valid = await profileFormRef.value.validate().catch(() => false)
+async function handleChangePassword() {
+  const valid = await pwdFormRef.value.validate().catch(() => false)
   if (!valid) return
 
-  profileSaving.value = true
+  pwdSaving.value = true
   try {
-    const user = getUser()
-    const phone = user?.phone || ''
-
-    // 修改昵称/头像
-    if (profileForm.nickname) {
-      const updated = await updateProfile({
-        phone,
-        nickname: profileForm.nickname,
-        avatar: profileForm.avatar,
-      })
-      setUser(updated)
-    }
-
-    // 修改密码（三项均填写时执行）
-    if (profileForm.oldPassword && profileForm.newPassword) {
-      await updatePassword({
-        phone,
-        oldPassword: profileForm.oldPassword,
-        newPassword: profileForm.newPassword,
-        confirmPassword: profileForm.confirmPassword,
-      })
-    }
-
-    ElMessage.success('个人信息保存成功')
-    // 清空密码字段
-    profileForm.oldPassword = ''
-    profileForm.newPassword = ''
-    profileForm.confirmPassword = ''
-    profileFormRef.value.clearValidate()
+    await changePassword({ ...pwdForm })
+    ElMessage.success('密码修改成功，请使用新密码重新登录')
+    clearLoginState()
+    router.push('/login')
   } catch (e) {
-    ElMessage.error(e.message || '保存失败')
+    ElMessage.error(e.message || '密码修改失败')
   } finally {
-    profileSaving.value = false
+    pwdSaving.value = false
   }
 }
 
-// ---------------- RAG 参数 ----------------
+// ---------------- RAG 参数（仅管理员） ----------------
+const canRagConfig = hasPermission('ragConfig')
+
 const ragFormRef = ref(null)
 const ragSaving = ref(false)
 
@@ -376,6 +331,7 @@ const ragRules = {
 }
 
 onMounted(async () => {
+  if (!canRagConfig) return
   const config = await getRagConfig()
   ragForm.chunkSize = config.chunkSize
   ragForm.topK = config.topK
@@ -396,12 +352,6 @@ onMounted(async () => {
   ragForm.queryMode = q.mode || 'off'
   ragForm.multiQueryCount = q.multiQueryCount ?? ragForm.multiQueryCount
   ragForm.fuseThenRerank = !!q.fuseThenRerank
-  // 回填个人信息
-  const user = getUser()
-  if (user) {
-    profileForm.nickname = user.nickname || ''
-    profileForm.avatar = user.avatar || ''
-  }
 })
 
 async function handleSaveRag() {
@@ -460,6 +410,11 @@ async function handleSaveRag() {
   border-bottom: 1px solid var(--border-light);
 }
 
+.account-desc {
+  margin-top: 18px;
+  max-width: 720px;
+}
+
 .settings-form {
   margin-top: 18px;
   max-width: 640px;
@@ -467,47 +422,6 @@ async function handleSaveRag() {
 
 .field-input {
   width: 320px;
-}
-
-/* 头像上传 */
-.avatar-uploader :deep(.el-upload) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-}
-
-.avatar-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 1px dashed var(--brand-color-disabled);
-  background-color: var(--brand-color-light);
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-
-.avatar-box:hover {
-  border-color: var(--brand-color);
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-placeholder {
-  color: var(--brand-color);
-}
-
-.avatar-tip {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
 /* 分组标题 */

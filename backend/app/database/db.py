@@ -1,6 +1,7 @@
 '''数据库引擎与会话管理'''
 import os
 
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -25,6 +26,12 @@ async_engine = create_async_engine(DATABASE_URL, echo=False)
 # 异步会话工厂
 async_session = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
+# 账号模块依赖的 user 表字段（create_all 不会给已存在的表加列，缺失时提示执行迁移）
+_REQUIRED_USER_COLUMNS = {
+    "role", "level", "status", "must_change_password", "created_by",
+    "deleted_at", "failed_attempts", "locked_until",
+}
+
 
 async def get_session():
     """FastAPI 依赖：提供一个数据库会话"""
@@ -35,12 +42,25 @@ async def get_session():
 async def init_db() -> None:
     """初始化数据库表结构（幂等：已存在的表不会重建，新增表自动创建）"""
     # 导入全部模型以确保注册到 SQLModel.metadata
-    from app.models import users, documents, document_chunk, chat_conversation, chat_message  # noqa: F401
+    from app.models import (  # noqa: F401
+        users, documents, document_chunk, chat_conversation, chat_message, audit_log,
+    )
 
     try:
         async with async_engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
+            columns = await conn.run_sync(
+                lambda sync_conn: {c["name"] for c in inspect(sync_conn).get_columns("user")}
+            )
         logger.info("[数据库]表结构初始化完成")
+
+        missing = _REQUIRED_USER_COLUMNS - columns
+        if missing:
+            logger.warning(
+                "[数据库]user 表缺少账号模块字段 %s，请先执行迁移："
+                "uv run python -m app.cli.migrate_account_module",
+                sorted(missing),
+            )
     except Exception as e:
         logger.error(f"[数据库]表结构初始化失败，错误信息：{str(e)}", exc_info=True)
         raise

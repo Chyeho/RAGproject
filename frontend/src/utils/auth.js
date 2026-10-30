@@ -1,6 +1,6 @@
 /**
- * mock 登录态管理（localStorage）
- * 后端就绪后：token 与 user 改为真实接口返回，读取逻辑保持一致
+ * 登录态管理（localStorage）
+ * 后端返回的 user 对象包含 role / level / permissions，前端据此渲染菜单与按钮
  */
 const TOKEN_KEY = 'privrag_token'
 const USER_KEY = 'privrag_user'
@@ -32,13 +32,22 @@ export function isLoggedIn() {
   return !!getToken()
 }
 
+/**
+ * 权限判断（后端 permissions 布尔字典）
+ * 权限键：chat / statistics / knowledgeRead / knowledgeWrite / ragConfig / accountManage
+ */
+export function hasPermission(permission) {
+  const user = getUser()
+  return !!user?.permissions?.[permission]
+}
+
 export function getRemember() {
   return localStorage.getItem(REMEMBER_KEY) === '1'
 }
 
 /**
  * 登录成功后写入登录态
- * @param {string} token mock token
+ * @param {string} token JWT
  * @param {object} user 用户对象（契约 user 结构）
  * @param {boolean} remember 记住我
  */
@@ -52,7 +61,7 @@ export function setLoginState(token, user, remember) {
   }
 }
 
-/** 退出登录：清除全部 mock 登录状态 */
+/** 退出登录：清除全部登录状态 */
 export function clearLoginState() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
