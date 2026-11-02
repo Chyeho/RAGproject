@@ -511,11 +511,14 @@
   "uploadedAt": "2026-08-01 10:00:00",
   "vectorizeStatus": "success",
   "vectorizeMessage": "",
-  "content": "员工手册\n第一章 总则……（预览用纯文本内容，超长截断）"
+  "content": "员工手册\n第一章 总则……（预览用纯文本内容，超长截断）",
+  "previewNotice": ""
 }
 ```
 
-> 预览为服务端按 UTF-8 读取文件前 10000 字符（`errors="ignore"`）；pdf/docx/xlsx 等二进制格式通常只能得到少量可读文本或空串，完整内容请走下载接口。
+> 预览由服务端按文件格式解析正文：`txt/md` 按 UTF-8（乱码率高时回退 GB18030）直接读，`pdf/docx/xlsx` 分别用 PyMuPDF / python-docx / openpyxl 提取文本，统一截断到前 10000 字符。
+>
+> `previewNotice` 为空表示内容完整；非空时是给用户看的提示，此时 `content` 可能为空，例如：扫描件 PDF「未提取到文本内容（可能是扫描件/图片型 PDF），请下载后查看」、旧版 `.doc`「旧版 .doc 格式不支持在线预览，请下载后查看」、内容被截断「内容较长，仅展示前 10000 字符」。完整原文一律走下载接口。
 
 ### 3.5 文档下载
 

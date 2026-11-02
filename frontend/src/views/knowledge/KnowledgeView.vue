@@ -137,7 +137,18 @@
             {{ formatFileSize(previewDoc.size) }} · {{ previewDoc.uploadedAt }}
           </span>
         </div>
-        <pre class="preview-content">{{ previewDoc.content }}</pre>
+
+        <!-- 解析不出正文（扫描件 / 旧版 doc）时展示提示，避免弹窗一片空白 -->
+        <div v-if="previewDoc.content" class="preview-content-wrap">
+          <p v-if="previewDoc.previewNotice" class="preview-notice">
+            {{ previewDoc.previewNotice }}
+          </p>
+          <pre class="preview-content">{{ previewDoc.content }}</pre>
+        </div>
+        <div v-else class="preview-empty">
+          <el-icon :size="32"><Document /></el-icon>
+          <p>{{ previewDoc.previewNotice || '暂无可预览的文本内容，请下载后查看' }}</p>
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -146,7 +157,7 @@
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, UploadFilled, Search } from '@element-plus/icons-vue'
+import { Upload, UploadFilled, Search, Document } from '@element-plus/icons-vue'
 import {
   queryDocuments,
   uploadDocuments,
@@ -409,5 +420,31 @@ async function handleDelete(row) {
   color: var(--text-main);
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* 截断提示 */
+.preview-notice {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: var(--warning-light);
+  color: var(--warning);
+  font-size: 12px;
+}
+
+/* 无可预览内容（扫描件 / 旧版 doc） */
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 24px 12px;
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
 }
 </style>

@@ -4,6 +4,7 @@ import os
 import time
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from langchain_core.documents import Document as LCDocument
 from sqlalchemy import func
@@ -22,6 +23,7 @@ from app.service.rag.vector_store import VectorStoreService
 from app.utils.config_handler import qdrant_conf
 from app.utils.logger_handler import logger
 from app.utils.path_tool import get_abs_path
+from app.utils.preview_extractor import extract_preview_text
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -196,20 +198,20 @@ async def preview_document(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """文档预览：返回文件纯文本内容（超长截断）"""
+    """文档预览：按格式提取正文纯文本（超长截断）
+
+    pdf/docx/xlsx 必须先解析再取文本，直接按 UTF-8 读文件会得到二进制乱码。
+    解析不出内容（扫描件、旧版 doc）时返回空正文 + 提示文案，由前端展示提示。
+    """
     doc = await session.get(Document, document_id)
     if not doc or not doc.file_path or not os.path.exists(doc.file_path):
         return err(4001, "文档不存在")
 
-    content = ""
-    try:
-        with open(doc.file_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()[:10000]
-    except Exception as e:
-        logger.warning(f"[文档]预览文档(id={document_id})读取失败：{str(e)}")
-        content = ""
+    content, notice = await run_in_threadpool(extract_preview_text, doc.file_path)
+    if notice:
+        logger.info(f"[文档]预览文档(id={document_id})提示：{notice}")
 
-    return ok({**doc_to_dict(doc), "content": content})
+    return ok({**doc_to_dict(doc), "content": content, "previewNotice": notice})
 
 
 @router.get("/{document_id}/download")
