@@ -3,7 +3,9 @@
     <!-- ================= 顶部导航栏 ================= -->
     <header class="layout-header">
       <div class="header-left">
-        <img class="header-logo" :src="horizontalLogo" alt="宸甄 PrivRAG" />
+        <div class="logo-chip">
+          <img class="header-logo" :src="horizontalLogo" alt="宸甄 PrivRAG" />
+        </div>
       </div>
 
       <div class="header-right">
@@ -170,8 +172,21 @@ async function handleCommand(command) {
   align-items: center;
 }
 
+/* Logo 是深藏青文字 + 蓝色立方体，直接压在蓝紫渐变上对比度不足；
+   用白色胶囊底托起来，既保留品牌原色又保证清晰可读 */
+.logo-chip {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 2px 8px rgba(12, 26, 90, 0.22);
+}
+
 .header-logo {
-  height: 44px;
+  display: block;
+  height: 34px;
   width: auto;
   object-fit: contain;
 }
