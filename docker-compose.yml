@@ -128,6 +128,10 @@ services:
       - ./backend/app/data:/app/app/data
       # 持久化目录
       - chat_history:/app/chat_history
+      # 运行日志 + 请求 trace（logs/traces 的 JSONL），容器重建后仍可回溯
+      - logs:/app/app/logs
+      # 评测报告（json 全量 + md 可读），跨评测跑批留存便于对比
+      - eval_reports:/app/eval_reports
     networks:
       - privrag-network
     healthcheck:
@@ -192,6 +196,10 @@ volumes:
     name: privrag_chat_history
   rag_config:
     name: privrag_rag_config
+  logs:
+    name: privrag_logs
+  eval_reports:
+    name: privrag_eval_reports
 
 # ======================== 网络 ========================
 networks:

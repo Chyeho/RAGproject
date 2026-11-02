@@ -45,7 +45,29 @@ COPY --from=builder --chown=app:app /app /app
 
 # 预创建持久化目录并授权：命名卷首次初始化时会把镜像内挂载点的属主复制进卷，
 # 若不预创建，Docker 会以 root:root 创建挂载点，导致非 root 用户无写权限
-RUN mkdir -p /app/chat_history /app/runtime_config && chown -R app:app /app/chat_history /app/runtime_config
+#
+# 需要可写目录清单（按写入方列出，新增落盘功能时记得同步这里）：
+#   /app/chat_history          多轮对话历史 JSON，按会话一文件      → service/history/history_store.py（命名卷 chat_history）
+#   /app/runtime_config        设置页热更新后的配置副本             → utils/path_tool.get_config_path（命名卷 rag_config）
+#   /app/eval_reports          评测报告 json + md（REPORTS_DIR）    → service/eval/report.py（命名卷 eval_reports）
+#   /app/app/logs              运行日志 + logs/traces 的 trace JSONL  → utils/logger_handler.py、service/observability/trace.py（命名卷 logs）
+#   /home/app/.cache           本地精排模型缓存（HF 默认 ~/.cache/huggingface，system 用户无家目录）
+#
+# 注意：/app/app/data（知识库上传落盘）在 compose 中是**宿主机 bind mount**，
+#       镜像内预创建对它无效，需在宿主机 chown 成容器用户（uid=999）；
+#       详见 docs/常见报错问题解决方案速查.md 第 18 条。
+RUN mkdir -p \
+        /app/chat_history \
+        /app/runtime_config \
+        /app/eval_reports \
+        /app/app/logs/traces \
+        /home/app/.cache/huggingface \
+    && chown -R app:app \
+        /app/chat_history \
+        /app/runtime_config \
+        /app/eval_reports \
+        /app/app/logs \
+        /home/app
 
 USER app
 
