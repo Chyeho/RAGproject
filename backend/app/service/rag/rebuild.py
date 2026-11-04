@@ -19,7 +19,7 @@ from sqlmodel import select
 
 from app.database.db import async_session
 from app.models.document_chunk import DocumentChunk
-from app.models.documents import Document
+from app.models.documents import Document as DocumentModel
 from app.service.rag.retrieval import bm25_retriever, hybrid_enabled
 from app.service.rag.vector_store import VectorStoreService
 from app.utils.logger_handler import logger
@@ -34,7 +34,7 @@ RESULT_NOT_FOUND = "not_found"
 async def rebuild_document(vs: VectorStoreService, document_id: int) -> str:
     """重建单个文档：删旧向量/旧分块行 → 重跑新链路 → 重建分块行 → 更新向量化状态"""
     async with async_session() as session:
-        doc = await session.get(Document, document_id)
+        doc = await session.get(DocumentModel, document_id)
         if not doc:
             logger.error(f"[重建]文档(id={document_id})不存在")
             return RESULT_NOT_FOUND
@@ -73,13 +73,18 @@ async def rebuild_document(vs: VectorStoreService, document_id: int) -> str:
             await session.commit()
 
             # P2：BM25 内存索引同步（删旧增新，仅 hybrid 开启时维护）
+            # BM25 只是内存缓存，服务启动时会按 document_chunk 全量重建，
+            # 同步失败不该把已经入库成功的文档标记成 failed
             if hybrid_enabled():
-                if old_vector_ids:
-                    bm25_retriever.remove(old_vector_ids)
-                bm25_retriever.add([
-                    Document(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
-                    for text, vector_id in chunks
-                ])
+                try:
+                    if old_vector_ids:
+                        bm25_retriever.remove(old_vector_ids)
+                    bm25_retriever.add([
+                        Document(page_content=text, metadata={"vector_id": vector_id, "document_id": document_id})
+                        for text, vector_id in chunks
+                    ])
+                except Exception as e:
+                    logger.warning(f"[重建]文档(id={document_id}) BM25 索引同步失败（不影响入库）：{str(e)}")
 
             logger.info(f"[重建]文档(id={document_id}) {doc.file_name} 重建成功，共 {len(chunks)} 个分块")
             return RESULT_SUCCESS
@@ -115,7 +120,7 @@ async def main() -> int:
 
     # 全量重建：单文档失败记录并继续，结束打印汇总
     async with async_session() as session:
-        docs = (await session.exec(select(Document).order_by(Document.id))).all()
+        docs = (await session.exec(select(DocumentModel).order_by(DocumentModel.id))).all()
     logger.info(f"[重建]全量重建开始，共 {len(docs)} 个文档")
 
     counts = {RESULT_SUCCESS: 0, RESULT_FAILED: 0, RESULT_SKIPPED: 0, RESULT_NOT_FOUND: 0}

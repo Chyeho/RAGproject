@@ -53,14 +53,25 @@
         <template #default="{ row }">{{ formatFileSize(row.size) }}</template>
       </el-table-column>
       <el-table-column prop="uploadedAt" label="入库时间" width="170" />
-      <el-table-column prop="vectorizeStatus" label="向量化状态" width="120" align="center">
+      <el-table-column prop="vectorizeStatus" label="向量化状态" width="130" align="center">
         <template #default="{ row }">
+          <el-tooltip
+            v-if="row.vectorizeStatus === 'failed' && row.vectorizeMessage"
+            :content="row.vectorizeMessage"
+            placement="top"
+          >
+            <el-tag type="danger" effect="light" size="small" disable-transitions>失败</el-tag>
+          </el-tooltip>
           <el-tag
-            :type="row.vectorizeStatus === 'success' ? 'success' : row.vectorizeStatus === 'failed' ? 'danger' : 'info'"
+            v-else
+            :type="row.vectorizeStatus === 'success' ? 'success' : 'info'"
             effect="light"
             size="small"
             disable-transitions
           >
+            <el-icon v-if="row.vectorizeStatus === 'processing'" class="status-spin">
+              <Loading />
+            </el-icon>
             {{ statusText(row.vectorizeStatus) }}
           </el-tag>
         </template>
@@ -137,7 +148,18 @@
             {{ formatFileSize(previewDoc.size) }} · {{ previewDoc.uploadedAt }}
           </span>
         </div>
-        <pre class="preview-content">{{ previewDoc.content }}</pre>
+
+        <!-- 解析不出正文（扫描件 / 旧版 doc）时展示提示，避免弹窗一片空白 -->
+        <div v-if="previewDoc.content" class="preview-content-wrap">
+          <p v-if="previewDoc.previewNotice" class="preview-notice">
+            {{ previewDoc.previewNotice }}
+          </p>
+          <pre class="preview-content">{{ previewDoc.content }}</pre>
+        </div>
+        <div v-else class="preview-empty">
+          <el-icon :size="32"><Document /></el-icon>
+          <p>{{ previewDoc.previewNotice || '暂无可预览的文本内容，请下载后查看' }}</p>
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -146,7 +168,7 @@
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, UploadFilled, Search } from '@element-plus/icons-vue'
+import { Upload, UploadFilled, Search, Document, Loading } from '@element-plus/icons-vue'
 import {
   queryDocuments,
   uploadDocuments,
@@ -201,8 +223,70 @@ function debouncedSearch() {
   searchTimer = setTimeout(() => handleSearch(), 300)
 }
 
-onMounted(() => fetchList(1))
-onBeforeUnmount(() => clearTimeout(searchTimer))
+// ---------------- 向量化状态轮询（上传后自动刷新，无需手动刷页面） ----------------
+const POLL_INTERVAL = 3000 // 轮询间隔
+const POLL_MAX_MS = 10 * 60 * 1000 // 单次跟踪最长 10 分钟，避免异常情况下无限轮询
+
+let pollTimer = null
+let pollDeadline = 0
+let pollInFlight = false
+
+const isProcessing = (row) => row.vectorizeStatus === 'processing'
+const anyProcessing = (rows) => rows.some(isProcessing)
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+function startPolling() {
+  if (pollTimer) return // 已在轮询中
+  pollDeadline = Date.now() + POLL_MAX_MS
+  pollTimer = setInterval(pollStatus, POLL_INTERVAL)
+}
+
+// 静默拉取当前页：不触发 loading 遮罩，避免表格每 3 秒闪一次
+async function pollStatus() {
+  if (pollInFlight) return
+  if (Date.now() > pollDeadline) {
+    stopPolling()
+    return
+  }
+  pollInFlight = true
+  try {
+    const res = await queryDocuments({ ...query })
+    const beforeStatus = new Map(list.value.map((d) => [d.id, d.vectorizeStatus]))
+    list.value = res.list
+    total.value = res.total
+
+    // 成功静默更新（批量上传时不刷屏），失败给出可操作提示
+    res.list
+      .filter((d) => beforeStatus.get(d.id) === 'processing' && d.vectorizeStatus === 'failed')
+      .slice(0, 3)
+      .forEach((d) => {
+        const reason = (d.vectorizeMessage || '').slice(0, 80)
+        ElMessage.error(`「${d.name}」向量化失败${reason ? '：' + reason : ''}`)
+      })
+
+    if (!anyProcessing(res.list)) stopPolling()
+  } catch (e) {
+    // 单次轮询失败不打扰用户，下一轮重试；持续失败由 deadline 兜底
+  } finally {
+    pollInFlight = false
+  }
+}
+
+onMounted(async () => {
+  await fetchList(1)
+  // 刷新页面/切回本页时，若还有文档在向量化，继续跟踪状态
+  if (anyProcessing(list.value)) startPolling()
+})
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  stopPolling()
+})
 
 // ---------------- 上传 ----------------
 const uploadVisible = ref(false)
@@ -238,12 +322,14 @@ function confirmUpload() {
 
   uploading.value = true
   uploadDocuments(files)
-    .then(() => {
+    .then(async () => {
       ElMessage.success(`上传成功，共 ${files.length} 个文件已加入知识库`)
       uploadVisible.value = false
       fileList.value = []
       uploadRef.value?.clearFiles?.()
-      fetchList(1)
+      await fetchList(1)
+      // 上传后立即开始轮询向量化状态，处理完成会自动更新为成功/失败
+      startPolling()
     })
     .catch((e) => ElMessage.error(e.message || '上传失败'))
     .finally(() => {
@@ -347,6 +433,19 @@ async function handleDelete(row) {
   font-weight: 600;
 }
 
+/* 「向量化中」的旋转图标：让自动更新有可见的进行中状态 */
+.status-spin {
+  margin-right: 3px;
+  vertical-align: -2px;
+  animation: status-rotate 1s linear infinite;
+}
+
+@keyframes status-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .knowledge-pagination {
   display: flex;
   justify-content: flex-end;
@@ -409,5 +508,31 @@ async function handleDelete(row) {
   color: var(--text-main);
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* 截断提示 */
+.preview-notice {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: var(--warning-light);
+  color: var(--warning);
+  font-size: 12px;
+}
+
+/* 无可预览内容（扫描件 / 旧版 doc） */
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 24px 12px;
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
 }
 </style>

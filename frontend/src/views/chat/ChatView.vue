@@ -1,50 +1,72 @@
 <template>
   <div class="chat-view">
-    <!-- ================= 左侧：会话列表 ================= -->
-    <aside class="chat-sidebar">
-      <div class="chat-sidebar-header">
-        <el-button
-          type="primary"
-          class="new-conv-btn"
-          :icon="Plus"
-          @click="handleNewConversation"
-        >
-          新建会话
-        </el-button>
+    <!-- ================= 左侧：会话列表（可收起） ================= -->
+    <aside class="chat-sidebar" :class="{ 'is-collapsed': sidebarCollapsed }">
+      <!-- 收起态：窄条操作栏 -->
+      <div v-if="sidebarCollapsed" class="sidebar-rail">
+        <el-tooltip content="展开侧栏（Ctrl+B）" placement="right">
+          <button class="rail-btn" @click="toggleSidebar">
+            <el-icon :size="16"><Expand /></el-icon>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="新建会话" placement="right">
+          <button class="rail-btn rail-btn-primary" @click="handleNewConversation">
+            <el-icon :size="16"><Plus /></el-icon>
+          </button>
+        </el-tooltip>
       </div>
 
-      <div class="conversation-list">
-        <div
-          v-for="conv in conversations"
-          :key="conv.id"
-          class="conversation-item"
-          :class="{ active: conv.id === activeId }"
-          @click="selectConversation(conv.id)"
-        >
-          <el-icon class="conv-icon"><ChatLineRound /></el-icon>
-          <span class="conv-title">{{ conv.title }}</span>
-          <el-icon
-            v-if="conv.id === activeId"
-            class="conv-delete"
-            title="删除会话"
-            @click.stop="removeConversation(conv.id)"
+      <!-- 展开态：新建按钮 + 会话列表 -->
+      <template v-else>
+        <div class="chat-sidebar-header">
+          <el-button
+            type="primary"
+            class="new-conv-btn"
+            :icon="Plus"
+            @click="handleNewConversation"
           >
-            <Delete />
-          </el-icon>
+            新建会话
+          </el-button>
+          <el-tooltip content="收起侧栏（Ctrl+B）" placement="bottom">
+            <button class="sidebar-toggle" @click="toggleSidebar">
+              <el-icon :size="16"><Fold /></el-icon>
+            </button>
+          </el-tooltip>
         </div>
 
-        <div v-if="conversations.length === 0" class="conversation-empty">
-          <p>暂无会话</p>
-          <p class="empty-tip">直接输入问题发送即可自动新建会话</p>
+        <div class="conversation-list">
+          <div
+            v-for="conv in conversations"
+            :key="conv.id"
+            class="conversation-item"
+            :class="{ active: conv.id === activeId }"
+            @click="selectConversation(conv.id)"
+          >
+            <el-icon class="conv-icon"><ChatLineRound /></el-icon>
+            <span class="conv-title">{{ conv.title }}</span>
+            <el-icon
+              v-if="conv.id === activeId"
+              class="conv-delete"
+              title="删除会话"
+              @click.stop="removeConversation(conv.id)"
+            >
+              <Delete />
+            </el-icon>
+          </div>
+
+          <div v-if="conversations.length === 0" class="conversation-empty">
+            <p>暂无会话</p>
+            <p class="empty-tip">直接输入问题发送即可自动新建会话</p>
+          </div>
         </div>
-      </div>
+      </template>
     </aside>
 
     <!-- ================= 右侧：聊天主区域 ================= -->
     <section class="chat-main">
       <!-- 消息列表 -->
       <div ref="messagesRef" class="chat-messages">
-        <template v-if="messages.length > 0">
+        <template v-if="messages.length > 0 || sending">
           <div
             v-for="msg in messages"
             :key="msg.id"
@@ -95,6 +117,20 @@
               </div>
             </div>
           </div>
+
+          <!-- AI 思考中占位：给出明确的"正在处理"反馈，避免用户以为没反应 -->
+          <div v-if="sending" class="message-row is-ai">
+            <div class="bubble bubble-ai thinking-bubble">
+              <div class="bubble-role">
+                <el-icon :size="13"><MagicStick /></el-icon>
+                <span>宸甄 PrivRAG</span>
+              </div>
+              <div class="thinking">
+                <span class="thinking-dots"><i></i><i></i><i></i></span>
+                <span class="thinking-text">正在检索知识库并生成回答…</span>
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- 空状态 -->
@@ -125,7 +161,8 @@
             :disabled="!draft.trim()"
             @click="handleSend"
           >
-            <el-icon class="btn-icon"><Promotion /></el-icon>发送
+            <el-icon v-if="!sending" class="btn-icon"><Promotion /></el-icon>
+            {{ sending ? '生成中…' : '发送' }}
           </el-button>
           <el-button :disabled="messages.length === 0" @click="handleClear">
             <el-icon class="btn-icon"><Delete /></el-icon>清空当前会话
@@ -137,7 +174,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick, onMounted, watch } from 'vue'
+import { ref, reactive, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus,
@@ -148,6 +185,8 @@ import {
   ArrowDown,
   MagicStick,
   Promotion,
+  Fold,
+  Expand,
 } from '@element-plus/icons-vue'
 import {
   listConversations,
@@ -162,6 +201,8 @@ import { nowDateTime } from '../../utils/format'
 // ---------------- 数据 ----------------
 // 输入草稿暂存：切换页面（组件卸载）或刷新后仍能恢复，避免手误点走导致内容丢失
 const DRAFT_KEY = 'privrag_chat_draft'
+// 侧栏收起状态：记住用户上一次的选择，刷新/切换页面后保持不变
+const SIDEBAR_KEY = 'privrag_chat_sidebar_collapsed'
 
 const conversations = ref([])
 const activeId = ref(null)
@@ -169,6 +210,7 @@ const messages = ref([])
 const draft = ref(sessionStorage.getItem(DRAFT_KEY) || '')
 const sending = ref(false)
 const expandedCitations = reactive(new Set())
+const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === '1')
 
 const messagesRef = ref(null)
 
@@ -183,10 +225,15 @@ watch(draft, (val) => {
 
 // ---------------- 生命周期 ----------------
 onMounted(async () => {
+  window.addEventListener('keydown', handleShortcut)
   await loadConversations()
   if (conversations.value.length > 0) {
     await selectConversation(conversations.value[0].id)
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleShortcut)
 })
 
 // 新消息时自动滚动到底部
@@ -197,6 +244,28 @@ watch(
     scrollToBottom()
   }
 )
+
+// 出现/收起「思考中」占位时同样贴底，保证用户一眼看到反馈
+watch(sending, async () => {
+  await nextTick()
+  scrollToBottom()
+})
+
+// ---------------- 侧栏收起 / 展开 ----------------
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.value ? '1' : '0')
+  // 侧栏宽度变化会改变消息区宽度，收展后重新贴底，避免出现半截气泡
+  nextTick(scrollToBottom)
+}
+
+// Ctrl/Cmd + B 快捷切换侧栏
+function handleShortcut(e) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+    e.preventDefault()
+    toggleSidebar()
+  }
+}
 
 // ---------------- 会话管理 ----------------
 async function loadConversations() {
@@ -329,15 +398,91 @@ function scrollToBottom() {
   flex-direction: column;
   background-color: var(--bg-card);
   border-right: 1px solid var(--border-light);
+  transition: width 0.22s ease;
+  overflow: hidden;
+}
+
+/* 收起态：只留一条窄操作栏 */
+.chat-sidebar.is-collapsed {
+  width: 56px;
 }
 
 .chat-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 16px;
   border-bottom: 1px solid var(--border-light);
 }
 
 .new-conv-btn {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 收起 / 展开按钮 */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.sidebar-toggle:hover {
+  color: var(--brand-color);
+  border-color: var(--brand-color-disabled);
+  background-color: var(--brand-color-light);
+}
+
+/* 收起态窄条 */
+.sidebar-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+}
+
+.rail-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.rail-btn:hover {
+  color: var(--brand-color);
+  border-color: var(--brand-color-disabled);
+  background-color: var(--brand-color-light);
+}
+
+.rail-btn-primary {
+  color: #ffffff;
+  border-color: transparent;
+  background: var(--brand-gradient);
+}
+
+.rail-btn-primary:hover {
+  color: #ffffff;
+  border-color: transparent;
+  background: var(--brand-gradient-hover);
 }
 
 .conversation-list {
@@ -494,6 +639,75 @@ function scrollToBottom() {
   font-size: 12px;
   color: var(--brand-color);
   margin-bottom: 6px;
+}
+
+/* ------- AI 思考中占位 ------- */
+.thinking-bubble {
+  /* 浅品牌底色 + 描边，避免白底白框在页面里"消失" */
+  background-color: #f8f9ff;
+  border-color: var(--brand-color-light-hover);
+  animation: thinking-in 0.22s ease-out;
+  box-shadow: 0 0 0 3px rgba(43, 79, 224, 0.06), var(--shadow-card);
+}
+
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.thinking-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--brand-color);
+  opacity: 0.3;
+  animation: thinking-bounce 1.1s infinite ease-in-out;
+}
+
+.thinking-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.thinking-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.thinking-text {
+  font-size: 13px;
+  color: #4e5969;
+  letter-spacing: 0.2px;
+}
+
+@keyframes thinking-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@keyframes thinking-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .bubble-text {
