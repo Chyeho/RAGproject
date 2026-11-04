@@ -66,7 +66,7 @@
     <section class="chat-main">
       <!-- 消息列表 -->
       <div ref="messagesRef" class="chat-messages">
-        <template v-if="messages.length > 0">
+        <template v-if="messages.length > 0 || sending">
           <div
             v-for="msg in messages"
             :key="msg.id"
@@ -117,6 +117,20 @@
               </div>
             </div>
           </div>
+
+          <!-- AI 思考中占位：给出明确的"正在处理"反馈，避免用户以为没反应 -->
+          <div v-if="sending" class="message-row is-ai">
+            <div class="bubble bubble-ai thinking-bubble">
+              <div class="bubble-role">
+                <el-icon :size="13"><MagicStick /></el-icon>
+                <span>宸甄 PrivRAG</span>
+              </div>
+              <div class="thinking">
+                <span class="thinking-dots"><i></i><i></i><i></i></span>
+                <span class="thinking-text">正在检索知识库并生成回答…</span>
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- 空状态 -->
@@ -147,7 +161,8 @@
             :disabled="!draft.trim()"
             @click="handleSend"
           >
-            <el-icon class="btn-icon"><Promotion /></el-icon>发送
+            <el-icon v-if="!sending" class="btn-icon"><Promotion /></el-icon>
+            {{ sending ? '生成中…' : '发送' }}
           </el-button>
           <el-button :disabled="messages.length === 0" @click="handleClear">
             <el-icon class="btn-icon"><Delete /></el-icon>清空当前会话
@@ -229,6 +244,12 @@ watch(
     scrollToBottom()
   }
 )
+
+// 出现/收起「思考中」占位时同样贴底，保证用户一眼看到反馈
+watch(sending, async () => {
+  await nextTick()
+  scrollToBottom()
+})
 
 // ---------------- 侧栏收起 / 展开 ----------------
 function toggleSidebar() {
@@ -618,6 +639,75 @@ function scrollToBottom() {
   font-size: 12px;
   color: var(--brand-color);
   margin-bottom: 6px;
+}
+
+/* ------- AI 思考中占位 ------- */
+.thinking-bubble {
+  /* 浅品牌底色 + 描边，避免白底白框在页面里"消失" */
+  background-color: #f8f9ff;
+  border-color: var(--brand-color-light-hover);
+  animation: thinking-in 0.22s ease-out;
+  box-shadow: 0 0 0 3px rgba(43, 79, 224, 0.06), var(--shadow-card);
+}
+
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.thinking-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--brand-color);
+  opacity: 0.3;
+  animation: thinking-bounce 1.1s infinite ease-in-out;
+}
+
+.thinking-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.thinking-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.thinking-text {
+  font-size: 13px;
+  color: #4e5969;
+  letter-spacing: 0.2px;
+}
+
+@keyframes thinking-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@keyframes thinking-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .bubble-text {
