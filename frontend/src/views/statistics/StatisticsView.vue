@@ -22,24 +22,33 @@
 
     <!-- ================= 图表区域 ================= -->
     <div v-if="overview.totalDocuments > 0" class="chart-area">
-      <!-- 第一行：左右两图 -->
-      <div class="chart-row">
+      <!-- 第一行：两个环形图并排，等高对称 -->
+      <div class="chart-row chart-row-donut">
         <div class="chart-card">
-          <div class="chart-title">各类文件类型占比</div>
+          <div class="chart-head">
+            <span class="chart-title">各类文件类型占比</span>
+            <span class="chart-hint">共 {{ overview.totalDocuments }} 篇</span>
+          </div>
           <div ref="pieRef" class="chart-box"></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">近30天每日入库文档数量趋势</div>
-          <div ref="barRef" class="chart-box"></div>
+          <div class="chart-head">
+            <span class="chart-title">文档向量化成功与失败占比</span>
+            <span class="chart-hint">
+              成功 {{ overview.vectorizeSuccess }} · 失败 {{ overview.vectorizeFailed }}
+            </span>
+          </div>
+          <div ref="ringRef" class="chart-box"></div>
         </div>
       </div>
 
-      <!-- 第二行：居中环形图 -->
-      <div class="chart-row chart-row-center">
-        <div class="chart-card chart-card-center">
-          <div class="chart-title">文档向量化成功与失败占比</div>
-          <div ref="ringRef" class="chart-box"></div>
+      <!-- 第二行：趋势图独占整行，横向空间留给日期轴 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <span class="chart-title">近 30 天每日入库文档数量趋势</span>
+          <span class="chart-hint">单位：篇</span>
         </div>
+        <div ref="barRef" class="chart-box chart-box-wide"></div>
       </div>
     </div>
 
@@ -131,8 +140,8 @@ function initPie(list) {
       {
         name: '文件类型占比',
         type: 'pie',
-        radius: ['40%', '68%'],
-        center: ['50%', '45%'],
+        radius: ['42%', '66%'],
+        center: ['50%', '48%'],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: '#FFFFFF', borderWidth: 2 },
         label: { color: '#4E5969', fontSize: 12 },
@@ -147,23 +156,40 @@ function initPie(list) {
 }
 
 // ---------------- 图表2：近30天入库趋势柱状图 ----------------
+// 接口只返回「有入库记录的日期」，这里补零成完整 30 天，
+// 否则柱子会被均匀摊在整条轴上，看不出时间间隔
+function buildDailySeries(list, days = 30) {
+  const countMap = new Map(list.map((item) => [item.date, item.count]))
+  const today = new Date()
+  const series = []
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
+    const key =
+      `${d.getFullYear()}-` +
+      `${String(d.getMonth() + 1).padStart(2, '0')}-` +
+      `${String(d.getDate()).padStart(2, '0')}`
+    series.push({ date: key, count: countMap.get(key) || 0 })
+  }
+  return series
+}
+
 function initBar(list) {
+  const series = buildDailySeries(list)
   barChart = echarts.init(barRef.value)
   barChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: 40, right: 20, top: 30, bottom: 24 },
+    grid: { left: 48, right: 24, top: 20, bottom: 30 },
     xAxis: {
       type: 'category',
-      data: list.map((item) => item.date.slice(5)), // MM-DD
+      data: series.map((item) => item.date.slice(5)), // MM-DD
       axisLine: { lineStyle: { color: '#E5E6EB' } },
       axisTick: { show: false },
-      axisLabel: { color: '#86909C', fontSize: 11 },
+      // 30 个日期按每 5 天显示一个，避免标签挤在一起
+      axisLabel: { color: '#86909C', fontSize: 11, margin: 10, interval: 4 },
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      name: '数量',
-      nameTextStyle: { color: '#86909C' },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: { color: '#86909C', fontSize: 11 },
@@ -173,7 +199,7 @@ function initBar(list) {
       {
         name: '入库文档数',
         type: 'bar',
-        barMaxWidth: 14,
+        barMaxWidth: 20,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#6249D4' },
@@ -181,7 +207,7 @@ function initBar(list) {
           ]),
           borderRadius: [3, 3, 0, 0],
         },
-        data: list.map((item) => item.count),
+        data: series.map((item) => item.count),
       },
     ],
   })
@@ -202,8 +228,8 @@ function initRing({ success, failed }) {
       {
         name: '向量化占比',
         type: 'pie',
-        radius: ['48%', '70%'],
-        center: ['50%', '45%'],
+        radius: ['48%', '68%'],
+        center: ['50%', '48%'],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: '#FFFFFF', borderWidth: 2 },
         label: { color: '#4E5969', fontSize: 12 },
@@ -219,30 +245,42 @@ function initRing({ success, failed }) {
 </script>
 
 <style scoped>
+/* 内边距由 .page-container 统一提供，这里不再重复声明，避免左右留白翻倍 */
 .statistics-page {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* ------- 统计卡片 ------- */
 .stat-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 16px;
 }
 
 .stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 104px;
+  padding: 20px 24px;
   background-color: var(--bg-card);
   border-radius: 8px;
   box-shadow: var(--shadow-card);
-  padding: 22px 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-hover);
 }
 
 .stat-value {
   font-size: 30px;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.2;
+  line-height: 1.1;
   letter-spacing: 0.5px;
   font-variant-numeric: tabular-nums;
 }
@@ -256,50 +294,70 @@ function initRing({ success, failed }) {
 }
 
 .stat-label {
-  margin-top: 10px;
   font-size: 13px;
   color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 /* ------- 图表区域 ------- */
-.chart-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.chart-area {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin-bottom: 16px;
 }
 
-.chart-row-center {
-  grid-template-columns: 1fr;
+.chart-row {
+  display: grid;
+  gap: 16px;
+}
+
+/* 两个环形图等高并排 */
+.chart-row-donut {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .chart-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 12px;
   background-color: var(--bg-card);
   border-radius: 8px;
   box-shadow: var(--shadow-card);
-  padding: 18px 20px;
 }
 
-.chart-card-center {
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
+/* 卡片头：标题左、统计口径右 */
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .chart-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 12px;
+}
+
+.chart-hint {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .chart-box {
   height: 300px;
 }
 
+.chart-box-wide {
+  height: 280px;
+}
+
 /* ------- 空状态 ------- */
 .chart-empty {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -310,5 +368,16 @@ function initRing({ success, failed }) {
   color: var(--text-secondary);
   gap: 12px;
   font-size: 14px;
+}
+
+/* ------- 窄屏自适应 ------- */
+@media (max-width: 1280px) {
+  .stat-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-row-donut {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
