@@ -1,4 +1,4 @@
-'''agent主体'''
+'''agent主体（已弃用）'''
 from langchain.agents import create_agent
 
 from app.modelFactory.factory import chat_model

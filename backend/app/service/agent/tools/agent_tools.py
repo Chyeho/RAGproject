@@ -1,4 +1,4 @@
-'''agent工具库'''
+'''agent工具库（已弃用）'''
 from langchain_core.tools import tool
 from app.service.rag import registry
 
